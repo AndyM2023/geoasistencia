@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="text-h4 mb-6">Dashboard</h1>
+    <h1 class="text-h4 mb-6 text-white">Dashboard</h1>
     
     <!-- Tarjetas de Estadísticas -->
     <v-row class="mb-6">
@@ -52,8 +52,8 @@
     <!-- Gráficos y Actividad Reciente -->
     <v-row>
       <v-col cols="12" md="8">
-        <v-card>
-          <v-card-title>Asistencias por Semana</v-card-title>
+        <v-card class="bg-dark-surface border border-blue-500/20">
+          <v-card-title class="text-white">Asistencias por Semana</v-card-title>
           <v-card-text>
             <div class="text-center pa-8">
               <v-icon size="64" color="grey-lighten-1">mdi-chart-line</v-icon>
@@ -65,16 +65,17 @@
       </v-col>
       
       <v-col cols="12" md="4">
-        <v-card>
-          <v-card-title>Actividad Reciente</v-card-title>
+        <v-card class="bg-dark-surface border border-blue-500/20">
+          <v-card-title class="text-white">Actividad Reciente</v-card-title>
           <v-card-text>
-            <v-list density="compact">
+            <v-list density="compact" class="bg-transparent">
               <v-list-item
                 v-for="activity in recentActivities"
                 :key="activity.id"
                 :prepend-icon="activity.icon"
                 :title="activity.title"
                 :subtitle="activity.time"
+                class="text-white"
               >
                 <template v-slot:append>
                   <v-chip

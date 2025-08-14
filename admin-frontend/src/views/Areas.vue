@@ -3,8 +3,8 @@
     <v-row>
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
-          <h1 class="text-h4">Gestión de Áreas</h1>
-          <v-btn color="primary" prepend-icon="mdi-plus" @click="showDialog = true">
+          <h1 class="text-h4 text-white">Gestión de Áreas</h1>
+          <v-btn color="blue-400" prepend-icon="mdi-plus" @click="showDialog = true" class="neon-border">
             Nueva Área
           </v-btn>
         </div>
@@ -12,8 +12,8 @@
     </v-row>
 
     <!-- Tabla de Áreas -->
-    <v-card>
-      <v-card-title>
+    <v-card class="bg-dark-surface border border-blue-500/20">
+      <v-card-title class="text-white">
         <v-text-field
           v-model="search"
           append-icon="mdi-magnify"
@@ -22,6 +22,8 @@
           hide-details
           variant="outlined"
           density="compact"
+          color="blue-400"
+          class="text-white"
         ></v-text-field>
       </v-card-title>
 
@@ -30,12 +32,13 @@
         :items="areas"
         :search="search"
         :loading="loading"
-        class="elevation-1"
+        class="elevation-1 bg-dark-surface"
+        theme="dark"
       >
         <template v-slot:item.actions="{ item }">
-          <v-btn icon="mdi-pencil" size="small" color="primary" @click="editArea(item)"></v-btn>
-          <v-btn icon="mdi-delete" size="small" color="error" @click="deleteArea(item)"></v-btn>
-          <v-btn icon="mdi-map-marker" size="small" color="info" @click="showMap(item)"></v-btn>
+          <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editArea(item)"></v-btn>
+          <v-btn icon="mdi-delete" size="small" color="red-400" @click="deleteArea(item)"></v-btn>
+          <v-btn icon="mdi-map-marker" size="small" color="green-400" @click="showMap(item)"></v-btn>
         </template>
         
         <template v-slot:item.radius="{ item }">
@@ -43,7 +46,7 @@
         </template>
         
         <template v-slot:item.employee_count="{ item }">
-          <v-chip :color="item.employee_count > 0 ? 'success' : 'grey'" size="small">
+          <v-chip :color="item.employee_count > 0 ? 'green-500' : 'grey-500'" size="small" variant="tonal">
             {{ item.employee_count }} empleados
           </v-chip>
         </template>
@@ -52,8 +55,8 @@
 
     <!-- Dialog para Crear/Editar Área -->
     <v-dialog v-model="showDialog" max-width="700px">
-      <v-card>
-        <v-card-title>
+      <v-card class="bg-dark-surface border border-blue-500/20">
+        <v-card-title class="text-white">
           <span class="text-h5">{{ editingArea ? 'Editar' : 'Nueva' }} Área</span>
         </v-card-title>
         
@@ -66,6 +69,8 @@
                   label="Nombre del Área"
                   required
                   :rules="[v => !!v || 'Nombre es requerido']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -75,6 +80,8 @@
                   label="Descripción"
                   required
                   :rules="[v => !!v || 'Descripción es requerida']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -86,6 +93,8 @@
                   step="0.000001"
                   required
                   :rules="[v => !!v || 'Latitud es requerida']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -97,6 +106,8 @@
                   step="0.000001"
                   required
                   :rules="[v => !!v || 'Longitud es requerida']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -109,6 +120,8 @@
                   max="10000"
                   required
                   :rules="[v => !!v || 'Radio es requerido', v => v >= 10 || 'Radio mínimo 10m', v => v <= 10000 || 'Radio máximo 10km']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -121,6 +134,8 @@
                   item-value="value"
                   required
                   :rules="[v => !!v || 'Estado es requerido']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-select>
               </v-col>
               
@@ -130,6 +145,7 @@
                   label="Notas Adicionales"
                   rows="3"
                   variant="outlined"
+                  color="blue-400"
                 ></v-textarea>
               </v-col>
             </v-row>
@@ -138,17 +154,17 @@
         
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="showDialog = false">Cancelar</v-btn>
-          <v-btn color="primary" @click="saveArea" :loading="saving">Guardar</v-btn>
+          <v-btn color="grey-400" variant="text" @click="showDialog = false">Cancelar</v-btn>
+          <v-btn color="blue-400" @click="saveArea" :loading="saving" class="neon-border">Guardar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- Dialog de Confirmación para Eliminar -->
     <v-dialog v-model="showDeleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-h5">Confirmar Eliminación</v-card-title>
-        <v-card-text>
+      <v-card class="bg-dark-surface border border-blue-500/20">
+        <v-card-title class="text-h5 text-white">Confirmar Eliminación</v-card-title>
+        <v-card-text class="text-grey-300">
           ¿Estás seguro de que quieres eliminar el área <strong>{{ areaToDelete?.name }}</strong>?
           <br><br>
           <v-alert type="warning" variant="tonal">
@@ -157,24 +173,24 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="showDeleteDialog = false">Cancelar</v-btn>
-          <v-btn color="error" @click="confirmDelete" :loading="deleting">Eliminar</v-btn>
+          <v-btn color="grey-400" variant="text" @click="showDeleteDialog = false">Cancelar</v-btn>
+          <v-btn color="red-400" @click="confirmDelete" :loading="deleting">Eliminar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- Dialog del Mapa -->
     <v-dialog v-model="showMapDialog" max-width="800px">
-      <v-card>
-        <v-card-title>
+      <v-card class="bg-dark-surface border border-blue-500/20">
+        <v-card-title class="text-white">
           <span class="text-h5">Ubicación del Área: {{ selectedArea?.name }}</span>
         </v-card-title>
         
         <v-card-text>
           <div class="text-center pa-8">
-            <v-icon size="64" color="info">mdi-map-marker</v-icon>
-            <div class="text-h6 mt-4">Mapa de Ubicación</div>
-            <div class="text-body-2 text-grey mb-4">
+            <v-icon size="64" color="green-400">mdi-map-marker</v-icon>
+            <div class="text-h6 mt-4 text-white">Mapa de Ubicación</div>
+            <div class="text-body-2 text-grey-300 mb-4">
               Coordenadas: {{ selectedArea?.latitude }}, {{ selectedArea?.longitude }}
               <br>
               Radio: {{ selectedArea?.radius }} metros
@@ -187,7 +203,7 @@
         
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="primary" @click="showMapDialog = false">Cerrar</v-btn>
+          <v-btn color="blue-400" @click="showMapDialog = false" class="neon-border">Cerrar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

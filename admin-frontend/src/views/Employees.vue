@@ -3,8 +3,8 @@
     <v-row>
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
-          <h1 class="text-h4">Gestión de Empleados</h1>
-          <v-btn color="primary" prepend-icon="mdi-plus" @click="showDialog = true">
+          <h1 class="text-h4 text-white">Gestión de Empleados</h1>
+          <v-btn color="blue-400" prepend-icon="mdi-plus" @click="showDialog = true" class="neon-border">
             Nuevo Empleado
           </v-btn>
         </div>
@@ -12,8 +12,8 @@
     </v-row>
 
     <!-- Tabla de Empleados -->
-    <v-card>
-      <v-card-title>
+    <v-card class="bg-dark-surface border border-blue-500/20">
+      <v-card-title class="text-white">
         <v-text-field
           v-model="search"
           append-icon="mdi-magnify"
@@ -22,6 +22,8 @@
           hide-details
           variant="outlined"
           density="compact"
+          color="blue-400"
+          class="text-white"
         ></v-text-field>
       </v-card-title>
 
@@ -30,15 +32,16 @@
         :items="employees"
         :search="search"
         :loading="loading"
-        class="elevation-1"
+        class="elevation-1 bg-dark-surface"
+        theme="dark"
       >
         <template v-slot:item.actions="{ item }">
-          <v-btn icon="mdi-pencil" size="small" color="primary" @click="editEmployee(item)"></v-btn>
-          <v-btn icon="mdi-delete" size="small" color="error" @click="deleteEmployee(item)"></v-btn>
+          <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editEmployee(item)"></v-btn>
+          <v-btn icon="mdi-delete" size="small" color="red-400" @click="deleteEmployee(item)"></v-btn>
         </template>
         
         <template v-slot:item.status="{ item }">
-          <v-chip :color="item.status === 'active' ? 'success' : 'error'" size="small">
+          <v-chip :color="item.status === 'active' ? 'green-500' : 'red-500'" size="small" variant="tonal">
             {{ item.status === 'active' ? 'Activo' : 'Inactivo' }}
           </v-chip>
         </template>
@@ -47,8 +50,8 @@
 
     <!-- Dialog para Crear/Editar Empleado -->
     <v-dialog v-model="showDialog" max-width="600px">
-      <v-card>
-        <v-card-title>
+      <v-card class="bg-dark-surface border border-blue-500/20">
+        <v-card-title class="text-white">
           <span class="text-h5">{{ editingEmployee ? 'Editar' : 'Nuevo' }} Empleado</span>
         </v-card-title>
         
@@ -61,6 +64,8 @@
                   label="Nombre"
                   required
                   :rules="[v => !!v || 'Nombre es requerido']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -70,6 +75,8 @@
                   label="Apellido"
                   required
                   :rules="[v => !!v || 'Apellido es requerido']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -80,6 +87,8 @@
                   type="email"
                   required
                   :rules="[v => !!v || 'Email es requerido', v => /.+@.+\..+/.test(v) || 'Email debe ser válido']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -89,6 +98,8 @@
                   label="ID de Empleado"
                   required
                   :rules="[v => !!v || 'ID es requerido']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-text-field>
               </v-col>
               
@@ -99,6 +110,8 @@
                   :items="positions"
                   required
                   :rules="[v => !!v || 'Cargo es requerido']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-select>
               </v-col>
               
@@ -111,6 +124,8 @@
                   item-value="id"
                   required
                   :rules="[v => !!v || 'Área es requerida']"
+                  color="blue-400"
+                  variant="outlined"
                 ></v-select>
               </v-col>
             </v-row>
@@ -119,23 +134,23 @@
         
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="showDialog = false">Cancelar</v-btn>
-          <v-btn color="primary" @click="saveEmployee" :loading="saving">Guardar</v-btn>
+          <v-btn color="grey-400" variant="text" @click="showDialog = false">Cancelar</v-btn>
+          <v-btn color="blue-400" @click="saveEmployee" :loading="saving" class="neon-border">Guardar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- Dialog de Confirmación para Eliminar -->
     <v-dialog v-model="showDeleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-h5">Confirmar Eliminación</v-card-title>
-        <v-card-text>
+      <v-card class="bg-dark-surface border border-blue-500/20">
+        <v-card-title class="text-h5 text-white">Confirmar Eliminación</v-card-title>
+        <v-card-text class="text-grey-300">
           ¿Estás seguro de que quieres eliminar a <strong>{{ employeeToDelete?.first_name }} {{ employeeToDelete?.last_name }}</strong>?
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="showDeleteDialog = false">Cancelar</v-btn>
-          <v-btn color="error" @click="confirmDelete" :loading="deleting">Eliminar</v-btn>
+          <v-btn color="grey-400" variant="text" @click="showDeleteDialog = false">Cancelar</v-btn>
+          <v-btn color="red-400" @click="confirmDelete" :loading="deleting">Eliminar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

@@ -1,91 +1,151 @@
 <template>
-  <div class="login-container">
-    <!-- Panel izquierdo azul -->
-    <div class="left-panel">
-      <div class="logo-container">
-        <h1 class="logo">GEOASISTENCIA ADMIN</h1>
-      </div>
-    </div>
+  <v-container fluid class="login-container pa-0">
+    <v-row no-gutters class="h-100">
+      <!-- Panel izquierdo con gradiente azul oscuro -->
+      <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
+        <div class="text-center">
+          <h1 class="logo-text text-h3 font-weight-bold text-white">
+            GEOASISTENCIA
+            <br>
+            ADMIN
+          </h1>
+          <div class="logo-glow"></div>
+        </div>
+      </v-col>
 
-    <!-- Panel derecho blanco con formulario -->
-    <div class="right-panel">
-      <div class="login-form-container">
-        <h2 class="login-title">Log in</h2>
-        <p class="signup-text">
-          New to Geoasistencia? 
-          <a href="#" class="signup-link">Sign up</a>
-        </p>
+      <!-- Panel derecho con formulario -->
+      <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
+        <v-card class="login-card" elevation="0">
+          <v-card-text class="pa-8">
+            <h2 class="text-h4 font-weight-bold text-white mb-2">Log in</h2>
+            <p class="text-body-1 text-grey-lighten-1 mb-8">
+              New to Geoasistencia? 
+              <v-btn variant="text" color="primary" class="text-none px-1">Sign up</v-btn>
+            </p>
 
-        <form @submit.prevent="handleLogin" class="login-form">
-          <div class="form-group">
-            <label for="email" class="form-label">EMAIL</label>
-            <input
-              id="email"
-              v-model="form.email"
-              type="email"
-              class="form-input"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="password" class="form-label">PASSWORD</label>
-            <div class="password-input-container">
-              <input
-                id="password"
-                v-model="form.password"
-                :type="showPassword ? 'text' : 'password'"
-                class="form-input"
-                placeholder="Enter your password"
-                required
-              />
-              <button
-                type="button"
-                class="password-toggle"
-                @click="togglePassword"
+            <v-form @submit.prevent="handleLogin" class="login-form">
+              <v-text-field
+                v-model="form.email"
+                label="EMAIL"
+                type="email"
+                placeholder="Enter your email"
+                variant="outlined"
+                color="primary"
+                bg-color="dark-surface"
+                class="mb-4"
+                :rules="[rules.required, rules.email]"
+                hide-details="auto"
               >
-                <i class="mdi" :class="showPassword ? 'mdi-eye-off' : 'mdi-eye'"></i>
-              </button>
-            </div>
-          </div>
+                <template v-slot:prepend-inner>
+                  <v-icon color="primary">mdi-email</v-icon>
+                </template>
+              </v-text-field>
 
-          <div class="form-options">
-            <label class="checkbox-container">
-              <input
-                v-model="form.keepSignedIn"
-                type="checkbox"
-                class="checkbox"
-              />
-              <span class="checkmark"></span>
-              Keep me signed in on this device
-            </label>
-            <a href="#" class="forgot-password">Forgot password?</a>
-          </div>
+              <v-text-field
+                v-model="form.password"
+                label="PASSWORD"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="Enter your password"
+                variant="outlined"
+                color="primary"
+                bg-color="dark-surface"
+                class="mb-4"
+                :rules="[rules.required]"
+                hide-details="auto"
+              >
+                <template v-slot:prepend-inner>
+                  <v-icon color="primary">mdi-lock</v-icon>
+                </template>
+                <template v-slot:append-inner>
+                  <v-btn
+                    variant="text"
+                    icon
+                    @click="togglePassword"
+                    color="grey-lighten-1"
+                  >
+                    <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                  </v-btn>
+                </template>
+              </v-text-field>
 
-          <button type="submit" class="login-button" :disabled="loading">
-            <span v-if="loading">Logging in...</span>
-            <span v-else>Login</span>
-          </button>
-        </form>
+              <div class="d-flex justify-space-between align-center mb-6">
+                <v-checkbox
+                  v-model="form.keepSignedIn"
+                  label="Keep me signed in on this device"
+                  color="primary"
+                  hide-details
+                  class="text-grey-lighten-1"
+                ></v-checkbox>
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  class="text-none"
+                >
+                  Forgot password?
+                </v-btn>
+              </div>
 
-        <!-- Mensajes de error/éxito -->
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
-        <div v-if="success" class="success-message">
-          {{ success }}
-        </div>
+              <v-btn
+                type="submit"
+                color="primary"
+                size="large"
+                block
+                :loading="loading"
+                :disabled="loading"
+                class="mb-6"
+                elevation="2"
+              >
+                <span v-if="loading">Logging in...</span>
+                <span v-else>Login</span>
+              </v-btn>
+            </v-form>
 
-        <!-- Credenciales de prueba -->
-        <div class="demo-credentials">
-          <p class="demo-title">Demo Credentials:</p>
-          <p class="demo-text">Email: <strong>admin@geoasistencia.com</strong></p>
-          <p class="demo-text">Password: <strong>admin123</strong></p>
-        </div>
-      </div>
-    </div>
-  </div>
+            <!-- Mensajes de error/éxito -->
+            <v-alert
+              v-if="error"
+              type="error"
+              variant="tonal"
+              class="mb-4"
+              closable
+              @click:close="error = ''"
+            >
+              {{ error }}
+            </v-alert>
+
+            <v-alert
+              v-if="success"
+              type="success"
+              variant="tonal"
+              class="mb-4"
+            >
+              {{ success }}
+            </v-alert>
+
+            <!-- Credenciales de demo -->
+            <v-card
+              variant="tonal"
+              color="grey-darken-3"
+              class="demo-credentials"
+            >
+              <v-card-text class="pa-4">
+                <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
+                  Demo Credentials:
+                </h4>
+                <div class="text-body-2 text-grey-lighten-1">
+                  <p class="mb-1">
+                    <strong>Email:</strong> admin@geoasistencia.com
+                  </p>
+                  <p class="mb-0">
+                    <strong>Password:</strong> admin123
+                  </p>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script>
@@ -110,6 +170,11 @@ export default {
     const error = ref('')
     const success = ref('')
 
+    const rules = {
+      required: v => !!v || 'This field is required',
+      email: v => /.+@.+\..+/.test(v) || 'Email must be valid'
+    }
+
     const togglePassword = () => {
       showPassword.value = !showPassword.value
     }
@@ -120,13 +185,11 @@ export default {
       success.value = ''
 
       try {
-        // Usar el store de autenticación
         const result = await authStore.login(form.email, form.password)
         
         if (result.success) {
           success.value = 'Login successful! Redirecting...'
           
-          // Redirigir al dashboard
           setTimeout(() => {
             router.push('/')
           }, 1500)
@@ -146,6 +209,7 @@ export default {
       loading,
       error,
       success,
+      rules,
       togglePassword,
       handleLogin
     }
@@ -155,242 +219,128 @@ export default {
 
 <style scoped>
 .login-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
 }
 
 .left-panel {
-  background: #1e3a8a;
-  width: 33.333%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  position: relative;
+  overflow: hidden;
 }
 
-.logo-container {
-  text-align: center;
+.left-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 70%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
-.logo {
-  color: white;
-  font-size: 2.5rem;
-  font-weight: 700;
+.logo-text {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
   letter-spacing: 2px;
-  text-transform: uppercase;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 .right-panel {
-  background: white;
-  width: 66.667%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.login-form-container {
-  width: 100%;
-  max-width: 400px;
-  padding: 2rem;
-}
-
-.login-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.signup-text {
-  color: #6b7280;
-  margin-bottom: 2rem;
-  font-size: 1rem;
-}
-
-.signup-link {
-  color: #3b82f6;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.signup-link:hover {
-  text-decoration: underline;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.form-input {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.password-input-container {
+  background: #16213e;
   position: relative;
 }
 
-.password-toggle {
+.right-panel::before {
+  content: '';
   position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0.25rem;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+  pointer-events: none;
 }
 
-.password-toggle:hover {
-  color: #374151;
-}
-
-.form-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.5rem;
-}
-
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #374151;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.checkbox {
-  width: 1rem;
-  height: 1rem;
-  accent-color: #3b82f6;
-}
-
-.forgot-password {
-  color: #3b82f6;
-  text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.forgot-password:hover {
-  text-decoration: underline;
-}
-
-.login-button {
-  background: #1e3a8a;
-  color: white;
-  padding: 0.875rem 1rem;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 1rem;
-}
-
-.login-button:hover:not(:disabled) {
-  background: #1e40af;
-}
-
-.login-button:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
-.error-message {
-  background: #fef2f2;
-  color: #dc2626;
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  border: 1px solid #fecaca;
-  margin-top: 1rem;
-  font-size: 0.875rem;
-}
-
-.success-message {
-  background: #f0fdf4;
-  color: #16a34a;
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  border: 1px solid #bbf7d0;
-  margin-top: 1rem;
-  font-size: 0.875rem;
+.login-card {
+  background: rgba(30, 41, 59, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 16px;
+  max-width: 450px;
+  width: 100%;
 }
 
 .demo-credentials {
-  margin-top: 2rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 0.375rem;
-  border: 1px solid #e2e8f0;
+  background: rgba(51, 65, 85, 0.6) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-.demo-title {
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+/* Personalización de Vuetify para modo oscuro */
+:deep(.v-field) {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
 }
 
-.demo-text {
-  color: #6b7280;
-  font-size: 0.75rem;
-  margin: 0.25rem 0;
+:deep(.v-field--focused) {
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2) !important;
+}
+
+:deep(.v-field__input) {
+  color: #ffffff !important;
+}
+
+:deep(.v-field__label) {
+  color: #cbd5e1 !important;
+}
+
+:deep(.v-btn--variant-text) {
+  color: #3b82f6 !important;
+}
+
+:deep(.v-btn--variant-text:hover) {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+:deep(.v-checkbox .v-selection-control__input) {
+  color: #00d4ff !important;
+}
+
+:deep(.v-checkbox .v-label) {
+  color: #cbd5e1 !important;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .login-container {
-    flex-direction: column;
-  }
-  
+@media (max-width: 960px) {
   .left-panel {
-    width: 100%;
-    height: 30vh;
+    min-height: 200px;
   }
   
-  .right-panel {
-    width: 100%;
-    height: 70vh;
+  .logo-text {
+    font-size: 1.5rem !important;
   }
   
-  .logo {
-    font-size: 2rem;
-  }
-  
-  .login-title {
-    font-size: 2rem;
+  .login-card {
+    margin: 1rem;
   }
 }
 </style>

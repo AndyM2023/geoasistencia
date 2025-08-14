@@ -2,7 +2,7 @@
   <div>
     <v-row>
       <v-col cols="12">
-        <h1 class="text-h4 mb-4">Reportes de Asistencia</h1>
+        <h1 class="text-h4 mb-4 text-white">Reportes de Asistencia</h1>
       </v-col>
     </v-row>
 
