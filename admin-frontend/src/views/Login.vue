@@ -122,25 +122,7 @@
             </v-alert>
 
             <!-- Credenciales de demo -->
-            <v-card
-              variant="tonal"
-              color="grey-darken-3"
-              class="demo-credentials"
-            >
-              <v-card-text class="pa-4">
-                <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
-                  Demo Credentials:
-                </h4>
-                <div class="text-body-2 text-grey-lighten-1">
-                  <p class="mb-1">
-                    <strong>Email:</strong> admin@geoasistencia.com
-                  </p>
-                  <p class="mb-0">
-                    <strong>Password:</strong> admin123
-                  </p>
-                </div>
-              </v-card-text>
-            </v-card>
+            
           </v-card-text>
         </v-card>
       </v-col>
@@ -149,7 +131,7 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -213,6 +195,15 @@ export default {
       togglePassword,
       handleLogin
     }
+  },
+
+  // Hooks de lifecycle para controlar el scroll
+  onMounted() {
+    document.body.classList.add('login-page')
+  },
+
+  onUnmounted() {
+    document.body.classList.remove('login-page')
   }
 }
 </script>
@@ -221,6 +212,10 @@ export default {
 .login-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .left-panel {
@@ -327,6 +322,23 @@ export default {
 
 :deep(.v-checkbox .v-label) {
   color: #cbd5e1 !important;
+}
+
+/* Eliminar bordes y márgenes globales */
+:deep(.v-container) {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+:deep(.v-row) {
+  margin: 0 !important;
+  border: none !important;
+}
+
+:deep(.v-col) {
+  padding: 0 !important;
+  border: none !important;
 }
 
 /* Responsive */

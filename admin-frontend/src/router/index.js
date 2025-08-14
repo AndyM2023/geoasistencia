@@ -5,6 +5,7 @@ import Dashboard from '../views/Dashboard.vue'
 import Employees from '../views/Employees.vue'
 import Areas from '../views/Areas.vue'
 import Reports from '../views/Reports.vue'
+import About from '../views/About.vue'
 
 const routes = [
   {
@@ -36,6 +37,12 @@ const routes = [
     name: 'Reports',
     component: Reports,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: About,
+    meta: { requiresAuth: false }
   }
 ]
 

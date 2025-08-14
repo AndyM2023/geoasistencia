@@ -140,3 +140,47 @@ body {
     width: 100% !important;
   }
 }
+
+/* ===== ESTILOS ESPECÍFICOS PARA EL LOGIN ===== */
+/* Eliminar padding superior y scroll en la página de login */
+.login-main {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Eliminar scroll del body cuando esté en login */
+body.login-page {
+  overflow: hidden !important;
+}
+
+/* Asegurar que el login ocupe toda la pantalla */
+.login-main .v-container {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* ===== ESTILOS DE LA APPBAR ===== */
+/* Filo sutil debajo de la barra superior */
+.app-bar-with-border {
+  position: relative;
+}
+
+.app-bar-with-border::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 212, 255, 0.3) 20%,
+    rgba(59, 130, 246, 0.4) 50%,
+    rgba(0, 212, 255, 0.3) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}
