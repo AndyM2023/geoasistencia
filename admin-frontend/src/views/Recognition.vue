@@ -15,11 +15,31 @@
             
             <v-row>
               <!-- Columna izquierda: Cámara -->
-              <v-col cols="12" md="6" class="d-flex align-center justify-center">
-                <div class="camera-area">
-                  <div class="camera-placeholder d-flex align-center justify-center">
+              <v-col cols="12" md="6" class="d-flex justify-center">
+                <!-- Título invisible para alineación -->
+                <div class="invisible-title mb-6"></div>
+                <div class="camera-area" @click="toggleCamera" :class="{ 'camera-active': isCameraActive }">
+                  <!-- Estado inicial: Placeholder -->
+                  <div v-if="!isCameraActive" class="camera-placeholder d-flex align-center justify-center">
                     <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
-                    <p class="text-body-2 text-grey-lighten-1 mt-2">Cámara no disponible</p>
+                    <p class="text-body-2 text-grey-lighten-1 mt-2">Click para activar cámara</p>
+                  </div>
+                  
+                  <!-- Estado activo: Video de la cámara -->
+                  <div v-else class="camera-video">
+                    <video ref="videoElement" autoplay muted class="camera-feed"></video>
+                    <div class="camera-overlay">
+                      <div class="face-detection-box"></div>
+                      <v-btn
+                        icon
+                        color="red"
+                        size="small"
+                        class="close-camera-btn"
+                        @click.stop="stopCamera"
+                      >
+                        <v-icon>mdi-close</v-icon>
+                      </v-btn>
+                    </div>
                   </div>
                 </div>
               </v-col>
@@ -153,6 +173,11 @@ export default {
     const loading = ref(false)
     const error = ref('')
     const success = ref('')
+    
+    // Variables para la cámara
+    const isCameraActive = ref(false)
+    const videoElement = ref(null)
+    const stream = ref(null)
 
     const rules = {
       required: v => !!v || 'Este campo es requerido'
@@ -191,6 +216,59 @@ export default {
       }
     }
 
+    // Funciones para manejar la cámara
+    const toggleCamera = async () => {
+      if (isCameraActive.value) {
+        await stopCamera()
+      } else {
+        await startCamera()
+      }
+    }
+
+    const startCamera = async () => {
+      try {
+        stream.value = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          } 
+        })
+        
+        if (videoElement.value) {
+          videoElement.value.srcObject = stream.value
+          isCameraActive.value = true
+          
+          // Iniciar reconocimiento facial automático
+          startFaceRecognition()
+        }
+      } catch (err) {
+        error.value = 'Error al acceder a la cámara: ' + err.message
+      }
+    }
+
+    const stopCamera = async () => {
+      if (stream.value) {
+        stream.value.getTracks().forEach(track => track.stop())
+        stream.value = null
+      }
+      isCameraActive.value = false
+    }
+
+    const startFaceRecognition = () => {
+      // Aquí implementarías la lógica de reconocimiento facial
+      // Por ahora solo simulamos el proceso
+      console.log('Iniciando reconocimiento facial...')
+      
+      // Simular detección de rostro
+      setTimeout(() => {
+        if (isCameraActive.value) {
+          success.value = 'Rostro detectado! Procesando reconocimiento...'
+          // Aquí iría la lógica real de reconocimiento
+        }
+      }, 3000)
+    }
+
     return {
       form,
       showPassword,
@@ -199,7 +277,13 @@ export default {
       success,
       rules,
       togglePassword,
-      handleRecognition
+      handleRecognition,
+      // Variables de la cámara
+      isCameraActive,
+      videoElement,
+      // Funciones de la cámara
+      toggleCamera,
+      stopCamera
     }
   },
 
@@ -258,6 +342,11 @@ export default {
   margin-top: 60px;
 }
 
+.invisible-title {
+  height: 32px; /* Altura aproximada del título h6 */
+  visibility: hidden;
+}
+
 .camera-area {
   background: rgba(15, 23, 42, 0.6);
   border: 2px dashed rgba(59, 130, 246, 0.3);
@@ -266,6 +355,64 @@ export default {
   text-align: center;
   width: 100%;
   max-width: 400px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.camera-area:hover {
+  border-color: rgba(0, 212, 255, 0.6);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.camera-area.camera-active {
+  border-color: #00d4ff;
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+  padding: 0;
+}
+
+.camera-video {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.camera-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.face-detection-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  border: 2px solid #00d4ff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.close-camera-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.7) !important;
 }
 
 .camera-placeholder {
