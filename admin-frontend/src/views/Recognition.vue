@@ -11,62 +11,64 @@
       <v-col cols="12" class="d-flex align-center justify-center">
         <v-card class="recognition-card" elevation="0">
           <v-card-text class="pa-8">
-            <h2 class="text-h4 font-weight-bold text-white mb-2">Reconocimiento Facial</h2>
-            <p class="text-body-1 text-grey-lighten-1 mb-8">
-              Identifícate para registrar tu asistencia
-            </p>
+            <h2 class="text-h6 font-weight-bold text-white mb-6 text-center">Reconocimiento Facial</h2>
+            
+            <v-row>
+              <!-- Columna izquierda: Cámara -->
+              <v-col cols="12" md="6" class="d-flex align-center justify-center">
+                <div class="camera-area">
+                  <div class="camera-placeholder d-flex align-center justify-center">
+                    <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
+                    <p class="text-body-2 text-grey-lighten-1 mt-2">Cámara no disponible</p>
+                  </div>
+                </div>
+              </v-col>
 
-            <!-- Área de la cámara -->
-            <div class="camera-area mb-6">
-              <div class="camera-placeholder d-flex align-center justify-center">
-                <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
-                <p class="text-body-2 text-grey-lighten-1 mt-2">Cámara no disponible</p>
-              </div>
-            </div>
-
-            <!-- Formulario de reconocimiento -->
-            <v-form @submit.prevent="handleRecognition" class="recognition-form">
-              <v-text-field
-                v-model="form.username"
-                label="USUARIO"
-                type="text"
-                placeholder="Ingresa tu usuario"
-                variant="outlined"
-                color="primary"
-                bg-color="dark-surface"
-                class="mb-4"
-                :rules="[rules.required]"
-                hide-details="auto"
-              >
-                <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-account</v-icon>
-                </template>
-              </v-text-field>
-
-              <v-text-field
-                v-model="form.password"
-                label="CONTRASEÑA"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Ingresa tu contraseña"
-                variant="outlined"
-                color="primary"
-                bg-color="dark-surface"
-                class="mb-4"
-                :rules="[rules.required]"
-                hide-details="auto"
-              >
-                <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-lock</v-icon>
-                </template>
-                <template v-slot:append-inner>
-                  <v-btn
-                    variant="text"
-                    icon
-                    @click="togglePassword"
-                    color="grey-lighten-1"
+              <!-- Columna derecha: Formulario -->
+              <v-col cols="12" md="6">
+                <!-- Formulario de reconocimiento -->
+                <v-form @submit.prevent="handleRecognition" class="recognition-form">
+                  <v-text-field
+                    v-model="form.username"
+                    label="USUARIO"
+                    type="text"
+                    placeholder="Ingresa tu usuario"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-4"
+                    :rules="[rules.required]"
+                    hide-details="auto"
                   >
-                    <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
-                  </v-btn>
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-account</v-icon>
+                    </template>
+                  </v-text-field>
+
+                  <v-text-field
+                    v-model="form.password"
+                    label="CONTRASEÑA"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Ingresa tu contraseña"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-4"
+                    :rules="[rules.required]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-lock</v-icon>
+                    </template>
+                    <template v-slot:append-inner>
+                      <v-btn
+                        variant="text"
+                        icon
+                        @click="togglePassword"
+                        color="grey-lighten-1"
+                      >
+                        <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                      </v-btn>
                 </template>
               </v-text-field>
 
@@ -124,6 +126,8 @@
                 </div>
               </v-card-text>
             </v-card>
+              </v-col>
+            </v-row>
           </v-card-text>
         </v-card>
       </v-col>
@@ -233,11 +237,11 @@ export default {
 }
 
 .left-image {
-  left: 130px;
+  left: 40px;
 }
 
 .right-image {
-  right: 150px;
+  right: 50px;
 }
 
 
@@ -249,8 +253,9 @@ export default {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 16px;
-  max-width: 500px;
+  max-width: 700px;
   width: 100%;
+  margin-top: 60px;
 }
 
 .camera-area {
@@ -259,6 +264,8 @@ export default {
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
+  width: 100%;
+  max-width: 400px;
 }
 
 .camera-placeholder {
