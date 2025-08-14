@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { authService } from '../services/authService'
 
 export const useAuthStore = defineStore('auth', () => {
   // Estado
@@ -13,81 +14,58 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Acciones
   const login = async (email, password) => {
+    console.log('🔑 Auth Store - Iniciando login para:', email)
+    
     try {
-      // Simular llamada a API
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // USAR API REAL (convertir email a username)
+      const response = await authService.login({ email, password })
       
-      // Validar credenciales (ejemplo)
-      if (email === 'admin@geoasistencia.com' && password === 'admin123') {
-        const userData = {
-          id: 1,
-          email: email,
-          name: 'Administrador',
-          role: 'admin'
-        }
-        
-        // Guardar datos de autenticación
-        isAuthenticated.value = true
-        user.value = userData
-        token.value = 'fake-jwt-token-' + Date.now()
-        
-        // Guardar en localStorage
-        localStorage.setItem('auth_token', token.value)
-        localStorage.setItem('user_data', JSON.stringify(userData))
-        
-        return { success: true, user: userData }
-      } else {
-        throw new Error('Credenciales inválidas')
-      }
+      console.log('🎉 Auth Store - Login exitoso, datos recibidos:', response)
+      
+      // Guardar datos de autenticación
+      isAuthenticated.value = true
+      user.value = response.user
+      token.value = response.token
+      
+      return { success: true, user: response.user }
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('💥 Auth Store - Error en login:', error)
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 
+               error.response?.data?.message || 
+               error.message || 
+               'Error desconocido en login'
+      }
     }
   }
 
-  const logout = () => {
-    // Limpiar estado
-    isAuthenticated.value = false
-    user.value = null
-    token.value = null
-    
-    // Limpiar localStorage
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_data')
-    sessionStorage.removeItem('isAuthenticated')
-    sessionStorage.removeItem('userEmail')
+  const logout = async () => {
+    try {
+      // USAR API REAL
+      await authService.logout()
+    } catch (error) {
+      console.error('Error en logout:', error)
+    } finally {
+      // Limpiar estado
+      isAuthenticated.value = false
+      user.value = null
+      token.value = null
+    }
   }
 
   const checkAuth = () => {
-    // Verificar si hay token en localStorage
-    const storedToken = localStorage.getItem('auth_token')
-    const storedUser = localStorage.getItem('user_data')
-    
-    if (storedToken && storedUser) {
-      try {
+    // USAR SERVICIO REAL
+    if (authService.isAuthenticated()) {
+      const storedUser = authService.getCurrentUser()
+      const storedToken = authService.getToken()
+      
+      if (storedUser && storedToken) {
         isAuthenticated.value = true
-        user.value = JSON.parse(storedUser)
+        user.value = storedUser
         token.value = storedToken
         return true
-      } catch (error) {
-        console.error('Error parsing stored user data:', error)
-        logout()
-        return false
       }
-    }
-    
-    // Verificar sessionStorage como fallback
-    const sessionAuth = sessionStorage.getItem('isAuthenticated')
-    const sessionEmail = sessionStorage.getItem('userEmail')
-    
-    if (sessionAuth === 'true' && sessionEmail) {
-      isAuthenticated.value = true
-      user.value = {
-        id: 1,
-        email: sessionEmail,
-        name: 'Administrador',
-        role: 'admin'
-      }
-      return true
     }
     
     return false

@@ -55,11 +55,7 @@
         <v-card class="bg-dark-surface border border-blue-500/20">
           <v-card-title class="text-white">Asistencias por Semana</v-card-title>
           <v-card-text>
-            <div class="text-center pa-8">
-              <v-icon size="64" color="grey-lighten-1">mdi-chart-line</v-icon>
-              <p class="text-grey-lighten-1 mt-2">Gráfico de asistencias</p>
-              <small class="text-grey-lighten-1">Chart.js se implementará aquí</small>
-            </div>
+            <AttendanceLineChart :data="weeklyAttendanceData" />
           </v-card-text>
         </v-card>
       </v-col>
@@ -98,11 +94,14 @@
 <script>
 import { ref, onMounted } from 'vue'
 import StatsCard from '../components/StatsCard.vue'
+import AttendanceLineChart from '../components/charts/AttendanceLineChart.vue'
+import { dashboardService } from '../services/dashboardService'
 
 export default {
   name: 'Dashboard',
   components: {
-    StatsCard
+    StatsCard,
+    AttendanceLineChart
   },
   setup() {
     const stats = ref({
@@ -143,19 +142,42 @@ export default {
       }
     ])
     
-    const loadStats = async () => {
-      // TODO: Cargar estadísticas desde la API
-      console.log('Cargando estadísticas...')
+    const weeklyAttendanceData = ref([
+      { date: 'Lun', count: 22 },
+      { date: 'Mar', count: 24 },
+      { date: 'Mié', count: 23 },
+      { date: 'Jue', count: 25 },
+      { date: 'Vie', count: 20 },
+      { date: 'Sáb', count: 8 },
+      { date: 'Dom', count: 0 }
+    ])
+    
+    const loadDashboardData = async () => {
+      try {
+        // CARGAR DESDE API REAL
+        const statsData = await dashboardService.getStats()
+        stats.value = statsData
+        
+        const weeklyAttendance = await dashboardService.getWeeklyAttendance()
+        weeklyAttendanceData.value = weeklyAttendance
+        
+        const activity = await dashboardService.getRecentActivity()
+        recentActivities.value = activity
+        
+      } catch (error) {
+        console.error('Error cargando datos del dashboard:', error)
+      }
     }
     
     onMounted(() => {
-      loadStats()
+      loadDashboardData()
     })
     
     return {
       stats,
       recentActivities,
-      loadStats
+      weeklyAttendanceData,
+      loadDashboardData
     }
   }
 }

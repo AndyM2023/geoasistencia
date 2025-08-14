@@ -13,5 +13,5 @@ router.register(r'areas', AreaViewSet, basename='area')
 router.register(r'attendance', AttendanceViewSet, basename='attendance')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]

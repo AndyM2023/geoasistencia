@@ -175,13 +175,9 @@
 
     <!-- Gráfico -->
     <v-card v-if="reportData.length > 0" class="mt-6">
-      <v-card-title>Gráfico de Asistencia</v-card-title>
+      <v-card-title>Distribución de Estados de Asistencia</v-card-title>
       <v-card-text>
-        <div class="text-center pa-8">
-          <v-icon size="64" color="grey">mdi-chart-bar</v-icon>
-          <div class="text-h6 mt-4">Gráfico de Asistencia por Día</div>
-          <div class="text-body-2 text-grey">Implementar con Chart.js</div>
-        </div>
+        <AttendancePieChart :data="chartData" />
       </v-card-text>
     </v-card>
 
@@ -195,10 +191,17 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import AttendancePieChart from '../components/charts/AttendancePieChart.vue'
+import { attendanceService } from '../services/attendanceService'
+import { employeeService } from '../services/employeeService'
+import { areaService } from '../services/areaService'
 
 export default {
   name: 'Reports',
+  components: {
+    AttendancePieChart
+  },
   setup() {
     const search = ref('')
     const loading = ref(false)
@@ -234,13 +237,33 @@ export default {
       { title: 'Notas', key: 'notes', sortable: false }
     ]
     
+    const chartData = computed(() => {
+      if (!reportData.value.length) return []
+      
+      // Agrupar datos por fecha
+      const groupedData = {}
+      reportData.value.forEach(item => {
+        const date = item.date
+        if (!groupedData[date]) {
+          groupedData[date] = { date: formatDate(date), present: 0, late: 0, absent: 0 }
+        }
+        
+        if (item.status === 'present') {
+          groupedData[date].present++
+        } else if (item.status === 'late') {
+          groupedData[date].late++
+        } else if (item.status === 'absent') {
+          groupedData[date].absent++
+        }
+      })
+      
+      return Object.values(groupedData)
+    })
+    
     const loadEmployees = async () => {
       try {
-        // TODO: Cargar desde API
-        employees.value = [
-          { id: 1, name: 'Juan Pérez' },
-          { id: 2, name: 'María García' }
-        ]
+        // CARGAR DESDE API REAL
+        employees.value = await employeeService.getAll()
       } catch (error) {
         console.error('Error cargando empleados:', error)
       }
@@ -248,11 +271,8 @@ export default {
     
     const loadAreas = async () => {
       try {
-        // TODO: Cargar desde API
-        areas.value = [
-          { id: 1, name: 'Desarrollo' },
-          { id: 2, name: 'Diseño' }
-        ]
+        // CARGAR DESDE API REAL
+        areas.value = await areaService.getAll()
       } catch (error) {
         console.error('Error cargando áreas:', error)
       }
@@ -263,33 +283,13 @@ export default {
       loading.value = true
       
       try {
-        // TODO: Generar reporte desde API
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Simular delay
-        
-        reportData.value = [
-          {
-            id: 1,
-            date: '2025-08-14',
-            employee_name: 'Juan Pérez',
-            area_name: 'Desarrollo',
-            check_in: '08:30:00',
-            check_out: '17:30:00',
-            status: 'present',
-            hours_worked: '9.0',
-            notes: 'Asistencia normal'
-          },
-          {
-            id: 2,
-            date: '2025-08-14',
-            employee_name: 'María García',
-            area_name: 'Diseño',
-            check_in: '09:15:00',
-            check_out: '18:00:00',
-            status: 'late',
-            hours_worked: '8.75',
-            notes: 'Llegó tarde'
-          }
-        ]
+        // GENERAR REPORTE DESDE API REAL
+        if (filters.value.dateRange.length === 2) {
+          const [startDate, endDate] = filters.value.dateRange
+          reportData.value = await attendanceService.getByDateRange(startDate, endDate)
+        } else {
+          reportData.value = await attendanceService.getAll()
+        }
         
         calculateStats()
       } catch (error) {
@@ -363,6 +363,7 @@ export default {
       reportData,
       stats,
       headers,
+      chartData,
       generateReport,
       exportReport,
       formatDate,
