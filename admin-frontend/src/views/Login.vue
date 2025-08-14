@@ -17,35 +17,35 @@
       <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
         <v-card class="login-card" elevation="0">
           <v-card-text class="pa-8">
-            <h2 class="text-h4 font-weight-bold text-white mb-2">Log in</h2>
+            <h2 class="text-h4 font-weight-bold text-white mb-2">Iniciar Sesión</h2>
             <p class="text-body-1 text-grey-lighten-1 mb-8">
-              New to Geoasistencia? 
-              <v-btn variant="text" color="primary" class="text-none px-1">Sign up</v-btn>
+              ¿Nuevo en Geoasistencia? 
+              <v-btn variant="text" color="primary" class="text-none px-1">Registrarse</v-btn>
             </p>
 
             <v-form @submit.prevent="handleLogin" class="login-form">
               <v-text-field
-                v-model="form.email"
-                label="EMAIL"
-                type="email"
-                placeholder="Enter your email"
+                v-model="form.usuario"
+                label="USUARIO"
+                type="text"
+                placeholder="Ingresa tu usuario"
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
                 class="mb-4"
-                :rules="[rules.required, rules.email]"
+                :rules="[rules.required]"
                 hide-details="auto"
               >
                 <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-email</v-icon>
+                  <v-icon color="primary">mdi-account</v-icon>
                 </template>
               </v-text-field>
 
               <v-text-field
-                v-model="form.password"
-                label="PASSWORD"
+                v-model="form.contraseña"
+                label="CONTRASEÑA"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Enter your password"
+                placeholder="Ingresa tu contraseña"
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
@@ -71,7 +71,7 @@
               <div class="d-flex justify-space-between align-center mb-6">
                 <v-checkbox
                   v-model="form.keepSignedIn"
-                  label="Keep me signed in on this device"
+                  label="Mantener sesión iniciada en este dispositivo"
                   color="primary"
                   hide-details
                   class="text-grey-lighten-1"
@@ -81,7 +81,7 @@
                   color="primary"
                   class="text-none"
                 >
-                  Forgot password?
+                  ¿Olvidaste tu contraseña?
                 </v-btn>
               </div>
 
@@ -95,8 +95,8 @@
                 class="mb-6"
                 elevation="2"
               >
-                <span v-if="loading">Logging in...</span>
-                <span v-else>Login</span>
+                <span v-if="loading">Iniciando sesión...</span>
+                <span v-else>Iniciar Sesión</span>
               </v-btn>
             </v-form>
 
@@ -142,8 +142,8 @@ export default {
     const authStore = useAuthStore()
     
     const form = reactive({
-      email: '',
-      password: '',
+      usuario: '',
+      contraseña: '',
       keepSignedIn: false
     })
     
@@ -153,8 +153,7 @@ export default {
     const success = ref('')
 
     const rules = {
-      required: v => !!v || 'This field is required',
-      email: v => /.+@.+\..+/.test(v) || 'Email must be valid'
+      required: v => !!v || 'Este campo es requerido'
     }
 
     const togglePassword = () => {
@@ -167,10 +166,10 @@ export default {
       success.value = ''
 
       try {
-        const result = await authStore.login(form.email, form.password)
+        const result = await authStore.login(form.usuario, form.contraseña)
         
         if (result.success) {
-          success.value = 'Login successful! Redirecting...'
+          success.value = '¡Inicio de sesión exitoso! Redirigiendo...'
           
           setTimeout(() => {
             router.push('/')
@@ -179,7 +178,7 @@ export default {
           error.value = result.error
         }
       } catch (err) {
-        error.value = 'An error occurred. Please try again.'
+        error.value = 'Ocurrió un error. Por favor intenta de nuevo.'
       } finally {
         loading.value = false
       }
