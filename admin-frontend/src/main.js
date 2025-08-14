@@ -10,6 +10,9 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 
+// Importar estilos CSS personalizados
+import './styles/index.css'
+
 const vuetify = createVuetify({
   components,
   directives,

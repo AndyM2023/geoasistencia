@@ -68,13 +68,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.stats-card {
-  transition: transform 0.2s ease-in-out;
-}
-
-.stats-card:hover {
-  transform: translateY(-2px);
-}
-</style>

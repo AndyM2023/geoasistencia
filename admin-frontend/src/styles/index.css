@@ -1,0 +1,114 @@
+/* ===== ÍNDICE DE ESTILOS - GEOASISTENCIA ===== */
+
+/* Importar variables CSS primero */
+@import './variables.css';
+
+/* Importar estilos globales */
+@import './global.css';
+
+/* Importar estilos de componentes */
+@import './components.css';
+
+/* ===== ESTILOS ADICIONALES ESPECÍFICOS ===== */
+
+/* Asegurar que las variables CSS se apliquen correctamente */
+* {
+  box-sizing: border-box;
+}
+
+/* Aplicar variables CSS a elementos específicos */
+.v-application {
+  background: var(--gradient-primary) !important;
+  font-family: var(--font-family);
+}
+
+/* Asegurar que los colores de Vuetify usen nuestras variables */
+.v-theme--dark {
+  --v-theme-primary: var(--color-primary);
+  --v-theme-secondary: var(--color-secondary);
+  --v-theme-success: var(--color-success);
+  --v-theme-warning: var(--color-warning);
+  --v-theme-error: var(--color-error);
+  --v-theme-info: var(--color-info);
+}
+
+/* ===== UTILIDADES ADICIONALES ===== */
+
+/* Centrado de contenido */
+.center-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Espaciado consistente */
+.section-spacing {
+  padding: var(--spacing-xl) 0;
+}
+
+/* Contenedor con ancho máximo */
+.container-max {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* ===== ANIMACIONES ADICIONALES ===== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Clases de animación */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* ===== ESTILOS DE IMPRESIÓN ===== */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
