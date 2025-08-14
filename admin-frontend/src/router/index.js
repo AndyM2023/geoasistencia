@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import Login from '../views/Login.vue'
+import Recognition from '../views/Recognition.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Employees from '../views/Employees.vue'
 import Areas from '../views/Areas.vue'
@@ -9,13 +10,19 @@ import About from '../views/About.vue'
 
 const routes = [
   {
+    path: '/',
+    name: 'Recognition',
+    component: Recognition,
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: Login,
     meta: { requiresGuest: true }
   },
   {
-    path: '/',
+    path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
     meta: { requiresAuth: true }

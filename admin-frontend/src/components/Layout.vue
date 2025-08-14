@@ -7,8 +7,8 @@
   
 
     <!-- Contenido principal -->
-    <v-main :class="$route.path === '/login' ? 'login-main' : 'bg-dark-background'">
-      <v-container fluid :class="$route.path === '/login' ? 'pa-0' : 'pa-6'">
+    <v-main :class="$route.path === '/login' || $route.path === '/' ? 'login-main' : 'bg-dark-background'">
+      <v-container fluid :class="$route.path === '/login' || $route.path === '/' ? 'pa-0' : 'pa-6'">
         <router-view />
       </v-container>
     </v-main>

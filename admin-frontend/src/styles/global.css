@@ -161,6 +161,26 @@ body.login-page {
   overflow: hidden !important;
 }
 
+/* ===== ESTILOS PARA LA PÁGINA DE RECONOCIMIENTO ===== */
+/* Eliminar padding superior y scroll en la página de reconocimiento */
+.recognition-main {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Eliminar scroll del body cuando esté en reconocimiento */
+body.recognition-page {
+  overflow: hidden !important;
+}
+
+/* Asegurar que el reconocimiento ocupe toda la pantalla */
+.recognition-main .v-container {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
 /* ===== ESTILOS DE LA APPBAR ===== */
 /* Filo sutil debajo de la barra superior */
 .app-bar-with-border {

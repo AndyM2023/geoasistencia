@@ -59,6 +59,13 @@
         </template>
         
         <v-list class="bg-dark-surface">
+          <v-list-item @click="goToLogin">
+            <v-list-item-title class="text-white">
+              <v-icon left color="blue-400">mdi-login</v-icon>
+              Iniciar Sesión
+            </v-list-item-title>
+          </v-list-item>
+          <v-divider class="my-2"></v-divider>
           <v-list-item @click="logout">
             <v-list-item-title class="text-white">
               <v-icon left color="red-400">mdi-logout</v-icon>
@@ -88,9 +95,14 @@ export default {
       router.push('/login')
     }
 
+    const goToLogin = () => {
+      router.push('/login')
+    }
+
     return {
       drawer,
-      logout
+      logout,
+      goToLogin
     }
   }
 }
