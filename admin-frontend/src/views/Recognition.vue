@@ -1,4 +1,5 @@
 <template>
+
   <v-container fluid class="recognition-container pa-0">
     <!-- Imagen del lado izquierdo -->
     <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image">
@@ -46,6 +47,7 @@
 
               <!-- Columna derecha: Formulario -->
               <v-col cols="12" md="6">
+
                 <!-- Formulario de reconocimiento -->
                 <v-form @submit.prevent="handleRecognition" class="recognition-form">
                   <v-text-field
@@ -59,6 +61,7 @@
                     class="mb-4"
                     :rules="[rules.required]"
                     hide-details="auto"
+
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-account</v-icon>
@@ -153,6 +156,7 @@
       </v-col>
     </v-row>
   </v-container>
+
 </template>
 
 <script>

@@ -21,14 +21,21 @@
             <p class="text-body-1 text-grey-lighten-1 mb-8">
               ¿Nuevo en Geoasistencia? 
               <v-btn variant="text" color="primary" class="text-none px-1">Registrarse</v-btn>
+
+
+            </p>
+            <p class="text-caption text-grey-lighten-2 mb-6">
+              Use your username (not email) to sign in
             </p>
 
             <v-form @submit.prevent="handleLogin" class="login-form">
               <v-text-field
+
                 v-model="form.usuario"
                 label="USUARIO"
                 type="text"
                 placeholder="Ingresa tu usuario"
+
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
@@ -142,8 +149,10 @@ export default {
     const authStore = useAuthStore()
     
     const form = reactive({
+
       usuario: '',
       contraseña: '',
+
       keepSignedIn: false
     })
     
@@ -153,7 +162,9 @@ export default {
     const success = ref('')
 
     const rules = {
+
       required: v => !!v || 'Este campo es requerido'
+
     }
 
     const togglePassword = () => {
@@ -166,13 +177,15 @@ export default {
       success.value = ''
 
       try {
+
         const result = await authStore.login(form.usuario, form.contraseña)
+
         
         if (result.success) {
           success.value = '¡Inicio de sesión exitoso! Redirigiendo...'
           
           setTimeout(() => {
-            router.push('/')
+            router.push('/app/dashboard')
           }, 1500)
         } else {
           error.value = result.error
