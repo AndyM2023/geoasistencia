@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 class User(AbstractUser):
     """Usuario base del sistema (Admin o Empleado)"""
@@ -69,7 +70,7 @@ class Area(models.Model):
 class Employee(models.Model):
     """Empleado del sistema"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
-    employee_id = models.CharField(max_length=20, unique=True, verbose_name='ID de Empleado')
+    employee_id = models.CharField(max_length=20, unique=True, blank=True, verbose_name='ID de Empleado')
     position = models.CharField(max_length=100, verbose_name='Cargo')
     area = models.ForeignKey(
         Area, 
@@ -79,16 +80,14 @@ class Employee(models.Model):
         related_name='employees',
         verbose_name='Área de Trabajo'
     )
-    hire_date = models.DateField(verbose_name='Fecha de Contratación')
-    salary = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
+    hire_date = models.DateField(default=timezone.now, verbose_name='Fecha de Contratación')
+    photo = models.ImageField(
+        upload_to='employee_photos/', 
         null=True, 
         blank=True, 
-        verbose_name='Salario'
+        verbose_name='Foto del Empleado',
+        help_text='Foto principal del empleado para identificación'
     )
-    emergency_contact = models.CharField(max_length=100, blank=True, verbose_name='Contacto de Emergencia')
-    emergency_phone = models.CharField(max_length=15, blank=True, verbose_name='Teléfono de Emergencia')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -107,6 +106,55 @@ class Employee(models.Model):
     @property
     def email(self):
         return self.user.email
+    
+    def save(self, *args, **kwargs):
+        """Generar employee_id automáticamente si no existe"""
+        if not self.employee_id:
+            # Obtener el último número de empleado
+            last_employee = Employee.objects.filter(
+                employee_id__startswith='EMP'
+            ).order_by('employee_id').last()
+            
+            if last_employee and last_employee.employee_id:
+                # Extraer el número del último employee_id
+                try:
+                    last_number = int(last_employee.employee_id[3:])  # Quitar 'EMP'
+                    new_number = last_number + 1
+                except (ValueError, IndexError):
+                    new_number = 1
+            else:
+                new_number = 1
+            
+            # Generar el nuevo employee_id con formato EMP001, EMP002, etc.
+            self.employee_id = f'EMP{new_number:03d}'
+        
+        super().save(*args, **kwargs)
+
+class FaceProfile(models.Model):
+    """Perfil facial del empleado"""
+    employee = models.OneToOneField(
+        Employee, 
+        on_delete=models.CASCADE, 
+        related_name='face_profile'
+    )
+    face_embeddings_path = models.CharField(
+        max_length=255, 
+        blank=True, 
+        verbose_name='Ruta de Embeddings'
+    )
+    photos_count = models.IntegerField(default=0, verbose_name='Número de Fotos')
+    is_trained = models.BooleanField(default=False, verbose_name='Entrenado')
+    confidence_threshold = models.FloatField(default=0.90, verbose_name='Umbral de Confianza')
+    last_training = models.DateTimeField(null=True, blank=True, verbose_name='Último Entrenamiento')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Perfil Facial'
+        verbose_name_plural = 'Perfiles Faciales'
+    
+    def __str__(self):
+        return f"Perfil Facial - {self.employee.full_name}"
 
 class Attendance(models.Model):
     """Registro de asistencia del empleado"""

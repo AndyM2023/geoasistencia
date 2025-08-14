@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from .models import User, Employee, Area, Attendance
+
+User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer para el modelo User"""
@@ -29,20 +31,89 @@ class EmployeeSerializer(serializers.ModelSerializer):
     user_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role='employee'),
         source='user',
-        write_only=True
+        write_only=True,
+        required=False
     )
+    # Campos para crear usuario
+    first_name = serializers.CharField(write_only=True, required=False)
+    last_name = serializers.CharField(write_only=True, required=False)
+    email = serializers.EmailField(write_only=True, required=False)
+    
     area_name = serializers.CharField(source='area.name', read_only=True)
     full_name = serializers.ReadOnlyField()
-    email = serializers.ReadOnlyField()
+    email_display = serializers.ReadOnlyField(source='email')
     
     class Meta:
         model = Employee
         fields = [
             'id', 'user', 'user_id', 'employee_id', 'position', 'area', 'area_name',
-            'hire_date', 'salary', 'emergency_contact', 'emergency_phone',
-            'full_name', 'email', 'created_at', 'updated_at'
+            'hire_date', 'photo', 'full_name', 'email_display', 'created_at', 'updated_at',
+            'first_name', 'last_name', 'email'  # Campos para crear usuario
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'email', 'area_name']
+        read_only_fields = ['id', 'employee_id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name']
+    
+    def create(self, validated_data):
+        """Crear empleado y usuario asociado"""
+        # Extraer datos del usuario
+        first_name = validated_data.pop('first_name', '')
+        last_name = validated_data.pop('last_name', '')
+        email = validated_data.pop('email', '')
+        
+        # Si no se proporciona user_id, crear un nuevo usuario
+        if 'user' not in validated_data:
+            # Generar username único basado en email
+            username = email.split('@')[0] if email else f"user_{User.objects.count() + 1}"
+            
+            # Asegurar username único
+            counter = 1
+            original_username = username
+            while User.objects.filter(username=username).exists():
+                username = f"{original_username}{counter}"
+                counter += 1
+            
+            # Crear usuario
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                role='employee'
+            )
+            validated_data['user'] = user
+        
+        # Asegurar que hire_date esté presente
+        if 'hire_date' not in validated_data:
+            from django.utils import timezone
+            validated_data['hire_date'] = timezone.now().date()
+        
+        # Crear empleado
+        employee = Employee.objects.create(**validated_data)
+        return employee
+    
+    def update(self, instance, validated_data):
+        """Actualizar empleado y usuario asociado"""
+        # Extraer datos del usuario
+        first_name = validated_data.pop('first_name', '')
+        last_name = validated_data.pop('last_name', '')
+        email = validated_data.pop('email', '')
+        
+        # Actualizar usuario si se proporcionan datos
+        if first_name or last_name or email:
+            user = instance.user
+            if first_name:
+                user.first_name = first_name
+            if last_name:
+                user.last_name = last_name
+            if email:
+                user.email = email
+            user.save()
+        
+        # Actualizar empleado
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
 
 class AttendanceSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Attendance"""

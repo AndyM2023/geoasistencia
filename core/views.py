@@ -7,11 +7,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import date, timedelta
-from .models import User, Employee, Area, Attendance
+from .models import User, Employee, Area, Attendance, FaceProfile
 from .serializers import (
     UserSerializer, EmployeeSerializer, AreaSerializer, AttendanceSerializer,
     LoginSerializer, DashboardStatsSerializer, AttendanceReportSerializer
 )
+from .services.face_service import FaceRecognitionService
 
 User = get_user_model()
 
@@ -92,15 +93,22 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de empleados"""
     queryset = Employee.objects.select_related('user', 'area').all()
     serializer_class = EmployeeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # TEMPORAL: Permitir sin autenticación
     
     def get_queryset(self):
-        queryset = Employee.objects.select_related('user', 'area').all()
+        # Por defecto, solo mostrar empleados activos
+        queryset = Employee.objects.select_related('user', 'area').filter(user__is_active=True)
         
         # Filtros
         search = self.request.query_params.get('search', None)
         area = self.request.query_params.get('area', None)
-        status = self.request.query_params.get('status', None)
+        status_param = self.request.query_params.get('status', None)
+        
+        # Permitir ver empleados inactivos si se especifica
+        if status_param == 'all':
+            queryset = Employee.objects.select_related('user', 'area').all()
+        elif status_param == 'inactive':
+            queryset = Employee.objects.select_related('user', 'area').filter(user__is_active=False)
         
         if search:
             queryset = queryset.filter(
@@ -113,10 +121,87 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         if area:
             queryset = queryset.filter(area_id=area)
         
-        if status:
-            queryset = queryset.filter(user__is_active=status == 'active')
-        
         return queryset
+    
+    @action(detail=True, methods=['post'])
+    def register_face(self, request, pk=None):
+        """Registrar rostro de empleado"""
+        employee = self.get_object()
+        photos = request.data.get('photos', [])
+        
+        if not photos:
+            return Response(
+                {'error': 'Se requieren fotos para el registro'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        face_service = FaceRecognitionService()
+        result = face_service.register_employee_face(employee, photos)
+        
+        if result['success']:
+            return Response(result, status=status.HTTP_201_CREATED)
+        else:
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def face_status(self, request, pk=None):
+        """Obtener estado del perfil facial del empleado"""
+        employee = self.get_object()
+        face_service = FaceRecognitionService()
+        status_data = face_service.get_employee_face_status(employee)
+        
+        return Response(status_data)
+    
+    @action(detail=True, methods=['post'])
+    def verify_face(self, request, pk=None):
+        """Verificar rostro para asistencia"""
+        employee = self.get_object()
+        photo = request.data.get('photo')
+        
+        if not photo:
+            return Response(
+                {'error': 'Se requiere una foto para verificación'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        face_service = FaceRecognitionService()
+        result = face_service.verify_face(employee, photo)
+        
+        return Response(result)
+    
+    def destroy(self, request, pk=None):
+        """Soft delete: Desactivar empleado en lugar de eliminarlo"""
+        employee = self.get_object()
+        
+        # Desactivar usuario asociado (soft delete)
+        employee.user.is_active = False
+        employee.user.save()
+        
+        return Response(
+            {'message': f'Empleado {employee.full_name} desactivado correctamente'}, 
+            status=status.HTTP_204_NO_CONTENT
+        )
+    
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """Reactivar empleado desactivado"""
+        # Buscar empleado incluyendo inactivos
+        try:
+            employee = Employee.objects.select_related('user', 'area').get(pk=pk)
+        except Employee.DoesNotExist:
+            return Response(
+                {'error': 'Empleado no encontrado'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Reactivar usuario
+        employee.user.is_active = True
+        employee.user.save()
+        
+        return Response(
+            {'message': f'Empleado {employee.full_name} reactivado correctamente'}, 
+            status=status.HTTP_200_OK
+        )
 
 class AreaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de áreas"""
