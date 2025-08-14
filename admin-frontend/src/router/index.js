@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import Login from '../views/Login.vue'
 import Recognition from '../views/Recognition.vue'
+import Layout from '../views/Layout.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Employees from '../views/Employees.vue'
 import Areas from '../views/Areas.vue'
@@ -22,28 +23,36 @@ const routes = [
     meta: { requiresGuest: true }
   },
   {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: Dashboard,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/employees',
-    name: 'Employees',
-    component: Employees,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/areas',
-    name: 'Areas',
-    component: Areas,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/reports',
-    name: 'Reports',
-    component: Reports,
-    meta: { requiresAuth: true }
+    path: '/app',
+    name: 'App',
+    component: Layout,
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        redirect: '/app/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: Dashboard
+      },
+      {
+        path: 'employees',
+        name: 'Employees',
+        component: Employees
+      },
+      {
+        path: 'areas',
+        name: 'Areas',
+        component: Areas
+      },
+      {
+        path: 'reports',
+        name: 'Reports',
+        component: Reports
+      }
+    ]
   },
   {
     path: '/about',

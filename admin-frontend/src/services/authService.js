@@ -2,9 +2,8 @@ import api from './api'
 
 export const authService = {
   async login(credentials) {
-    // Convertir email a username para el backend
     const loginData = {
-      username: credentials.email || credentials.username,
+      username: credentials.username,
       password: credentials.password
     }
     

@@ -13,12 +13,12 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = computed(() => user.value)
 
   // Acciones
-  const login = async (email, password) => {
-    console.log('🔑 Auth Store - Iniciando login para:', email)
+  const login = async (username, password) => {
+    console.log('🔑 Auth Store - Iniciando login para:', username)
     
     try {
-      // USAR API REAL (convertir email a username)
-      const response = await authService.login({ email, password })
+      // USAR API REAL
+      const response = await authService.login({ username, password })
       
       console.log('🎉 Auth Store - Login exitoso, datos recibidos:', response)
       
