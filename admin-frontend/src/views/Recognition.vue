@@ -1,134 +1,142 @@
 <template>
-  <v-container fluid class="recognition-container pa-0">
-    <!-- Imagen del lado izquierdo -->
-    <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image">
-    
-    <!-- Imagen del lado derecho -->
-    <img src="/src/assets/right-image.png" alt="Imagen derecha" class="side-image right-image">
-    
-    <v-row no-gutters class="h-100">
-      <!-- Contenido centrado de reconocimiento -->
-      <v-col cols="12" class="d-flex align-center justify-center">
-        <v-card class="recognition-card" elevation="0">
-          <v-card-text class="pa-8">
-            <h2 class="text-h4 font-weight-bold text-white mb-2">Reconocimiento Facial</h2>
-            <p class="text-body-1 text-grey-lighten-1 mb-8">
-              Identifícate para registrar tu asistencia
-            </p>
+  <v-app>
+    <!-- AppBar superior -->
+    <AppBar />
 
-            <!-- Área de la cámara -->
-            <div class="camera-area mb-6">
-              <div class="camera-placeholder d-flex align-center justify-center">
-                <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
-                <p class="text-body-2 text-grey-lighten-1 mt-2">Cámara no disponible</p>
-              </div>
-            </div>
+    <!-- Contenido principal -->
+    <v-main>
+      <v-container fluid class="recognition-container pa-0">
+        <!-- Imagen del lado izquierdo -->
+        <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image">
+        
+        <!-- Imagen del lado derecho -->
+        <img src="/src/assets/right-image.png" alt="Imagen derecha" class="side-image right-image">
+        
+        <v-row no-gutters class="h-100">
+          <!-- Contenido centrado de reconocimiento -->
+          <v-col cols="12" class="d-flex align-center justify-center">
+            <v-card class="recognition-card" elevation="0">
+              <v-card-text class="pa-8">
+                <h2 class="text-h4 font-weight-bold text-white mb-2">Reconocimiento Facial</h2>
+                <p class="text-body-1 text-grey-lighten-1 mb-8">
+                  Identifícate para registrar tu asistencia
+                </p>
 
-            <!-- Formulario de reconocimiento -->
-            <v-form @submit.prevent="handleRecognition" class="recognition-form">
-              <v-text-field
-                v-model="form.username"
-                label="USUARIO"
-                type="text"
-                placeholder="Ingresa tu usuario"
-                variant="outlined"
-                color="primary"
-                bg-color="dark-surface"
-                class="mb-4"
-                :rules="[rules.required]"
-                hide-details="auto"
-              >
-                <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-account</v-icon>
-                </template>
-              </v-text-field>
-
-              <v-text-field
-                v-model="form.password"
-                label="CONTRASEÑA"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Ingresa tu contraseña"
-                variant="outlined"
-                color="primary"
-                bg-color="dark-surface"
-                class="mb-4"
-                :rules="[rules.required]"
-                hide-details="auto"
-              >
-                <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-lock</v-icon>
-                </template>
-                <template v-slot:append-inner>
-                  <v-btn
-                    variant="text"
-                    icon
-                    @click="togglePassword"
-                    color="grey-lighten-1"
-                  >
-                    <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
-                  </v-btn>
-                </template>
-              </v-text-field>
-
-              <v-btn
-                type="submit"
-                color="primary"
-                size="large"
-                block
-                :loading="loading"
-                :disabled="loading"
-                class="mb-6 recognition-btn"
-                elevation="2"
-              >
-                <v-icon left class="mr-2">mdi-face-recognition</v-icon>
-                <span v-if="loading">Reconociendo...</span>
-                <span v-else>RECONOCER ASISTENCIA</span>
-              </v-btn>
-            </v-form>
-
-            <!-- Mensajes de estado -->
-            <v-alert
-              v-if="error"
-              type="error"
-              variant="tonal"
-              class="mb-4"
-              closable
-              @click:close="error = ''"
-            >
-              {{ error }}
-            </v-alert>
-
-            <v-alert
-              v-if="success"
-              type="success"
-              variant="tonal"
-              class="mb-4"
-            >
-              {{ success }}
-            </v-alert>
-
-            <!-- Instrucciones -->
-            <v-card
-              variant="tonal"
-              color="grey-darken-3"
-              class="instructions-card"
-            >
-              <v-card-text class="pa-4">
-                <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
-                  Instrucciones:
-                </h4>
-                <div class="text-body-2 text-grey-lighten-1">
-                  <p class="mb-1">• Asegúrate de estar bien iluminado</p>
-                  <p class="mb-1">• Mira directamente a la cámara</p>
-                  <p class="mb-0">• Mantén una distancia de 30-50 cm</p>
+                <!-- Área de la cámara -->
+                <div class="camera-area mb-6">
+                  <div class="camera-placeholder d-flex align-center justify-center">
+                    <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
+                    <p class="text-body-2 text-grey-lighten-1 mt-2">Cámara no disponible</p>
+                  </div>
                 </div>
+
+                <!-- Formulario de reconocimiento -->
+                <v-form @submit.prevent="handleRecognition" class="recognition-form">
+                  <v-text-field
+                    v-model="form.username"
+                    label="USUARIO"
+                    type="text"
+                    placeholder="Ingresa tu usuario"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-4"
+                    :rules="[rules.required]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-account</v-icon>
+                    </template>
+                  </v-text-field>
+
+                  <v-text-field
+                    v-model="form.password"
+                    label="CONTRASEÑA"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Ingresa tu contraseña"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-4"
+                    :rules="[rules.required]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-lock</v-icon>
+                    </template>
+                    <template v-slot:append-inner>
+                      <v-btn
+                        variant="text"
+                        icon
+                        @click="togglePassword"
+                        color="grey-lighten-1"
+                      >
+                        <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-text-field>
+
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    size="large"
+                    block
+                    :loading="loading"
+                    :disabled="loading"
+                    class="mb-6 recognition-btn"
+                    elevation="2"
+                  >
+                    <v-icon left class="mr-2">mdi-face-recognition</v-icon>
+                    <span v-if="loading">Reconociendo...</span>
+                    <span v-else>RECONOCER ASISTENCIA</span>
+                  </v-btn>
+                </v-form>
+
+                <!-- Mensajes de estado -->
+                <v-alert
+                  v-if="error"
+                  type="error"
+                  variant="tonal"
+                  class="mb-4"
+                  closable
+                  @click:close="error = ''"
+                >
+                  {{ error }}
+                </v-alert>
+
+                <v-alert
+                  v-if="success"
+                  type="success"
+                  variant="tonal"
+                  class="mb-4"
+                >
+                  {{ success }}
+                </v-alert>
+
+                <!-- Instrucciones -->
+                <v-card
+                  variant="tonal"
+                  color="grey-darken-3"
+                  class="instructions-card"
+                >
+                  <v-card-text class="pa-4">
+                    <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
+                      Instrucciones:
+                    </h4>
+                    <div class="text-body-2 text-grey-lighten-1">
+                      <p class="mb-1">• Asegúrate de estar bien iluminado</p>
+                      <p class="mb-1">• Mira directamente a la cámara</p>
+                      <p class="mb-0">• Mantén una distancia de 30-50 cm</p>
+                    </div>
+                  </v-card-text>
+                </v-card>
               </v-card-text>
             </v-card>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
 
 <script>

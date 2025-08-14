@@ -18,26 +18,29 @@
         <v-card class="login-card" elevation="0">
           <v-card-text class="pa-8">
             <h2 class="text-h4 font-weight-bold text-white mb-2">Log in</h2>
-            <p class="text-body-1 text-grey-lighten-1 mb-8">
+            <p class="text-body-1 text-grey-lighten-1 mb-4">
               New to Geoasistencia? 
               <v-btn variant="text" color="primary" class="text-none px-1">Sign up</v-btn>
+            </p>
+            <p class="text-caption text-grey-lighten-2 mb-6">
+              Use your username (not email) to sign in
             </p>
 
             <v-form @submit.prevent="handleLogin" class="login-form">
               <v-text-field
-                v-model="form.email"
-                label="EMAIL"
-                type="email"
-                placeholder="Enter your email"
+                v-model="form.username"
+                label="USERNAME"
+                type="text"
+                placeholder="Enter your username"
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
                 class="mb-4"
-                :rules="[rules.required, rules.email]"
+                :rules="[rules.required]"
                 hide-details="auto"
               >
                 <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-email</v-icon>
+                  <v-icon color="primary">mdi-account</v-icon>
                 </template>
               </v-text-field>
 
@@ -142,7 +145,7 @@ export default {
     const authStore = useAuthStore()
     
     const form = reactive({
-      email: '',
+      username: '',
       password: '',
       keepSignedIn: false
     })
@@ -153,8 +156,7 @@ export default {
     const success = ref('')
 
     const rules = {
-      required: v => !!v || 'This field is required',
-      email: v => /.+@.+\..+/.test(v) || 'Email must be valid'
+      required: v => !!v || 'This field is required'
     }
 
     const togglePassword = () => {
@@ -167,13 +169,13 @@ export default {
       success.value = ''
 
       try {
-        const result = await authStore.login(form.email, form.password)
+        const result = await authStore.login(form.username, form.password)
         
         if (result.success) {
           success.value = 'Login successful! Redirecting...'
           
           setTimeout(() => {
-            router.push('/')
+            router.push('/app/dashboard')
           }, 1500)
         } else {
           error.value = result.error
