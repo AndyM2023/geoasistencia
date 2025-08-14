@@ -17,10 +17,12 @@
       <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
         <v-card class="login-card" elevation="0">
           <v-card-text class="pa-8">
-            <h2 class="text-h4 font-weight-bold text-white mb-2">Log in</h2>
-            <p class="text-body-1 text-grey-lighten-1 mb-4">
-              New to Geoasistencia? 
-              <v-btn variant="text" color="primary" class="text-none px-1">Sign up</v-btn>
+            <h2 class="text-h4 font-weight-bold text-white mb-2">Iniciar Sesión</h2>
+            <p class="text-body-1 text-grey-lighten-1 mb-8">
+              ¿Nuevo en Geoasistencia? 
+              <v-btn variant="text" color="primary" class="text-none px-1">Registrarse</v-btn>
+
+
             </p>
             <p class="text-caption text-grey-lighten-2 mb-6">
               Use your username (not email) to sign in
@@ -28,10 +30,12 @@
 
             <v-form @submit.prevent="handleLogin" class="login-form">
               <v-text-field
-                v-model="form.username"
-                label="USERNAME"
+
+                v-model="form.usuario"
+                label="USUARIO"
                 type="text"
-                placeholder="Enter your username"
+                placeholder="Ingresa tu usuario"
+
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
@@ -45,10 +49,10 @@
               </v-text-field>
 
               <v-text-field
-                v-model="form.password"
-                label="PASSWORD"
+                v-model="form.contraseña"
+                label="CONTRASEÑA"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Enter your password"
+                placeholder="Ingresa tu contraseña"
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
@@ -74,7 +78,7 @@
               <div class="d-flex justify-space-between align-center mb-6">
                 <v-checkbox
                   v-model="form.keepSignedIn"
-                  label="Keep me signed in on this device"
+                  label="Mantener sesión iniciada en este dispositivo"
                   color="primary"
                   hide-details
                   class="text-grey-lighten-1"
@@ -84,7 +88,7 @@
                   color="primary"
                   class="text-none"
                 >
-                  Forgot password?
+                  ¿Olvidaste tu contraseña?
                 </v-btn>
               </div>
 
@@ -98,8 +102,8 @@
                 class="mb-6"
                 elevation="2"
               >
-                <span v-if="loading">Logging in...</span>
-                <span v-else>Login</span>
+                <span v-if="loading">Iniciando sesión...</span>
+                <span v-else>Iniciar Sesión</span>
               </v-btn>
             </v-form>
 
@@ -145,8 +149,10 @@ export default {
     const authStore = useAuthStore()
     
     const form = reactive({
-      username: '',
-      password: '',
+
+      usuario: '',
+      contraseña: '',
+
       keepSignedIn: false
     })
     
@@ -156,7 +162,9 @@ export default {
     const success = ref('')
 
     const rules = {
-      required: v => !!v || 'This field is required'
+
+      required: v => !!v || 'Este campo es requerido'
+
     }
 
     const togglePassword = () => {
@@ -169,10 +177,12 @@ export default {
       success.value = ''
 
       try {
-        const result = await authStore.login(form.username, form.password)
+
+        const result = await authStore.login(form.usuario, form.contraseña)
+
         
         if (result.success) {
-          success.value = 'Login successful! Redirecting...'
+          success.value = '¡Inicio de sesión exitoso! Redirigiendo...'
           
           setTimeout(() => {
             router.push('/app/dashboard')
@@ -181,7 +191,7 @@ export default {
           error.value = result.error
         }
       } catch (err) {
-        error.value = 'An error occurred. Please try again.'
+        error.value = 'Ocurrió un error. Por favor intenta de nuevo.'
       } finally {
         loading.value = false
       }

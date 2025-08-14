@@ -1,34 +1,52 @@
 <template>
-  <v-app>
-    <!-- AppBar superior -->
-    <AppBar />
 
-    <!-- Contenido principal -->
-    <v-main>
-      <v-container fluid class="recognition-container pa-0">
-        <!-- Imagen del lado izquierdo -->
-        <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image">
-        
-        <!-- Imagen del lado derecho -->
-        <img src="/src/assets/right-image.png" alt="Imagen derecha" class="side-image right-image">
-        
-        <v-row no-gutters class="h-100">
-          <!-- Contenido centrado de reconocimiento -->
-          <v-col cols="12" class="d-flex align-center justify-center">
-            <v-card class="recognition-card" elevation="0">
-              <v-card-text class="pa-8">
-                <h2 class="text-h4 font-weight-bold text-white mb-2">Reconocimiento Facial</h2>
-                <p class="text-body-1 text-grey-lighten-1 mb-8">
-                  Identifícate para registrar tu asistencia
-                </p>
-
-                <!-- Área de la cámara -->
-                <div class="camera-area mb-6">
-                  <div class="camera-placeholder d-flex align-center justify-center">
+  <v-container fluid class="recognition-container pa-0">
+    <!-- Imagen del lado izquierdo -->
+    <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image">
+    
+    <!-- Imagen del lado derecho -->
+    <img src="/src/assets/right-image.png" alt="Imagen derecha" class="side-image right-image">
+    
+    <v-row no-gutters class="h-100">
+      <!-- Contenido centrado de reconocimiento -->
+      <v-col cols="12" class="d-flex align-center justify-center">
+        <v-card class="recognition-card" elevation="0">
+          <v-card-text class="pa-8">
+            <h2 class="text-h6 font-weight-bold text-white mb-6 text-center">Reconocimiento Facial</h2>
+            
+            <v-row>
+              <!-- Columna izquierda: Cámara -->
+              <v-col cols="12" md="6" class="d-flex justify-center">
+                <!-- Título invisible para alineación -->
+                <div class="invisible-title mb-6"></div>
+                <div class="camera-area" @click="toggleCamera" :class="{ 'camera-active': isCameraActive }">
+                  <!-- Estado inicial: Placeholder -->
+                  <div v-if="!isCameraActive" class="camera-placeholder d-flex align-center justify-center">
                     <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
-                    <p class="text-body-2 text-grey-lighten-1 mt-2">Cámara no disponible</p>
+                    <p class="text-body-2 text-grey-lighten-1 mt-2">Click para activar cámara</p>
+                  </div>
+                  
+                  <!-- Estado activo: Video de la cámara -->
+                  <div v-else class="camera-video">
+                    <video ref="videoElement" autoplay muted class="camera-feed"></video>
+                    <div class="camera-overlay">
+                      <div class="face-detection-box"></div>
+                      <v-btn
+                        icon
+                        color="red"
+                        size="small"
+                        class="close-camera-btn"
+                        @click.stop="stopCamera"
+                      >
+                        <v-icon>mdi-close</v-icon>
+                      </v-btn>
+                    </div>
                   </div>
                 </div>
+              </v-col>
+
+              <!-- Columna derecha: Formulario -->
+              <v-col cols="12" md="6">
 
                 <!-- Formulario de reconocimiento -->
                 <v-form @submit.prevent="handleRecognition" class="recognition-form">
@@ -43,6 +61,7 @@
                     class="mb-4"
                     :rules="[rules.required]"
                     hide-details="auto"
+
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-account</v-icon>
@@ -73,70 +92,71 @@
                       >
                         <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                       </v-btn>
-                    </template>
-                  </v-text-field>
+                </template>
+              </v-text-field>
 
-                  <v-btn
-                    type="submit"
-                    color="primary"
-                    size="large"
-                    block
-                    :loading="loading"
-                    :disabled="loading"
-                    class="mb-6 recognition-btn"
-                    elevation="2"
-                  >
-                    <v-icon left class="mr-2">mdi-face-recognition</v-icon>
-                    <span v-if="loading">Reconociendo...</span>
-                    <span v-else>RECONOCER ASISTENCIA</span>
-                  </v-btn>
-                </v-form>
+              <v-btn
+                type="submit"
+                color="primary"
+                size="large"
+                block
+                :loading="loading"
+                :disabled="loading"
+                class="mb-6 recognition-btn"
+                elevation="2"
+              >
+                <v-icon left class="mr-2">mdi-face-recognition</v-icon>
+                <span v-if="loading">Reconociendo...</span>
+                <span v-else>RECONOCER ASISTENCIA</span>
+              </v-btn>
+            </v-form>
 
-                <!-- Mensajes de estado -->
-                <v-alert
-                  v-if="error"
-                  type="error"
-                  variant="tonal"
-                  class="mb-4"
-                  closable
-                  @click:close="error = ''"
-                >
-                  {{ error }}
-                </v-alert>
+            <!-- Mensajes de estado -->
+            <v-alert
+              v-if="error"
+              type="error"
+              variant="tonal"
+              class="mb-4"
+              closable
+              @click:close="error = ''"
+            >
+              {{ error }}
+            </v-alert>
 
-                <v-alert
-                  v-if="success"
-                  type="success"
-                  variant="tonal"
-                  class="mb-4"
-                >
-                  {{ success }}
-                </v-alert>
+            <v-alert
+              v-if="success"
+              type="success"
+              variant="tonal"
+              class="mb-4"
+            >
+              {{ success }}
+            </v-alert>
 
-                <!-- Instrucciones -->
-                <v-card
-                  variant="tonal"
-                  color="grey-darken-3"
-                  class="instructions-card"
-                >
-                  <v-card-text class="pa-4">
-                    <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
-                      Instrucciones:
-                    </h4>
-                    <div class="text-body-2 text-grey-lighten-1">
-                      <p class="mb-1">• Asegúrate de estar bien iluminado</p>
-                      <p class="mb-1">• Mira directamente a la cámara</p>
-                      <p class="mb-0">• Mantén una distancia de 30-50 cm</p>
-                    </div>
-                  </v-card-text>
-                </v-card>
+            <!-- Instrucciones -->
+            <v-card
+              variant="tonal"
+              color="grey-darken-3"
+              class="instructions-card"
+            >
+              <v-card-text class="pa-4">
+                <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
+                  Instrucciones:
+                </h4>
+                <div class="text-body-2 text-grey-lighten-1">
+                  <p class="mb-1">• Asegúrate de estar bien iluminado</p>
+                  <p class="mb-1">• Mira directamente a la cámara</p>
+                  <p class="mb-0">• Mantén una distancia de 30-50 cm</p>
+                </div>
               </v-card-text>
             </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
-  </v-app>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+
 </template>
 
 <script>
@@ -157,6 +177,11 @@ export default {
     const loading = ref(false)
     const error = ref('')
     const success = ref('')
+    
+    // Variables para la cámara
+    const isCameraActive = ref(false)
+    const videoElement = ref(null)
+    const stream = ref(null)
 
     const rules = {
       required: v => !!v || 'Este campo es requerido'
@@ -195,6 +220,59 @@ export default {
       }
     }
 
+    // Funciones para manejar la cámara
+    const toggleCamera = async () => {
+      if (isCameraActive.value) {
+        await stopCamera()
+      } else {
+        await startCamera()
+      }
+    }
+
+    const startCamera = async () => {
+      try {
+        stream.value = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          } 
+        })
+        
+        if (videoElement.value) {
+          videoElement.value.srcObject = stream.value
+          isCameraActive.value = true
+          
+          // Iniciar reconocimiento facial automático
+          startFaceRecognition()
+        }
+      } catch (err) {
+        error.value = 'Error al acceder a la cámara: ' + err.message
+      }
+    }
+
+    const stopCamera = async () => {
+      if (stream.value) {
+        stream.value.getTracks().forEach(track => track.stop())
+        stream.value = null
+      }
+      isCameraActive.value = false
+    }
+
+    const startFaceRecognition = () => {
+      // Aquí implementarías la lógica de reconocimiento facial
+      // Por ahora solo simulamos el proceso
+      console.log('Iniciando reconocimiento facial...')
+      
+      // Simular detección de rostro
+      setTimeout(() => {
+        if (isCameraActive.value) {
+          success.value = 'Rostro detectado! Procesando reconocimiento...'
+          // Aquí iría la lógica real de reconocimiento
+        }
+      }, 3000)
+    }
+
     return {
       form,
       showPassword,
@@ -203,7 +281,13 @@ export default {
       success,
       rules,
       togglePassword,
-      handleRecognition
+      handleRecognition,
+      // Variables de la cámara
+      isCameraActive,
+      videoElement,
+      // Funciones de la cámara
+      toggleCamera,
+      stopCamera
     }
   },
 
@@ -241,11 +325,11 @@ export default {
 }
 
 .left-image {
-  left: 130px;
+  left: 40px;
 }
 
 .right-image {
-  right: 150px;
+  right: 50px;
 }
 
 
@@ -257,8 +341,14 @@ export default {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 16px;
-  max-width: 500px;
+  max-width: 700px;
   width: 100%;
+  margin-top: 60px;
+}
+
+.invisible-title {
+  height: 32px; /* Altura aproximada del título h6 */
+  visibility: hidden;
 }
 
 .camera-area {
@@ -267,6 +357,66 @@ export default {
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
+  width: 100%;
+  max-width: 400px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.camera-area:hover {
+  border-color: rgba(0, 212, 255, 0.6);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.camera-area.camera-active {
+  border-color: #00d4ff;
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+  padding: 0;
+}
+
+.camera-video {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.camera-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.face-detection-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  border: 2px solid #00d4ff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.close-camera-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.7) !important;
 }
 
 .camera-placeholder {
