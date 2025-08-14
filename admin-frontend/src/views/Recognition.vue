@@ -1,23 +1,14 @@
 <template>
   <v-container fluid class="recognition-container pa-0">
+    <!-- Imagen del lado izquierdo -->
+    <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image">
+    
+    <!-- Imagen del lado derecho -->
+    <img src="/src/assets/right-image.png" alt="Imagen derecha" class="side-image right-image">
+    
     <v-row no-gutters class="h-100">
-      <!-- Panel izquierdo con gradiente azul oscuro -->
-      <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
-        <div class="text-center">
-          <h1 class="logo-text text-h3 font-weight-bold text-white">
-            RECONOCIMIENTO
-            <br>
-            DE ASISTENCIA
-          </h1>
-          <div class="logo-glow"></div>
-          <p class="text-body-1 text-grey-lighten-1 mt-4">
-            Sistema de identificación facial para empleados
-          </p>
-        </div>
-      </v-col>
-
-      <!-- Panel derecho con formulario de reconocimiento -->
-      <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
+      <!-- Contenido centrado de reconocimiento -->
+      <v-col cols="12" class="d-flex align-center justify-center">
         <v-card class="recognition-card" elevation="0">
           <v-card-text class="pa-8">
             <h2 class="text-h4 font-weight-bold text-white mb-2">Reconocimiento Facial</h2>
@@ -222,69 +213,36 @@ export default {
 <style scoped>
 .recognition-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+  background: #16213e;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   outline: none !important;
-}
-
-.left-panel {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   position: relative;
-  overflow: hidden;
 }
 
-.left-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 30% 70%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.logo-text {
-  position: relative;
-  z-index: 2;
-  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-  letter-spacing: 2px;
-}
-
-.logo-glow {
+/* Imágenes de los lados */
+.side-image {
   position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: pulse 3s ease-in-out infinite;
+  transform: translateY(-50%);
+  width: 300px;
+  height: 300px;
+  z-index: 1;
+  object-fit: contain;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+.left-image {
+  left: 130px;
 }
 
-.right-panel {
-  background: #16213e;
-  position: relative;
+.right-image {
+  right: 150px;
 }
 
-.right-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-  pointer-events: none;
-}
+
+
+
 
 .recognition-card {
   background: rgba(30, 41, 59, 0.8) !important;
