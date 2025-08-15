@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-row>
+    <v-row class="mt-2 employee-header">
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Empleados</h1>
@@ -12,32 +12,34 @@
     </v-row>
 
     <!-- Tabla de Empleados -->
-    <v-card class="bg-dark-surface border border-blue-500/20">
-      <v-card-title class="text-white d-flex align-center gap-4">
-        <v-select
-          v-model="statusFilter"
-          :items="statusOptions"
-          label="Estado"
-          variant="outlined"
-          density="compact"
-          color="blue-400"
-          class="text-white"
-          style="width: 150px;"
-          @update:model-value="loadEmployees"
-        ></v-select>
+    <v-card class="bg-dark-surface border border-blue-500/20 mt-6 employee-table-card">
+      <v-card-title class="text-white filters-container">
+        <div class="filter-item">
+          <v-select
+            v-model="statusFilter"
+            :items="statusOptions"
+            label="Estado"
+            variant="outlined"
+            density="compact"
+            color="blue-400"
+            class="text-white status-filter"
+            @update:model-value="loadEmployees"
+          ></v-select>
+        </div>
         
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Buscar empleado"
-          single-line
-          hide-details
-          variant="outlined"
-          density="compact"
-          color="blue-400"
-          class="text-white"
-          style="flex: 1;"
-        ></v-text-field>
+        <div class="filter-item">
+          <v-text-field
+            v-model="search"
+            append-icon="mdi-magnify"
+            label="Buscar empleado"
+            single-line
+            hide-details
+            variant="outlined"
+            density="compact"
+            color="blue-400"
+            class="text-white search-field"
+          ></v-text-field>
+        </div>
       </v-card-title>
 
       <v-data-table
@@ -610,3 +612,207 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* ===== ESTILOS ESPECÍFICOS PARA EMPLEADOS ===== */
+
+/* Asegurar que el título y botón tengan el espaciado correcto */
+.employee-header {
+  margin-top: 0.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Contenedor principal con espaciado reducido */
+.employee-header .v-col {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/* Asegurar que la tabla tenga el margen superior correcto */
+.employee-table-card {
+  margin-top: 1rem !important;
+}
+
+/* Estilos específicos para los filtros */
+.filters-container {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+  width: 100% !important;
+}
+
+/* Contenedor de cada filtro para mejor control */
+.filter-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Asegurar que el select de estado tenga el ancho correcto */
+.status-filter {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+}
+
+/* Asegurar que el campo de búsqueda tenga el ancho correcto */
+.search-field {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+}
+
+/* Asegurar que los filtros estén alineados */
+.v-card-title {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+}
+
+/* Override de estilos globales que puedan interferir */
+.v-select {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.v-text-field {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Asegurar que no haya estilos heredados que interfieran */
+.v-card-title > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== ESTILOS ADICIONALES CON MAYOR ESPECIFICIDAD ===== */
+
+/* Forzar la aplicación de estilos para los filtros */
+.employee-table-card .v-card-title.filters-container {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+  width: 100% !important;
+}
+
+/* Forzar el ancho del select de estado */
+.employee-table-card .v-card-title .status-filter {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Forzar el ancho del campo de búsqueda */
+.employee-table-card .v-card-title .search-field {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Asegurar que los campos internos también tengan el ancho correcto */
+.employee-table-card .v-card-title .status-filter .v-field,
+.employee-table-card .v-card-title .search-field .v-field {
+  width: inherit !important;
+  min-width: inherit !important;
+  max-width: inherit !important;
+}
+
+/* Override de cualquier estilo de Vuetify que pueda interferir */
+.employee-table-card .v-card-title .v-select,
+.employee-table-card .v-card-title .v-text-field {
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Asegurar que el contenedor de filtros tenga el comportamiento correcto */
+.employee-table-card .v-card-title.filters-container > * {
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ===== ESTILOS PARA ALINEACIÓN PERFECTA ===== */
+
+/* Asegurar que los campos internos estén alineados */
+.employee-table-card .v-card-title .filter-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Asegurar que los labels estén alineados */
+.employee-table-card .v-card-title .filter-item .v-field__label {
+  margin-bottom: 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: #9ca3af !important;
+}
+
+/* Asegurar que los campos tengan la misma altura */
+.employee-table-card .v-card-title .filter-item .v-field {
+  height: 56px !important;
+  min-height: 56px !important;
+}
+
+/* Asegurar que los inputs estén alineados */
+.employee-table-card .v-card-title .filter-item .v-field__input {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1.5rem !important;
+    padding: 1rem !important;
+  }
+  
+  .filter-item {
+    width: 100% !important;
+  }
+  
+  .status-filter,
+  .search-field {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ===== ESTILOS ADICIONALES PARA ESPACIADO PERFECTO ===== */
+
+/* Asegurar que el contenedor principal tenga el espaciado correcto */
+.employee-header .d-flex {
+  align-items: center !important;
+  min-height: 48px !important;
+}
+
+/* Asegurar que el título tenga el espaciado correcto */
+.employee-header h1 {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* Asegurar que el botón tenga el espaciado correcto */
+.employee-header .v-btn {
+  margin: 0 !important;
+  padding: 0.5rem 1rem !important;
+}
+</style>

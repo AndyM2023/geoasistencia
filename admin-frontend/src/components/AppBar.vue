@@ -10,7 +10,7 @@
       <v-btn
         v-if="showMenuButton"
         icon
-        @click="drawer = !drawer"
+        @click="toggleDrawer"
         class="mr-4"
         color="blue-400"
       >
@@ -72,7 +72,7 @@
           <v-avatar size="32" class="mr-2">
             <v-icon>mdi-account</v-icon>
           </v-avatar>
-          EMPLOYEE
+          EMPLEADO
           <v-icon right>mdi-arrow-left</v-icon>
         </v-btn>
       </template>
@@ -113,8 +113,14 @@ import { useAuthStore } from '../stores/auth'
 
 export default {
   name: 'AppBar',
-  setup() {
-    const drawer = ref(true)
+  props: {
+    drawer: {
+      type: Boolean,
+      default: true
+    }
+  },
+  emits: ['update:drawer'],
+  setup(props, { emit }) {
     const router = useRouter()
     const route = useRoute()
     const authStore = useAuthStore()
@@ -126,6 +132,11 @@ export default {
     
     // Mostrar botón de menú solo en rutas /app/*
     const showMenuButton = computed(() => isAppRoute.value)
+
+    const toggleDrawer = () => {
+      console.log('toggleDrawer clicked, current drawer:', props.drawer)
+      emit('update:drawer', !props.drawer)
+    }
 
     const logout = () => {
       authStore.logout()
@@ -141,7 +152,7 @@ export default {
     }
 
     return {
-      drawer,
+      toggleDrawer,
       logout,
       goToLogin,
       goToRecognition,

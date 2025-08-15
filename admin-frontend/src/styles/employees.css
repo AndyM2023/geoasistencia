@@ -1,0 +1,172 @@
+/* ===== ESTILOS ESPECÍFICOS PARA LA PÁGINA DE EMPLEADOS ===== */
+
+/* ===== HEADER DE EMPLEADOS ===== */
+.employee-header {
+  margin-top: 0.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Contenedor principal con espaciado reducido */
+.employee-header .v-col {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/* ===== TABLA DE EMPLEADOS ===== */
+.employee-table-card {
+  margin-top: 1rem !important;
+  margin-bottom: 2rem !important;
+}
+
+/* ===== CONTENEDOR DE FILTROS ===== */
+.filters-container {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+  width: 100% !important;
+}
+
+/* ===== CONTENEDOR DE CADA FILTRO ===== */
+.filter-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== FILTRO DE ESTADO ===== */
+.status-filter {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  flex-shrink: 0 !important;
+}
+
+.status-filter .v-field {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+}
+
+/* ===== CAMPO DE BÚSQUEDA ===== */
+.search-field {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  flex-shrink: 0 !important;
+}
+
+.search-field .v-field {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+}
+
+/* ===== OVERRIDE DE ESTILOS GLOBALES ===== */
+.employee-table-card .v-card-title {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+  margin: 0 !important;
+}
+
+.employee-table-card .v-card-title > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+  
+  .status-filter,
+  .search-field {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .status-filter .v-field,
+  .search-field .v-field {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ===== FORZAR APLICACIÓN DE ESTILOS ===== */
+.employee-table-card .v-card-title.v-card-title {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+}
+
+.employee-table-card .v-card-title .v-select,
+.employee-table-card .v-card-title .v-text-field {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== ESTILOS ADICIONALES PARA ESPACIADO PERFECTO ===== */
+
+/* Asegurar que el contenedor principal tenga el espaciado correcto */
+.employee-header .d-flex {
+  align-items: center !important;
+  min-height: 48px !important;
+}
+
+/* Asegurar que el título tenga el espaciado correcto */
+.employee-header h1 {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* Asegurar que el botón tenga el espaciado correcto */
+.employee-header .v-btn {
+  margin: 0 !important;
+  padding: 0.5rem 1rem !important;
+}
+
+/* ===== ESTILOS PARA ALINEACIÓN PERFECTA ===== */
+
+/* Asegurar que los campos internos estén alineados */
+.employee-table-card .v-card-title .filter-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Asegurar que los labels estén alineados */
+.employee-table-card .v-card-title .filter-item .v-field__label {
+  margin-bottom: 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: #9ca3af !important;
+}
+
+/* Asegurar que los campos tengan la misma altura */
+.employee-table-card .v-card-title .filter-item .v-field {
+  height: 56px !important;
+  min-height: 56px !important;
+}
+
+/* Asegurar que los inputs estén alineados */
+.employee-table-card .v-card-title .filter-item .v-field__input {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}

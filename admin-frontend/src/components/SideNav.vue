@@ -5,21 +5,7 @@
     class="bg-dark-surface"
     width="280"
   >
-    <!-- Logo en el drawer -->
-    <div class="pa-4 border-b border-blue-500/20">
-      <div class="d-flex align-center">
-        <v-icon
-          size="28"
-          color="blue-400"
-          class="mr-3"
-        >
-          mdi-fingerprint
-        </v-icon>
-        <span class="text-h6 font-weight-bold text-white">
-          GeoAsistencia
-        </span>
-      </div>
-    </div>
+  
 
     <!-- Menú de navegación -->
     <v-list class="pa-2">

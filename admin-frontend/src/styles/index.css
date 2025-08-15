@@ -9,6 +9,9 @@
 /* Importar estilos de componentes */
 @import './components.css';
 
+/* Importar estilos específicos de páginas */
+@import './employees.css';
+
 /* ===== ESTILOS ADICIONALES ESPECÍFICOS ===== */
 
 /* Asegurar que las variables CSS se apliquen correctamente */
