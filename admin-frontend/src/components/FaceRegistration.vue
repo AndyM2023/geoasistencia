@@ -140,6 +140,13 @@ const props = defineProps({
   }
 });
 
+// Log para debug
+console.log('🔍 FaceRegistration - Props recibidas:', {
+  employeeId: props.employeeId,
+  employeeName: props.employeeName,
+  targetCount: props.targetCount
+});
+
 const emit = defineEmits(['registro-completo', 'registro-error', 'close']);
 
 const videoElement = ref(null);

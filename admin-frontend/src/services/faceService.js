@@ -3,21 +3,27 @@ import api from './api';
 export const faceService = {
     async registerFace(employeeId, photosBase64) {
         try {
-            console.log('Enviando fotos al backend Django:', {
-                employeeId,
-                photosCount: photosBase64.length
-            });
+            console.log('🔍 Datos enviados al backend:');
+            console.log('   - Employee ID:', employeeId);
+            console.log('   - Photos count:', photosBase64.length);
+            console.log('   - First photo sample:', photosBase64[0] ? photosBase64[0].substring(0, 100) + '...' : 'undefined');
+            console.log('   - Photos type:', typeof photosBase64);
+            console.log('   - Is array:', Array.isArray(photosBase64));
 
-            const response = await api.post(`/employees/${employeeId}/register_face/`, {
+            const requestData = {
                 photos_base64: photosBase64
-            }, {
+            };
+            
+            console.log('📤 Request data completo:', requestData);
+
+            const response = await api.post(`/employees/${employeeId}/register_face/`, requestData, {
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 timeout: 30000 // 30 segundos para procesar múltiples fotos
             });
 
-            console.log('Respuesta del backend Django:', response.data);
+            console.log('✅ Respuesta del backend Django:', response.data);
 
             if (!response.data.success) {
                 throw new Error(response.data.message || 'Error desconocido en el servidor');
@@ -25,10 +31,11 @@ export const faceService = {
 
             return response.data;
         } catch (error) {
-            console.error('Error detallado en el registro facial:', {
+            console.error('❌ Error detallado en el registro facial:', {
                 message: error.message,
                 response: error.response?.data,
-                status: error.response?.status
+                status: error.response?.status,
+                statusText: error.response?.statusText
             });
 
             if (error.response) {

@@ -78,8 +78,6 @@
             title="Reactivar empleado"
           ></v-btn>
         </template>
-        
-
       </v-data-table>
       
       <!-- Vista de Tarjetas -->
@@ -98,49 +96,36 @@
               <div class="employee-photo-container">
                 <v-avatar 
                   v-if="employee.photo_url" 
-                  size="120" 
+                  :image="employee.photo_url" 
+                  size="80"
                   class="employee-photo"
-                >
-                  <v-img :src="employee.photo_url" alt="Foto del empleado"></v-img>
-                </v-avatar>
+                ></v-avatar>
                 <v-avatar 
                   v-else 
-                  size="120" 
-                  class="employee-photo-placeholder"
+                  size="80"
                   color="blue-400"
+                  class="employee-photo-placeholder"
                 >
-                  <v-icon size="64" color="white">mdi-account</v-icon>
+                  <v-icon size="40" color="white">mdi-account</v-icon>
                 </v-avatar>
               </div>
               
               <!-- Información del empleado -->
-              <v-card-text class="employee-info">
+              <v-card-text class="text-center pa-4">
                 <h3 class="text-h6 text-white mb-2">{{ employee.full_name }}</h3>
-                <p class="text-grey-300 mb-1">
-                  <v-icon size="16" color="blue-400" class="mr-1">mdi-email</v-icon>
-                  {{ employee.email_display }}
-                </p>
-                <p class="text-grey-300 mb-1">
-                  <v-icon size="16" color="blue-400" class="mr-1">mdi-briefcase</v-icon>
-                  {{ employee.position }}
-                </p>
-                <p class="text-grey-300 mb-2">
-                  <v-icon size="16" color="blue-400" class="mr-1">mdi-domain</v-icon>
-                  {{ employee.area_name }}
-                </p>
-                
-
+                <p class="text-grey-400 mb-1">{{ employee.position }}</p>
+                <p class="text-grey-500 text-sm">{{ employee.area_name }}</p>
+                <p class="text-blue-400 text-sm font-weight-medium">{{ employee.email_display }}</p>
               </v-card-text>
               
               <!-- Acciones -->
-              <v-card-actions class="employee-actions">
+              <v-card-actions class="justify-center pa-4">
                 <v-btn 
                   icon="mdi-pencil" 
                   size="small" 
                   color="blue-400" 
                   @click="editEmployee(employee)"
-                  variant="text"
-                  title="Editar empleado"
+                  title="Editar"
                 ></v-btn>
                 
                 <v-btn 
@@ -149,8 +134,7 @@
                   size="small" 
                   color="red-400" 
                   @click="deleteEmployee(employee)"
-                  variant="text"
-                  title="Desactivar empleado"
+                  title="Desactivar"
                 ></v-btn>
                 
                 <v-btn 
@@ -159,32 +143,21 @@
                   size="small" 
                   color="green-400" 
                   @click="activateEmployee(employee)"
-                  variant="text"
-                  title="Reactivar empleado"
+                  title="Reactivar"
                 ></v-btn>
               </v-card-actions>
             </v-card>
           </v-col>
         </v-row>
-        
-        <!-- Mensaje si no hay empleados -->
-        <div v-if="filteredEmployees.length === 0" class="text-center py-8">
-          <v-icon size="64" color="grey-500" class="mb-4">mdi-account-group-outline</v-icon>
-          <h3 class="text-h5 text-grey-400 mb-2">No se encontraron empleados</h3>
-          <p class="text-grey-500">Intenta ajustar los filtros de búsqueda</p>
-        </div>
       </div>
     </v-card>
 
-    <!-- Dialog para Crear/Editar Empleado -->
-    <v-dialog 
-      v-model="showDialog" 
-      max-width="600px"
-      @after-enter="onDialogOpened"
-    >
+    <!-- Diálogo para crear/editar empleado -->
+    <v-dialog v-model="showDialog" max-width="600px" persistent @after-enter="onDialogOpened">
       <v-card class="bg-dark-surface border border-blue-500/20">
         <v-card-title class="text-white">
-          <span class="text-h5">{{ editingEmployee ? 'Editar' : 'Nuevo' }} Empleado</span>
+          <span v-if="editingEmployee">Editar Empleado</span>
+          <span v-else>Nuevo Empleado</span>
         </v-card-title>
         
         <v-card-text>
@@ -194,10 +167,10 @@
                 <v-text-field
                   v-model="employeeForm.first_name"
                   label="Nombre"
-                  required
-                  :rules="[v => !!v || 'Nombre es requerido']"
-                  color="blue-400"
                   variant="outlined"
+                  color="blue-400"
+                  :rules="[v => !!v || 'El nombre es requerido']"
+                  required
                 ></v-text-field>
               </v-col>
               
@@ -205,10 +178,10 @@
                 <v-text-field
                   v-model="employeeForm.last_name"
                   label="Apellido"
-                  required
-                  :rules="[v => !!v || 'Apellido es requerido']"
-                  color="blue-400"
                   variant="outlined"
+                  color="blue-400"
+                  :rules="[v => !!v || 'El apellido es requerido']"
+                  required
                 ></v-text-field>
               </v-col>
               
@@ -217,36 +190,38 @@
                   v-model="employeeForm.email"
                   label="Email"
                   type="email"
-                  required
-                  :rules="[v => !!v || 'Email es requerido', v => /.+@.+\..+/.test(v) || 'Email debe ser válido']"
-                  color="blue-400"
                   variant="outlined"
+                  color="blue-400"
+                  :rules="[
+                    v => !!v || 'El email es requerido',
+                    v => /.+@.+\..+/.test(v) || 'El email debe ser válido'
+                  ]"
+                  required
+                ></v-text-field>
+              </v-col>
+              
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="employeeForm.position"
+                  label="Cargo"
+                  variant="outlined"
+                  color="blue-400"
+                  :rules="[v => !!v || 'El cargo es requerido']"
+                  required
                 ></v-text-field>
               </v-col>
               
               <v-col cols="12" sm="6">
                 <v-select
-                  v-model="employeeForm.position"
-                  label="Cargo"
-                  :items="positions"
-                  required
-                  :rules="[v => !!v || 'Cargo es requerido']"
-                  color="blue-400"
-                  variant="outlined"
-                ></v-select>
-              </v-col>
-              
-              <v-col cols="12">
-                <v-select
                   v-model="employeeForm.area"
-                  label="Área de Trabajo"
                   :items="areas"
                   item-title="name"
                   item-value="id"
-                  required
-                  :rules="[v => !!v || 'Área es requerida']"
-                  color="blue-400"
+                  label="Área"
                   variant="outlined"
+                  color="blue-400"
+                  :rules="[v => !!v || 'El área es requerida']"
+                  required
                 ></v-select>
               </v-col>
             </v-row>
@@ -264,29 +239,29 @@
                 <v-card class="bg-dark-surface border border-blue-500/20">
                   <v-card-title class="text-sm text-blue-400">📷 Registro Facial</v-card-title>
                   <v-card-text>
-                                         <!-- Componente de captura de rostros - solo cuando el diálogo esté listo -->
-                     <div v-if="dialogReady" class="text-center">
-                       <v-btn
-                         @click="showFaceRegistration = true"
-                         color="blue-400"
-                         size="large"
-                         prepend-icon="mdi-camera"
-                         :disabled="!employeeForm.first_name || !employeeForm.last_name"
-                         block
-                       >
-                         🎯 Iniciar Registro Facial
-                       </v-btn>
-                       
-                       <p class="text-grey-400 text-sm mt-2">
-                         💡 Completa el nombre y apellido para habilitar el registro facial
-                       </p>
-                       <p class="text-blue-400 text-xs mt-1">
-                         📸 Se capturarán 30 fotos para mejor precisión
-                       </p>
-                       <p class="text-green-400 text-xs mt-1">
-                         🎯 Umbral de confianza: 80% (más permisivo)
-                       </p>
-                     </div>
+                    <!-- Componente de captura de rostros - solo cuando el diálogo esté listo -->
+                    <div v-if="dialogReady" class="text-center">
+                      <v-btn
+                        @click="showFaceRegistration = true"
+                        color="blue-400"
+                        size="large"
+                        prepend-icon="mdi-camera"
+                        :disabled="!employeeForm.first_name || !employeeForm.last_name"
+                        block
+                      >
+                        🎯 Iniciar Registro Facial
+                      </v-btn>
+                      
+                      <p class="text-grey-400 text-sm mt-2">
+                        💡 Completa el nombre y apellido para habilitar el registro facial
+                      </p>
+                      <p class="text-blue-400 text-xs mt-1">
+                        📸 Se capturarán 30 fotos para mejor precisión
+                      </p>
+                      <p class="text-green-400 text-xs mt-1">
+                        🎯 Umbral de confianza: 80% (más permisivo)
+                      </p>
+                    </div>
                     
                     <!-- Mensaje mientras carga el componente -->
                     <div v-else class="text-center py-4">
@@ -383,73 +358,99 @@
           </v-form>
         </v-card-text>
         
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey-400" variant="text" @click="showDialog = false">Cancelar</v-btn>
-          <v-btn color="blue-400" @click="saveEmployee" :loading="saving" class="neon-border">Guardar</v-btn>
+        <v-card-actions class="justify-end pa-4">
+          <v-btn 
+            color="grey-600" 
+            variant="outlined" 
+            @click="showDialog = false"
+            :disabled="saving"
+          >
+            Cancelar
+          </v-btn>
+          
+          <v-btn 
+            color="blue-400" 
+            @click="saveEmployee"
+            :loading="saving"
+            :disabled="!valid"
+          >
+            {{ editingEmployee ? 'Actualizar' : 'Crear' }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- Dialog de Confirmación para Eliminar -->
+    <!-- Diálogo de confirmación para eliminar -->
     <v-dialog v-model="showDeleteDialog" max-width="400px">
-      <v-card class="bg-dark-surface border border-blue-500/20">
-        <v-card-title class="text-h5 text-white">Confirmar Desactivación</v-card-title>
-        <v-card-text class="text-grey-300">
-          ¿Estás seguro de que quieres desactivar a <strong>{{ employeeToDelete?.full_name }}</strong>?
-          <br><br>
-          <small class="text-yellow-400">Nota: El empleado será desactivado pero no eliminado. Podrás reactivarlo después.</small>
+      <v-card class="bg-dark-surface border border-red-500/20">
+        <v-card-title class="text-white">
+          Confirmar Desactivación
+        </v-card-title>
+        
+        <v-card-text>
+          <p class="text-grey-400">
+            ¿Estás seguro de que quieres desactivar al empleado 
+            <strong>{{ employeeToDelete?.full_name }}</strong>?
+          </p>
+          <p class="text-grey-500 text-sm mt-2">
+            El empleado no podrá acceder al sistema, pero sus datos se mantendrán.
+          </p>
         </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey-400" variant="text" @click="showDeleteDialog = false">Cancelar</v-btn>
-          <v-btn color="orange-400" @click="confirmDelete" :loading="deleting">Desactivar</v-btn>
+        
+        <v-card-actions class="justify-end pa-4">
+          <v-btn 
+            color="grey-600" 
+            variant="outlined" 
+            @click="showDeleteDialog = false"
+          >
+            Cancelar
+          </v-btn>
+          
+          <v-btn 
+            color="red-400" 
+            @click="confirmDelete"
+            :loading="deleting"
+          >
+            Desactivar
+          </v-btn>
         </v-card-actions>
-             </v-card>
-     </v-dialog>
-     
-     <!-- Mensajes del sistema -->
-     <v-snackbar
-       :model-value="!!mensaje"
-       :color="mensaje?.tipo === 'success' ? 'success' : mensaje?.tipo === 'error' ? 'error' : 'info'"
-       :timeout="5000"
-       location="top right"
-       class="custom-snackbar"
-     >
-       <div class="d-flex align-center">
-         <v-icon 
-           :icon="mensaje?.tipo === 'success' ? 'mdi-check-circle' : mensaje?.tipo === 'error' ? 'mdi-alert-circle' : 'mdi-information'"
-           class="mr-2"
-         ></v-icon>
-         <span>{{ mensaje?.texto }}</span>
-       </div>
-       
-       <template v-slot:actions>
-         <v-btn
-           color="white"
-           variant="text"
-           @click="mensaje = null"
-         >
-           Cerrar
-         </v-btn>
-       </template>
-     </v-snackbar>
-     
-     <!-- Componente de Registro Facial -->
-     <FaceRegistration
-       v-if="showFaceRegistration"
-       :employee-id="editingEmployee?.id || 'new'"
-       :employee-name="`${employeeForm.first_name} ${employeeForm.last_name}`"
-       :target-count="30"
-       @registro-completo="onRegistroCompleto"
-       @registro-error="onRegistroError"
-       @close="showFaceRegistration = false"
-     />
-   </div>
- </template>
+      </v-card>
+    </v-dialog>
+
+    <!-- Componente de registro facial -->
+    <FaceRegistration
+      v-if="showFaceRegistration"
+      :employee-id="editingEmployee?.id || 'new'"
+      :employee-name="`${employeeForm.first_name} ${employeeForm.last_name}`"
+      :target-count="30"
+      @registro-completo="onRegistroCompleto"
+      @registro-error="onRegistroError"
+      @close="showFaceRegistration = false"
+    />
+
+    <!-- Snackbar para mensajes -->
+    <v-snackbar
+      v-model="mensaje.show"
+      :color="mensaje.type"
+      :timeout="4000"
+      class="custom-snackbar"
+    >
+      {{ mensaje.text }}
+      
+      <template v-slot:actions>
+        <v-btn
+          color="white"
+          variant="text"
+          @click="mensaje.show = false"
+        >
+          Cerrar
+        </v-btn>
+      </template>
+    </v-snackbar>
+  </div>
+</template>
 
 <script>
-
 import { ref, onMounted, computed } from 'vue'
 import { employeeService } from '../services/employeeService'
 import areaService from '../services/areaService'
@@ -464,7 +465,6 @@ export default {
   setup() {
     const search = ref('')
     const loading = ref(false)
-
     const viewMode = ref('list') // Modo de vista: 'list' o 'cards'
     const saving = ref(false)
     const deleting = ref(false)
@@ -482,7 +482,11 @@ export default {
     const areas = ref([])
     
     // Estado para mensajes
-    const mensaje = ref(null)
+    const mensaje = ref({
+      show: false,
+      text: '',
+      type: 'success'
+    })
    
     // Estados para registro facial
     const faceRegistration = ref({
@@ -544,6 +548,7 @@ export default {
         employees.value = employeesData.results || employeesData
       } catch (error) {
         console.error('Error cargando empleados:', error)
+        showMessage('Error cargando empleados', 'error')
       } finally {
         loading.value = false
       }
@@ -551,70 +556,22 @@ export default {
     
     const loadAreas = async () => {
       try {
-        // CARGAR DESDE API REAL
         const areasData = await areaService.getAll()
-        // El backend devuelve {count, next, previous, results}
-        // Necesitamos acceder a results que es el array de áreas
         areas.value = areasData.results || areasData
       } catch (error) {
         console.error('Error cargando áreas:', error)
+        showMessage('Error cargando áreas', 'error')
       }
     }
     
-    const editEmployee = (employee) => {
-      editingEmployee.value = employee
-      // Mapear datos del empleado al formulario, extrayendo datos del usuario
-      employeeForm.value = {
-        first_name: employee.user?.first_name || '',
-        last_name: employee.user?.last_name || '',
-        email: employee.user?.email || '',
-        position: employee.position || '',
-        area: employee.area || null  // employee.area ya debería ser el ID
-      }
-      console.log('Editando empleado:', employee)
-      console.log('Formulario mapeado:', employeeForm.value)
-      
-      // Abrir formulario inmediatamente
-      showDialog.value = true
-      dialogReady.value = false // Resetear estado del diálogo
-      
-      // Verificar estado facial en segundo plano (sin bloquear)
-      checkFaceRegistrationStatus(employee.id)
-    }
-    
-    const deleteEmployee = (employee) => {
-      employeeToDelete.value = employee
-      showDeleteDialog.value = true
-    }
-    
-    const confirmDelete = async () => {
-      if (!employeeToDelete.value) return
-      
-      deleting.value = true
-      try {
-        // SOFT DELETE - DESACTIVAR EMPLEADO
-        await employeeService.delete(employeeToDelete.value.id)
-        await loadEmployees() // Recargar lista
-        showDeleteDialog.value = false
-        employeeToDelete.value = null
-      } catch (error) {
-        console.error('Error desactivando empleado:', error)
-      } finally {
-        deleting.value = false
+    const showMessage = (text, type = 'success') => {
+      mensaje.value = {
+        show: true,
+        text,
+        type
       }
     }
     
-    const activateEmployee = async (employee) => {
-      try {
-        // REACTIVAR EMPLEADO
-        await employeeService.activate(employee.id)
-        await loadEmployees() // Recargar lista
-      } catch (error) {
-        console.error('Error reactivando empleado:', error)
-      }
-    }
-    
-    // Función para cuando el diálogo se abre completamente
     const onDialogOpened = async () => {
       console.log('🚪 Diálogo abierto, preparando componente de cámara...')
       // Esperar más tiempo para asegurar que todo esté renderizado en el modal
@@ -633,45 +590,127 @@ export default {
       }, 100)
     }
     
-    // Funciones para registro facial con el nuevo componente
-    const onPhotoCaptured = (data) => {
-      faceRegistration.value.photosCount = data.count
-      console.log(`✅ Foto ${data.count}/${data.total} capturada`)
+    const editEmployee = (employee) => {
+      editingEmployee.value = employee
+      employeeForm.value = {
+        first_name: employee.user.first_name,
+        last_name: employee.user.last_name,
+        email: employee.user.email,
+        position: employee.position,
+        area: employee.area
+      }
+      showDialog.value = true
+      
+      // Verificar estado facial en segundo plano (sin bloquear)
+      checkFaceRegistrationStatus(employee.id)
+    }
+    
+    const deleteEmployee = (employee) => {
+      employeeToDelete.value = employee
+      showDeleteDialog.value = true
+    }
+    
+    const confirmDelete = async () => {
+      if (!employeeToDelete.value) return
+      
+      deleting.value = true
+      try {
+        await employeeService.delete(employeeToDelete.value.id)
+        showMessage('Empleado desactivado correctamente')
+        await loadEmployees()
+        showDeleteDialog.value = false
+        employeeToDelete.value = null
+      } catch (error) {
+        console.error('Error desactivando empleado:', error)
+        showMessage('Error desactivando empleado', 'error')
+      } finally {
+        deleting.value = false
+      }
+    }
+    
+    const activateEmployee = async (employee) => {
+      try {
+        await employeeService.activate(employee.id)
+        showMessage('Empleado reactivado correctamente')
+        await loadEmployees()
+      } catch (error) {
+        console.error('Error reactivando empleado:', error)
+        showMessage('Error reactivando empleado', 'error')
+      }
+    }
+    
+    const saveEmployee = async () => {
+      if (!form.value?.validate()) return
+      
+      saving.value = true
+      try {
+        let savedEmployee
+        
+        if (editingEmployee.value) {
+          // Actualizar empleado existente
+          savedEmployee = await employeeService.update(editingEmployee.value.id, employeeForm.value)
+          showMessage('Empleado actualizado correctamente')
+        } else {
+          // Crear nuevo empleado
+          savedEmployee = await employeeService.create(employeeForm.value)
+          showMessage('Empleado creado correctamente')
+          
+          // Si se creó exitosamente, mostrar registro facial
+          if (savedEmployee && savedEmployee.id) {
+            editingEmployee.value = savedEmployee
+            showFaceRegistration.value = true
+            return // No cerrar el diálogo aún
+          }
+        }
+        
+        await loadEmployees() // Recargar lista
+        showDialog.value = false
+        dialogReady.value = false // Resetear estado del diálogo
+        editingEmployee.value = null
+        employeeForm.value = {
+          first_name: '',
+          last_name: '',
+          email: '',
+          position: '',
+          area: null
+        }
+        resetFaceRegistration() // Resetear estado facial
+      } catch (error) {
+        console.error('Error guardando empleado:', error)
+        showMessage('Error guardando empleado', 'error')
+      } finally {
+        saving.value = false
+      }
+    }
+    
+    const onPhotoCaptured = (photoData) => {
+      console.log('📸 Foto capturada:', photoData)
+      faceRegistration.value.photosCount++
+      faceRegistration.value.statusText = `Foto ${faceRegistration.value.photosCount} capturada`
     }
     
     const onCaptureComplete = (photos) => {
-      console.log(`✅ Captura completada: ${photos.length} fotos`)
-      faceRegistration.value.status = 'captured'
-      faceRegistration.value.statusText = `${photos.length} fotos con rostros válidos - Listo para procesar`
-      faceRegistration.value.photosCount = photos.length
+      console.log('✅ Captura completada:', photos.length, 'fotos')
       faceRegistration.value.capturedPhotos = photos
+      faceRegistration.value.status = 'captured'
+      faceRegistration.value.statusText = `${photos.length} fotos capturadas`
     }
     
-    const onCaptureStopped = (photos) => {
-      console.log(`⏹️ Captura detenida: ${photos.length} fotos`)
-      if (photos.length > 0) {
-        faceRegistration.value.status = 'captured'
-        faceRegistration.value.statusText = `${photos.length} fotos capturadas - Listo para procesar`
-        faceRegistration.value.photosCount = photos.length
-        faceRegistration.value.capturedPhotos = photos
-      } else {
-        resetFaceRegistration()
-      }
+    const onCaptureStopped = () => {
+      console.log('⏹️ Captura detenida')
+      faceRegistration.value.isCapturing = false
+      faceRegistration.value.statusText = 'Captura detenida'
     }
     
-    // Nuevas funciones para el registro facial
-    const onRegistroCompleto = (data) => {
-      console.log('✅ Registro facial completado:', data)
+    const onRegistroCompleto = async (result) => {
+      console.log('✅ Registro facial completado:', result)
       faceRegistration.value.status = 'trained'
       faceRegistration.value.statusText = 'Rostros procesados y guardados correctamente'
-      faceRegistration.value.photosCount = data.photosCount
+      faceRegistration.value.photosCount = result.photosCount
       showFaceRegistration.value = false
       
       // Mostrar mensaje de éxito
-      mensaje.value = {
-        tipo: 'success',
-        texto: `Registro facial completado: ${data.photosCount} fotos procesadas`
-      }
+      showMessage('Registro facial completado exitosamente')
     }
     
     const onRegistroError = (error) => {
@@ -681,12 +720,9 @@ export default {
       showFaceRegistration.value = false
       
       // Mostrar mensaje de error
-      mensaje.value = {
-        tipo: 'error',
-        texto: `Error en registro facial: ${error.message || 'Error desconocido'}`
-      }
+      showMessage('Error en registro facial: ' + error.message, 'error')
     }
-   
+    
     const trainFaceModel = async () => {
       if (!faceRegistration.value.capturedPhotos || faceRegistration.value.capturedPhotos.length === 0) {
         alert('Primero debes capturar fotos')
@@ -741,6 +777,18 @@ export default {
       }
     }
     
+    const resetFaceRegistration = () => {
+      faceRegistration.value = {
+        isCapturing: false,
+        isTraining: false,
+        status: 'pending',
+        statusText: 'Sin registrar',
+        photosCount: 0,
+        confidence: 90,
+        capturedPhotos: null
+      }
+    }
+
     const checkFaceRegistrationStatus = async (employeeId) => {
       try {
         console.log('🔍 Verificando estado de registro facial para empleado:', employeeId)
@@ -798,79 +846,6 @@ export default {
         }
       }
     }
-
-    const resetFaceRegistration = () => {
-      faceRegistration.value = {
-        isCapturing: false,
-        isTraining: false,
-        status: 'pending',
-        statusText: 'Sin registrar',
-        photosCount: 0,
-        confidence: 90,
-        capturedPhotos: null
-      }
-    }
-    
-    const saveEmployee = async () => {
-      if (!form.value?.validate()) {
-        console.log('Formulario no válido')
-        return
-      }
-      
-      saving.value = true
-      try {
-        // Preparar datos para enviar
-        const employeeData = {
-          ...employeeForm.value,
-          area: typeof employeeForm.value.area === 'object' ? employeeForm.value.area.id : employeeForm.value.area
-        }
-        
-        console.log('Enviando datos del empleado:', employeeData)
-        
-        let savedEmployee = null
-        
-        if (editingEmployee.value) {
-          // ACTUALIZAR EN API REAL
-          console.log('Actualizando empleado ID:', editingEmployee.value.id)
-          console.log('Datos para actualizar:', employeeData)
-          savedEmployee = await employeeService.update(editingEmployee.value.id, employeeData)
-        } else {
-          // CREAR EN API REAL
-          console.log('Creando nuevo empleado')
-          savedEmployee = await employeeService.create(employeeData)
-        }
-        
-        // Si hay fotos faciales capturadas, procesarlas automáticamente
-        if (faceRegistration.value.capturedPhotos && faceRegistration.value.capturedPhotos.length > 0) {
-          console.log('🎯 Procesando fotos faciales automáticamente...')
-          
-          // Actualizar el empleado con el ID real
-          if (savedEmployee && savedEmployee.id) {
-            editingEmployee.value = savedEmployee
-          }
-          
-          // Procesar rostros faciales
-          await trainFaceModel()
-        }
-        
-        await loadEmployees() // Recargar lista
-        showDialog.value = false
-        dialogReady.value = false // Resetear estado del diálogo
-        editingEmployee.value = null
-        employeeForm.value = {
-          first_name: '',
-          last_name: '',
-          email: '',
-          position: '',
-          area: null
-        }
-        resetFaceRegistration() // Resetear estado facial
-      } catch (error) {
-        console.error('Error guardando empleado:', error)
-      } finally {
-        saving.value = false
-      }
-    }
     
     onMounted(() => {
       loadEmployees()
@@ -914,14 +889,14 @@ export default {
       onRegistroCompleto,
       onRegistroError,
       trainFaceModel,
-      resetFaceRegistration
+      resetFaceRegistration,
+      checkFaceRegistrationStatus
     }
   }
 }
 </script>
 
 <style scoped>
-
 .custom-snackbar {
   z-index: 9999;
 }
@@ -933,9 +908,4 @@ export default {
 .custom-snackbar .v-snackbar__actions {
   margin-left: 16px;
 }
-
-/* ===== ESTILOS MIGRADOS A LA CARPETA DE ESTILOS ===== */
-/* Todos los estilos específicos de empleados se encuentran en: */
-/* admin-frontend/src/styles/employees.css */
-
 </style>

@@ -262,6 +262,11 @@ export default {
         )
 
         if (result.success) {
+          console.log('🔍 Resultado completo del backend:', result)
+          console.log('📊 Confianza recibida:', result.confidence)
+          console.log('📊 Confianza calculada:', Math.round(result.confidence * 100))
+          console.log('📊 Tipo de confianza:', typeof result.confidence)
+          
           success.value = `¡Asistencia registrada exitosamente! Rostro verificado con ${Math.round(result.confidence * 100)}% de confianza`
           
           // Limpiar formulario

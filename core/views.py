@@ -259,13 +259,23 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     def register_face(self, request, pk=None):
         """Registrar rostro de empleado"""
         employee = self.get_object()
+        
+        print(f"🔍 REGISTER_FACE - Datos recibidos:")
+        print(f"   - Employee ID: {employee.id}")
+        print(f"   - Request data keys: {list(request.data.keys())}")
+        print(f"   - photos_base64 type: {type(request.data.get('photos_base64'))}")
+        print(f"   - photos_base64 length: {len(request.data.get('photos_base64', []))}")
+        
         photos_base64 = request.data.get('photos_base64', [])
         
         if not photos_base64:
+            print("❌ No se recibieron fotos")
             return Response(
                 {'error': 'Se requieren fotos para el registro'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        print(f"✅ Fotos recibidas: {len(photos_base64)}")
         
         try:
             result = face_service_singleton.register_face(employee, photos_base64)
@@ -285,6 +295,8 @@ class EmployeeViewSet(viewsets.ModelViewSet):
                 
         except Exception as e:
             print(f"❌ Error en register_face: {e}")
+            import traceback
+            traceback.print_exc()
             return Response({
                 'success': False,
                 'message': f'Error interno: {str(e)}'
