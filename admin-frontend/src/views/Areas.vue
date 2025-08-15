@@ -331,10 +331,24 @@
 <script>
  import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import areaService from '../services/areaService'
+import useOptimizedMap from '../composables/useOptimizedMap'
 
 export default {
   name: 'Areas',
   setup() {
+    // Usar el composable optimizado para mapas
+    const {
+      isMapReady,
+      isLoading: mapLoading,
+      selectedLocation,
+      initMap,
+      setLocation,
+      setRadius,
+      searchLocation,
+      getCurrentLocation,
+      clearMap
+    } = useOptimizedMap('map-selector')
+    
     const search = ref('')
     const loading = ref(false)
     const saving = ref(false)
@@ -359,14 +373,10 @@ export default {
     
          // Variables para el selector de mapa
      const mapRadius = ref(100)
-     const selectedLocation = ref(null)
      const userLocation = ref(null)
      const isLocating = ref(false)
      const searchPlace = ref('')
-     const googleMapsAvailable = ref(false)
-     let map = null
-     let marker = null
-     let circle = null
+     const googleMapsAvailable = ref(true) // Siempre true con el servicio optimizado
     
     const areas = ref([])
     
@@ -497,310 +507,117 @@ export default {
        }
      }
     
-    // Funciones para el selector de mapa
-    const getUserLocation = () => {
-      return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error('Geolocalización no soportada'))
-          return
-        }
-        
-        isLocating.value = true
-        
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords
-            userLocation.value = { lat: latitude, lng: longitude }
-            isLocating.value = false
-            console.log('Ubicación obtenida:', userLocation.value)
-            resolve(userLocation.value)
-          },
-          (error) => {
-            isLocating.value = false
-            console.error('Error obteniendo ubicación:', error)
-            // Ubicación por defecto (Milagro, Ecuador)
-            const defaultLocation = { lat: -2.1340, lng: -79.5941 }
-            userLocation.value = defaultLocation
-            resolve(defaultLocation)
-          },
+    // Funciones para el selector de mapa optimizado
+    
+    const onSearchInput = async () => {
+      // Función optimizada para búsqueda de lugares
+      const query = searchPlace.value?.trim()
+      if (!query) return
+      
+      console.log('🔍 Buscando:', query)
+      
+      try {
+        // Usar el servicio optimizado de búsqueda
+        await searchLocation(query)
+        console.log('✅ Búsqueda completada')
+      } catch (error) {
+        console.error('❌ Error en la búsqueda:', error)
+        alert('Error en la búsqueda. Verifica tu conexión a internet.')
+      }
+    }
+
+    // Observar cambios en el radio del mapa
+    watch(mapRadius, (newRadius) => {
+      if (selectedLocation.value && isMapReady.value) {
+        // Actualizar el radio usando el servicio optimizado
+        setRadius(
+          selectedLocation.value.lat,
+          selectedLocation.value.lng,
+          newRadius,
           {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
+            color: '#3b82f6',
+            fillColor: '#3b82f6',
+            fillOpacity: 0.3,
+            weight: 2
           }
         )
-      })
-    }
-    
-    const onSearchInput = () => {
-      // Función para manejar la búsqueda de lugares
-      console.log('Buscando:', searchPlace.value)
-    }
-    
-                             const initMap = async (customLocation = null) => {
-        console.log('Función initMap ejecutada')
-        
-        try {
-          // Verificar si Leaflet está disponible
-          if (typeof L === 'undefined') {
-            console.error('Leaflet no está disponible.')
-            googleMapsAvailable.value = false
-            return
-          }
-          
-          console.log('Leaflet está disponible, inicializando mapa...')
-          googleMapsAvailable.value = true
-          
-          // Determinar la ubicación para centrar el mapa
-          let mapLocation
-          if (customLocation) {
-            // Usar ubicación personalizada (para editar área)
-            mapLocation = customLocation
-            console.log('Usando ubicación personalizada para el mapa:', mapLocation)
-          } else {
-            // Obtener ubicación del usuario (para nueva área)
-            mapLocation = await getUserLocation()
-            console.log('Usando ubicación del usuario para el mapa:', mapLocation)
-          }
-          
-          // Usar la función existente initMapWithLocation
-          // Si estamos editando, pasar isEditing = true
-          const isEditing = editingArea.value && editingArea.value.savedCoordinates
-          initMapWithLocation(mapLocation, isEditing)
-          
-        } catch (error) {
-          console.error('Error inicializando mapa:', error)
-          googleMapsAvailable.value = false
-        }
       }
-     
-     const initMapWithLocation = (location, isEditing = false) => {
-       try {
-         const mapElement = document.getElementById('map-selector')
-         
-         if (!mapElement) {
-           console.error('Elemento del mapa no encontrado')
-           return
-         }
-         
-         // Crear mapa de OpenStreetMap
-         map = L.map(mapElement).setView([location.lat, location.lng], 18)
-         
-         // Agregar capa de OpenStreetMap
-         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-           attribution: '© OpenStreetMap contributors',
-           maxZoom: 19
-         }).addTo(map)
-         
-         if (isEditing) {
-           // Si estamos editando, mostrar la ubicación guardada
-           console.log('Editando área - mostrando ubicación guardada:', location)
-           
-           // Agregar marcador de la ubicación guardada
-           L.marker([location.lat, location.lng], {
-             title: 'Ubicación actual del área'
-           }).addTo(map).bindPopup('Ubicación actual del área')
-           
-           // Establecer la ubicación seleccionada como la guardada
-           selectedLocation.value = { lat: location.lat, lng: location.lng }
-           
-           // Crear círculo con el radio actual del área
-           if (areaForm.value.radius) {
-             circle = L.circle([location.lat, location.lng], {
-               radius: areaForm.value.radius,
-               color: '#3b82f6',
-               fillColor: '#3b82f6',
-               fillOpacity: 0.3,
-               weight: 2
-             }).addTo(map)
-             
-             // Actualizar el radio del mapa
-             mapRadius.value = areaForm.value.radius
-           }
-         } else {
-           // Si es nueva área, mostrar ubicación del usuario
-           console.log('Nueva área - mostrando ubicación del usuario:', location)
-           
-           // Agregar marcador de ubicación actual
-           L.marker([location.lat, location.lng], {
-             title: 'Tu ubicación actual'
-           }).addTo(map).bindPopup('Tu ubicación actual')
-         }
-         
-         // Evento de clic en el mapa
-         map.on('click', (e) => {
-           const { lat, lng } = e.latlng
-           selectedLocation.value = { lat, lng }
-           
-           // Actualizar o crear marcador
-           if (marker) {
-             map.removeLayer(marker)
-           }
-           marker = L.marker([lat, lng], {
-             title: 'Ubicación seleccionada'
-           }).addTo(map)
-           
-           // Actualizar o crear círculo
-           if (circle) {
-             map.removeLayer(circle)
-           }
-           circle = L.circle([lat, lng], {
-             radius: mapRadius.value,
-             color: '#3b82f6',
-             fillColor: '#3b82f6',
-             fillOpacity: 0.3,
-             weight: 2
-           }).addTo(map)
-         })
-         
-         // Observar cambios en el radio
-         watch(mapRadius, (newRadius) => {
-           if (circle && selectedLocation.value) {
-             circle.setRadius(newRadius)
-           }
-         })
-         
-         // Función de búsqueda de lugares
-         setupPlaceSearch(location)
-         
-         // Forzar el redibujado del mapa
-         setTimeout(() => {
-           map.invalidateSize()
-         }, 100)
-         
-       } catch (error) {
-         console.error('Error inicializando mapa con ubicación por defecto:', error)
-       }
-     }
-     
-     const setupPlaceSearch = (defaultLocation) => {
-       // Usar Nominatim (servicio gratuito de OpenStreetMap) para búsqueda
-       const searchInput = document.getElementById('map-search')
-       
-       if (!searchInput) {
-         console.error('Campo de búsqueda no encontrado')
-         return
-       }
-       
-       // Remover event listeners anteriores para evitar duplicados
-       searchInput.removeEventListener('keypress', handleSearch)
-       
-       // Función de búsqueda
-       const handleSearch = async (e) => {
-         if (e.key === 'Enter') {
-           const query = searchInput.value.trim()
-           if (!query) return
-           
-           try {
-             console.log('Buscando:', query)
-             
-             // Buscar usando Nominatim
-             const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=ec`)
-             const data = await response.json()
-             
-             if (data && data.length > 0) {
-               const place = data[0]
-               const lat = parseFloat(place.lat)
-               const lng = parseFloat(place.lon)
-               
-               console.log('Lugar encontrado:', place.display_name, 'en', lat, lng)
-               
-               // Centrar mapa en el lugar encontrado
-               map.setView([lat, lng], 19)
-               
-               // Agregar marcador del lugar
-               L.marker([lat, lng], {
-                 title: place.display_name
-               }).addTo(map).bindPopup(place.display_name)
-               
-               // Mostrar mensaje de éxito
-               alert(`Lugar encontrado: ${place.display_name}`)
-             } else {
-               alert('No se encontró el lugar. Intenta con una búsqueda más específica.')
-             }
-           } catch (error) {
-             console.error('Error en la búsqueda:', error)
-             alert('Error en la búsqueda. Verifica tu conexión a internet.')
-           }
-         }
-       }
-       
-       // Agregar event listener
-       searchInput.addEventListener('keypress', handleSearch)
-     }
+    })
+
+    // Observar cambios en la ubicación seleccionada para sincronizar el radio
+    watch(selectedLocation, (newLocation) => {
+      if (newLocation && isMapReady.value) {
+        // Asegurar que el radio se muestre cuando se selecciona una nueva ubicación
+        setRadius(
+          newLocation.lat,
+          newLocation.lng,
+          mapRadius.value,
+          {
+            color: '#3b82f6',
+            fillColor: '#3b82f6',
+            fillOpacity: 0.3,
+            weight: 2
+          }
+        )
+      }
+    })
     
-         const showMapSelectorModal = () => {
-       console.log('Abriendo modal del mapa...')
-       
-       // Verificar si Leaflet está disponible antes de abrir el modal
-       if (typeof L === 'undefined') {
-         console.error('Leaflet no está disponible')
-         
-         // Intentar cargar Leaflet dinámicamente
-         const loadLeaflet = () => {
-           return new Promise((resolve, reject) => {
-             if (typeof L !== 'undefined') {
-               resolve();
-               return;
-             }
-             
-             const script = document.createElement('script');
-             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
-             script.onload = () => {
-               console.log('Leaflet cargado dinámicamente');
-               resolve();
-             };
-             script.onerror = () => {
-               reject(new Error('No se pudo cargar Leaflet'));
-             };
-             document.head.appendChild(script);
-           });
-         };
-         
-                   // Intentar cargar Leaflet
-          loadLeaflet().then(() => {
-            console.log('Leaflet cargado, abriendo modal...');
-            showMapSelector.value = true;
-            
-            // Inicializar mapa después de que el modal esté visible
-            nextTick(() => {
-              setTimeout(() => {
-                console.log('Inicializando mapa...');
-                // Si estamos editando, usar las coordenadas guardadas
-                if (editingArea.value && editingArea.value.savedCoordinates) {
-                  console.log('Editando área - usando coordenadas guardadas:', editingArea.value.savedCoordinates)
-                  initMap(editingArea.value.savedCoordinates)
-                } else {
-                  console.log('Nueva área - usando ubicación del usuario')
-                  initMap()
-                }
-              }, 500);
-            });
-          }).catch((error) => {
-            console.error('Error cargando Leaflet:', error);
-            alert('Error: No se pudo cargar el mapa. Verifica tu conexión a internet y recarga la página.');
-          });
+                 const showMapSelectorModal = async () => {
+      console.log('🗺️ Abriendo modal del mapa optimizado...')
+      
+      showMapSelector.value = true
+      
+      // Usar nextTick para asegurar que el modal esté renderizado
+      await nextTick()
+      
+      try {
+        // Inicializar mapa optimizado
+        if (editingArea.value && editingArea.value.savedCoordinates) {
+          console.log('📍 Editando área - usando coordenadas guardadas')
+          await initMap({
+            lat: editingArea.value.savedCoordinates.lat,
+            lng: editingArea.value.savedCoordinates.lng
+          })
           
-          return;
+          // Establecer ubicación con radio
+          setLocation(
+            editingArea.value.savedCoordinates.lat,
+            editingArea.value.savedCoordinates.lng,
+            {
+              radius: areaForm.value.radius || mapRadius.value,
+              title: 'Ubicación actual del área'
+            }
+          )
+          
+          // Sincronizar el slider del radio
+          if (areaForm.value.radius) {
+            mapRadius.value = areaForm.value.radius
+          }
+        } else {
+          console.log('📱 Nueva área - obteniendo ubicación del usuario')
+          await initMap()
+          
+          // Intentar obtener ubicación actual con radio
+          try {
+            await getCurrentLocation({
+              radius: mapRadius.value,
+              title: 'Tu ubicación actual'
+            })
+          } catch (error) {
+            console.log('📍 Usando ubicación por defecto (Ciudad de México)')
+            // La ubicación por defecto ya está configurada en el servicio
+            // Asegurar que se muestre el radio en la ubicación por defecto
+            if (selectedLocation.value) {
+              setRadius(selectedLocation.value.lat, selectedLocation.value.lng, mapRadius.value)
+            }
+          }
         }
         
-        console.log('Leaflet está disponible, abriendo modal...');
-        showMapSelector.value = true;
-        
-        // Inicializar mapa después de que el modal esté visible
-        nextTick(() => {
-          setTimeout(() => {
-            console.log('Inicializando mapa...');
-            // Si estamos editando, usar las coordenadas guardadas
-            if (editingArea.value && editingArea.value.savedCoordinates) {
-              console.log('Editando área - usando coordenadas guardadas:', editingArea.value.savedCoordinates)
-              initMap(editingArea.value.savedCoordinates)
-            } else {
-              console.log('Nueva área - usando ubicación del usuario')
-              initMap()
-            }
-          }, 500);
-        });
+        console.log('✅ Mapa optimizado listo')
+      } catch (error) {
+        console.error('❌ Error inicializando mapa:', error)
+        alert('Error cargando el mapa. Por favor, intenta de nuevo.')
+      }
      }
     
     const confirmMapSelection = () => {
@@ -810,25 +627,15 @@ export default {
         areaForm.value.radius = mapRadius.value
         showMapSelector.value = false
         
-        // Limpiar mapa
-        if (map) {
-          map = null
-          marker = null
-          circle = null
-        }
-        selectedLocation.value = null
+        console.log('✅ Ubicación confirmada:', selectedLocation.value)
       }
     }
     
     const cancelMapSelection = () => {
+      // Limpiar la selección actual
+      clearMap()
       showMapSelector.value = false
-      // Limpiar mapa
-      if (map) {
-        map = null
-        marker = null
-        circle = null
-      }
-      selectedLocation.value = null
+      console.log('❌ Selección de mapa cancelada')
     }
     
              const saveArea = async () => {
@@ -894,39 +701,13 @@ export default {
       }
     }
     
-         onMounted(() => {
-       loadAreas()
-       
-       // Verificar si Leaflet está disponible al cargar la página
-       const checkLeaflet = () => {
-         if (typeof L !== 'undefined') {
-           console.log('Leaflet está disponible al cargar la página')
-           googleMapsAvailable.value = true
-           return true
-         } else {
-           console.log('Leaflet no está disponible al cargar la página')
-           googleMapsAvailable.value = false
-           return false
-         }
-       }
-       
-       // Verificación inicial
-       checkLeaflet()
-       
-       // Verificación periódica cada 2 segundos
-       const leafletCheckInterval = setInterval(() => {
-         if (checkLeaflet()) {
-           clearInterval(leafletCheckInterval)
-         }
-       }, 2000)
-       
-       // Limpiar intervalo al desmontar
-       onUnmounted(() => {
-         clearInterval(leafletCheckInterval)
-       })
+                  onMounted(() => {
+      loadAreas()
+      // El mapService se inicializa automáticamente
+      console.log('🚀 Componente Areas cargado - Mapa optimizado listo')
      })
     
-    return {
+        return {
       search,
       loading,
       saving,
@@ -943,24 +724,28 @@ export default {
       areas,
       areaForm,
       headers,
-             // Variables del selector de mapa
-       mapRadius,
-       selectedLocation,
-       userLocation,
-       isLocating,
-       searchPlace,
-       googleMapsAvailable,
+      // Variables del mapa optimizado
+      mapRadius,
+      selectedLocation,
+      isMapReady,
+      mapLoading,
+      userLocation,
+      isLocating,
+      searchPlace,
+      googleMapsAvailable,
+      // Funciones principales
       editArea,
       deleteArea,
       activateArea,
       showMap,
       confirmDelete,
       saveArea,
-      // Funciones del selector de mapa
+      // Funciones del mapa optimizado
       showMapSelectorModal,
       confirmMapSelection,
       cancelMapSelection,
       onSearchInput,
+      clearMap,
       // Funciones de formateo
       formatCoordinate
     }
