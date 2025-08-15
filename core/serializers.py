@@ -24,6 +24,13 @@ class AreaSerializer(serializers.ModelSerializer):
         model = Area
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at', 'employee_count']
+    
+    def create(self, validated_data):
+        """Crear área con estado activo por defecto"""
+        # Si no se proporciona status, establecer como activo
+        if 'status' not in validated_data:
+            validated_data['status'] = 'active'
+        return super().create(validated_data)
 
 class EmployeeSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Employee"""

@@ -376,7 +376,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue'
 import { employeeService } from '../services/employeeService'
-import { areaService } from '../services/areaService'
+import areaService from '../services/areaService'
 import { faceService } from '../services/faceService'
 import FaceCameraCapture from '../components/FaceCameraCapture.vue'
 
@@ -461,7 +461,10 @@ export default {
       loading.value = true
       try {
         // CARGAR DESDE API REAL
-        employees.value = await employeeService.getAll()
+        const employeesData = await employeeService.getAll()
+        // El backend devuelve {count, next, previous, results}
+        // Necesitamos acceder a results que es el array de empleados
+        employees.value = employeesData.results || employeesData
       } catch (error) {
         console.error('Error cargando empleados:', error)
       } finally {
@@ -472,7 +475,10 @@ export default {
     const loadAreas = async () => {
       try {
         // CARGAR DESDE API REAL
-        areas.value = await areaService.getAll()
+        const areasData = await areaService.getAll()
+        // El backend devuelve {count, next, previous, results}
+        // Necesitamos acceder a results que es el array de áreas
+        areas.value = areasData.results || areasData
       } catch (error) {
         console.error('Error cargando áreas:', error)
       }

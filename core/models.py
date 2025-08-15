@@ -28,14 +28,14 @@ class Area(models.Model):
     name = models.CharField(max_length=100, verbose_name='Nombre del Área')
     description = models.TextField(blank=True, verbose_name='Descripción')
     latitude = models.DecimalField(
-        max_digits=9, 
-        decimal_places=6, 
+        max_digits=20, 
+        decimal_places=15, 
         verbose_name='Latitud',
         validators=[MinValueValidator(-90), MaxValueValidator(90)]
     )
     longitude = models.DecimalField(
-        max_digits=9, 
-        decimal_places=6, 
+        max_digits=20, 
+        decimal_places=15, 
         verbose_name='Longitud',
         validators=[MinValueValidator(-180), MaxValueValidator(180)]
     )
@@ -66,6 +66,20 @@ class Area(models.Model):
     def employee_count(self):
         """Número de empleados asignados a esta área"""
         return self.employees.count()
+    
+    def deactivate(self):
+        """Desactivar área (soft delete)"""
+        self.status = 'inactive'
+        self.save()
+    
+    def activate(self):
+        """Reactivar área"""
+        self.status = 'active'
+        self.save()
+    
+    def is_active(self):
+        """Verificar si el área está activa"""
+        return self.status == 'active'
 
 class Employee(models.Model):
     """Empleado del sistema"""

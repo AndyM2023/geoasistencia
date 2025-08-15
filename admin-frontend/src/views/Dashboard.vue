@@ -3,11 +3,11 @@
     <h1 class="text-h4 mb-6 text-white">Dashboard</h1>
     
     <!-- Tarjetas de Estadísticas -->
-    <v-row class="mb-6">
+    <v-row class="mb-6 dashboard-stats-row">
       <v-col cols="12" sm="6" md="3">
         <StatsCard
           title="Total Empleados"
-          :value="stats.totalEmployees"
+          :value="loading ? '...' : stats.totalEmployees"
           subtitle="Activos en el sistema"
           icon="mdi-account-group"
           color="primary"
@@ -18,7 +18,7 @@
       <v-col cols="12" sm="6" md="3">
         <StatsCard
           title="Asistencias Hoy"
-          :value="stats.todayAttendance"
+          :value="loading ? '...' : stats.todayAttendance"
           subtitle="Registradas hoy"
           icon="mdi-calendar-check"
           color="success"
@@ -29,7 +29,7 @@
       <v-col cols="12" sm="6" md="3">
         <StatsCard
           title="Áreas Activas"
-          :value="stats.activeAreas"
+          :value="loading ? '...' : stats.activeAreas"
           subtitle="Ubicaciones registradas"
           icon="mdi-map-marker"
           color="info"
@@ -40,7 +40,7 @@
       <v-col cols="12" sm="6" md="3">
         <StatsCard
           title="Tasa de Asistencia"
-          :value="stats.attendanceRate + '%'"
+          :value="loading ? '...' : (stats.attendanceRate ? stats.attendanceRate + '%' : '0%')"
           subtitle="Promedio mensual"
           icon="mdi-chart-line"
           color="warning"
@@ -55,7 +55,11 @@
         <v-card class="bg-dark-surface border border-blue-500/20">
           <v-card-title class="text-white">Asistencias por Semana</v-card-title>
           <v-card-text>
-            <AttendanceLineChart :data="weeklyAttendanceData" />
+            <div v-if="loading" class="text-center pa-8">
+              <v-progress-circular indeterminate color="primary"></v-progress-circular>
+              <div class="mt-4 text-grey-400">Cargando datos...</div>
+            </div>
+            <AttendanceLineChart v-else :data="weeklyAttendanceData" />
           </v-card-text>
         </v-card>
       </v-col>
@@ -64,7 +68,11 @@
         <v-card class="bg-dark-surface border border-blue-500/20">
           <v-card-title class="text-white">Actividad Reciente</v-card-title>
           <v-card-text>
-            <v-list density="compact" class="bg-transparent">
+            <div v-if="loading" class="text-center pa-8">
+              <v-progress-circular indeterminate color="primary"></v-progress-circular>
+              <div class="mt-4 text-grey-400">Cargando actividad...</div>
+            </div>
+            <v-list v-else density="compact" class="bg-transparent">
               <v-list-item
                 v-for="activity in recentActivities"
                 :key="activity.id"
@@ -104,57 +112,22 @@ export default {
     AttendanceLineChart
   },
   setup() {
+    const loading = ref(true)
     const stats = ref({
-      totalEmployees: 25,
-      todayAttendance: 18,
-      activeAreas: 3,
-      attendanceRate: 92
+      totalEmployees: 0,
+      todayAttendance: 0,
+      activeAreas: 0,
+      attendanceRate: 0
     })
     
-    const recentActivities = ref([
-      {
-        id: 1,
-        title: 'Juan Pérez marcó asistencia',
-        time: 'Hace 5 minutos',
-        icon: 'mdi-account-check',
-        status: 'success'
-      },
-      {
-        id: 2,
-        title: 'María García llegó tarde',
-        time: 'Hace 15 minutos',
-        icon: 'mdi-clock-alert',
-        status: 'warning'
-      },
-      {
-        id: 3,
-        title: 'Nueva área registrada',
-        time: 'Hace 1 hora',
-        icon: 'mdi-map-marker-plus',
-        status: 'success'
-      },
-      {
-        id: 4,
-        title: 'Reporte mensual generado',
-        time: 'Hace 2 horas',
-        icon: 'mdi-file-chart',
-        status: 'success'
-      }
-    ])
-    
-    const weeklyAttendanceData = ref([
-      { date: 'Lun', count: 22 },
-      { date: 'Mar', count: 24 },
-      { date: 'Mié', count: 23 },
-      { date: 'Jue', count: 25 },
-      { date: 'Vie', count: 20 },
-      { date: 'Sáb', count: 8 },
-      { date: 'Dom', count: 0 }
-    ])
+    const recentActivities = ref([])
+    const weeklyAttendanceData = ref([])
     
     const loadDashboardData = async () => {
       try {
-        // CARGAR DESDE API REAL
+        loading.value = true
+        
+        // Cargar datos reales desde la API
         const statsData = await dashboardService.getStats()
         stats.value = statsData
         
@@ -166,6 +139,9 @@ export default {
         
       } catch (error) {
         console.error('Error cargando datos del dashboard:', error)
+        // En caso de error, mantener valores en 0
+      } finally {
+        loading.value = false
       }
     }
     
@@ -174,6 +150,7 @@ export default {
     })
     
     return {
+      loading,
       stats,
       recentActivities,
       weeklyAttendanceData,
