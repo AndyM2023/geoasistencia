@@ -24,6 +24,13 @@ class AreaSerializer(serializers.ModelSerializer):
         model = Area
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at', 'employee_count']
+    
+    def create(self, validated_data):
+        """Crear área con estado activo por defecto"""
+        # Si no se proporciona status, establecer como activo
+        if 'status' not in validated_data:
+            validated_data['status'] = 'active'
+        return super().create(validated_data)
 
 class EmployeeSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Employee"""
@@ -152,11 +159,14 @@ class LoginSerializer(serializers.Serializer):
 
 class DashboardStatsSerializer(serializers.Serializer):
     """Serializer para estadísticas del dashboard"""
-    total_employees = serializers.IntegerField()
-    total_areas = serializers.IntegerField()
-    today_attendance = serializers.IntegerField()
-    pending_attendance = serializers.IntegerField()
-    recent_activities = serializers.ListField()
+    totalEmployees = serializers.IntegerField()
+    totalAreas = serializers.IntegerField()
+    activeAreas = serializers.IntegerField()
+    todayAttendance = serializers.IntegerField()
+    pendingAttendance = serializers.IntegerField()
+    attendanceRate = serializers.FloatField()
+    monthAttendance = serializers.IntegerField()
+    workingDays = serializers.IntegerField()
 
 class AttendanceReportSerializer(serializers.Serializer):
     """Serializer para reportes de asistencia"""

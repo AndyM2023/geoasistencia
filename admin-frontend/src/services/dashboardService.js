@@ -7,12 +7,12 @@ export const dashboardService = {
   },
   
   async getWeeklyAttendance() {
-    const response = await api.get('/dashboard/weekly-attendance/')
+    const response = await api.get('/dashboard/weekly_attendance/')
     return response.data
   },
   
   async getRecentActivity() {
-    const response = await api.get('/dashboard/recent-activity/')
+    const response = await api.get('/dashboard/recent_activity/')
     return response.data
   }
 }

@@ -13,6 +13,10 @@ import '@mdi/font/css/materialdesignicons.css'
 // Importar estilos CSS personalizados
 import './styles/index.css'
 
+// Aplicar estilos críticos inmediatamente
+document.body.style.backgroundColor = '#0a0a0f';
+document.body.style.color = '#ffffff';
+
 const vuetify = createVuetify({
   components,
   directives,

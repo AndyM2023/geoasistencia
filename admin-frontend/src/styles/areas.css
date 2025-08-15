@@ -44,8 +44,62 @@
     margin-bottom: 0.75rem !important;
   }
   
-  .areas-header .v-col {
-    padding-top: 0.25rem !important;
-    padding-bottom: 0.25rem !important;
-  }
-}
+     .areas-header .v-col {
+     padding-top: 0.25rem !important;
+     padding-bottom: 0.25rem !important;
+   }
+ }
+ 
+ /* ===== ESTILOS PARA EL MAPA ===== */
+ 
+ /* Contenedor del mapa */
+ .map-container {
+   width: 100% !important;
+ }
+ 
+ /* Campo de búsqueda del mapa */
+ .map-search {
+   background: rgba(59, 130, 246, 0.05) !important;
+   padding: 1rem !important;
+   border-radius: 8px !important;
+   border: 1px solid rgba(59, 130, 246, 0.2) !important;
+ }
+ 
+ /* Contenedor del mapa */
+ .map-wrapper {
+   width: 100% !important;
+   height: 400px !important;
+   border-radius: 8px !important;
+   overflow: hidden !important;
+   border: 2px solid rgba(59, 130, 246, 0.3) !important;
+   background: #f0f0f0 !important;
+ }
+ 
+ /* Controles del mapa */
+ .map-controls {
+   background: rgba(59, 130, 246, 0.1) !important;
+   padding: 1rem !important;
+   border-radius: 8px !important;
+   border: 1px solid rgba(59, 130, 246, 0.2) !important;
+ }
+ 
+ /* Instrucciones del mapa */
+ .map-instructions {
+   background: rgba(59, 130, 246, 0.05) !important;
+   border-radius: 8px !important;
+ }
+ 
+ /* Responsive para el mapa */
+ @media (max-width: 768px) {
+   .map-wrapper {
+     height: 300px !important;
+   }
+   
+   .map-controls {
+     padding: 0.75rem !important;
+   }
+   
+   .map-search {
+     padding: 0.75rem !important;
+   }
+ }
