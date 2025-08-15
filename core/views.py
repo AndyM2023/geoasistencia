@@ -12,7 +12,7 @@ from .serializers import (
     UserSerializer, EmployeeSerializer, AreaSerializer, AttendanceSerializer,
     LoginSerializer, DashboardStatsSerializer, AttendanceReportSerializer
 )
-from .services.face_service import FaceRecognitionService
+from .services.face_service_singleton import face_service_singleton
 
 User = get_user_model()
 
@@ -127,28 +127,42 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     def register_face(self, request, pk=None):
         """Registrar rostro de empleado"""
         employee = self.get_object()
-        photos = request.data.get('photos', [])
+        photos_base64 = request.data.get('photos_base64', [])
         
-        if not photos:
+        if not photos_base64:
             return Response(
                 {'error': 'Se requieren fotos para el registro'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        face_service = FaceRecognitionService()
-        result = face_service.register_employee_face(employee, photos)
-        
-        if result['success']:
-            return Response(result, status=status.HTTP_201_CREATED)
-        else:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            result = face_service_singleton.register_face(employee, photos_base64)
+            
+            if result['success']:
+                return Response({
+                    'success': True,
+                    'message': result['message'],
+                    'photos_count': result['photos_count'],
+                    'employee_id': employee.id
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    'success': False,
+                    'message': result.get('error', 'Error desconocido')
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            print(f"❌ Error en register_face: {e}")
+            return Response({
+                'success': False,
+                'message': f'Error interno: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['get'])
     def face_status(self, request, pk=None):
         """Obtener estado del perfil facial del empleado"""
         employee = self.get_object()
-        face_service = FaceRecognitionService()
-        status_data = face_service.get_employee_face_status(employee)
+        status_data = face_service_singleton.get_employee_face_status(employee)
         
         return Response(status_data)
     
@@ -164,8 +178,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        face_service = FaceRecognitionService()
-        result = face_service.verify_face(employee, photo)
+        result = face_service_singleton.verify_face(employee, photo)
         
         return Response(result)
     
@@ -270,7 +283,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         face_verified = request.data.get('face_verified', False)
         
         try:
-            employee = Employee.objects.get(employee_id=employee_id)
+            # Buscar empleado por ID de base de datos, no por employee_id
+            employee = Employee.objects.get(id=employee_id)
             area = Area.objects.get(id=area_id)
             
             # Verificar si ya tiene asistencia hoy

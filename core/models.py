@@ -144,7 +144,7 @@ class FaceProfile(models.Model):
     )
     photos_count = models.IntegerField(default=0, verbose_name='Número de Fotos')
     is_trained = models.BooleanField(default=False, verbose_name='Entrenado')
-    confidence_threshold = models.FloatField(default=0.90, verbose_name='Umbral de Confianza')
+    confidence_threshold = models.FloatField(default=0.80, verbose_name='Umbral de Confianza')
     last_training = models.DateTimeField(null=True, blank=True, verbose_name='Último Entrenamiento')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

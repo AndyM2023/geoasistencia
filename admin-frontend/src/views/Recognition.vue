@@ -20,30 +20,42 @@
               <v-col cols="12" md="6" class="d-flex justify-center">
                 <!-- Título invisible para alineación -->
                 <div class="invisible-title mb-6"></div>
-                <div class="camera-area" @click="toggleCamera" :class="{ 'camera-active': isCameraActive }">
-                  <!-- Estado inicial: Placeholder -->
-                  <div v-if="!isCameraActive" class="camera-placeholder d-flex align-center justify-center">
-                    <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
-                    <p class="text-body-2 text-grey-lighten-1 mt-2">Click para activar cámara</p>
-                  </div>
-                  
-                  <!-- Estado activo: Video de la cámara -->
-                  <div v-else class="camera-video">
-                    <video ref="videoElement" autoplay muted class="camera-feed"></video>
-                    <div class="camera-overlay">
-                      <div class="face-detection-box"></div>
+                                                   <div class="camera-area" :class="{ 'camera-active': isCameraActive }">
+                    <!-- Elemento de video siempre presente pero oculto -->
+                    <video ref="videoElement" autoplay muted playsinline class="camera-feed" :style="{ display: isCameraActive ? 'block' : 'none' }"></video>
+                    
+                    <!-- Estado inicial: Placeholder -->
+                    <div v-if="!isCameraActive" class="camera-placeholder d-flex align-center justify-center">
+                      <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
+                      <p class="text-body-2 text-grey-lighten-1 mt-2">Activa la cámara para capturar tu rostro</p>
+                      
+                      <!-- Botón para activar cámara -->
                       <v-btn
-                        icon
-                        color="red"
-                        size="small"
-                        class="close-camera-btn"
-                        @click.stop="stopCamera"
+                        @click="startCamera"
+                        color="primary"
+                        size="large"
+                        class="mt-4 activate-camera-btn"
+                        :loading="loading"
+                        :disabled="loading"
                       >
-                        <v-icon>mdi-close</v-icon>
+                        <v-icon left class="mr-2">mdi-camera</v-icon>
+                        📷 Activar Cámara
                       </v-btn>
                     </div>
+                    
+                                         <!-- Estado activo: Overlay de la cámara -->
+                      <div v-else class="camera-overlay">
+                        <v-btn
+                          icon
+                          color="red"
+                          size="small"
+                          class="close-camera-btn"
+                          @click.stop="stopCamera"
+                        >
+                          <v-icon>mdi-close</v-icon>
+                        </v-btn>
+                      </div>
                   </div>
-                </div>
               </v-col>
 
               <!-- Columna derecha: Formulario -->
@@ -161,9 +173,10 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import AppBar from '../components/AppBar.vue'
+import { attendanceService } from '../services/attendanceService'
 
 export default {
   name: 'Recognition',
@@ -202,40 +215,88 @@ export default {
       success.value = ''
 
       try {
-        // Simular proceso de reconocimiento
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        if (form.username && form.password) {
-          success.value = '¡Asistencia registrada exitosamente!'
+        // Validar campos
+        if (!form.username || !form.password) {
+          error.value = 'Por favor completa todos los campos'
+          return
+        }
+
+        // Verificar que la cámara esté activa
+        if (!isCameraActive.value) {
+          error.value = 'Primero debes activar la cámara para capturar tu rostro'
+          return
+        }
+
+        // Capturar foto de la cámara
+        const photoBase64 = await capturePhotoFromCamera()
+        if (!photoBase64) {
+          error.value = 'No se pudo capturar la foto. Intenta nuevamente.'
+          return
+        }
+
+        // Obtener credenciales del empleado
+        const employeeData = await getEmployeeCredentials(form.username, form.password)
+        if (!employeeData) {
+          error.value = 'Credenciales inválidas'
+          return
+        }
+
+        console.log('🔍 Datos del empleado obtenidos:', employeeData)
+        console.log('🔍 Employee ID:', employeeData.employee_id)
+        console.log('🔍 Area ID:', employeeData.area_id)
+
+        // Verificar rostro y marcar asistencia
+        const result = await verifyFaceAndMarkAttendance(
+          employeeData.employee_id,
+          photoBase64,
+          employeeData.area_id,
+          getCurrentLocation()
+        )
+
+        if (result.success) {
+          success.value = `¡Asistencia registrada exitosamente! Rostro verificado con ${Math.round(result.confidence * 100)}% de confianza`
           
           // Limpiar formulario
           form.username = ''
           form.password = ''
           
+          // Detener cámara
+          await stopCamera()
+          
           setTimeout(() => {
             success.value = ''
-          }, 3000)
+          }, 5000)
         } else {
-          error.value = 'Por favor completa todos los campos'
+          error.value = result.message || 'Error en el reconocimiento facial'
         }
+        
       } catch (err) {
-        error.value = 'Error en el reconocimiento. Intenta de nuevo.'
+        console.error('Error en reconocimiento:', err)
+        error.value = 'Error en el reconocimiento: ' + (err.message || 'Error desconocido')
       } finally {
         loading.value = false
       }
     }
 
     // Funciones para manejar la cámara
-    const toggleCamera = async () => {
-      if (isCameraActive.value) {
-        await stopCamera()
-      } else {
-        await startCamera()
-      }
-    }
 
     const startCamera = async () => {
       try {
+        console.log('🎬 Iniciando cámara...')
+        
+        // Limpiar estado previo
+        error.value = ''
+        
+        // Verificar que el elemento de video exista
+        if (!videoElement.value) {
+          console.error('❌ Elemento de video no encontrado')
+          error.value = 'Error: Elemento de video no encontrado. Intenta recargar la página.'
+          return
+        }
+        
+        console.log('📹 Elemento de video encontrado:', videoElement.value)
+        
+        // Obtener acceso a la cámara
         stream.value = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: 'user',
@@ -244,66 +305,170 @@ export default {
           } 
         })
         
-        if (videoElement.value) {
-          videoElement.value.srcObject = stream.value
-          isCameraActive.value = true
-          
-          // Iniciar reconocimiento facial automático
-          startFaceRecognition()
-        }
+        console.log('✅ Stream de cámara obtenido:', stream.value)
+        
+        // Asignar el stream al video
+        videoElement.value.srcObject = stream.value
+        
+        // Esperar a que el video esté listo
+        await new Promise((resolve) => {
+          videoElement.value.onloadedmetadata = () => {
+            console.log('📹 Video metadata cargado')
+            resolve()
+          }
+        })
+        
+        // Activar la cámara
+        isCameraActive.value = true
+        console.log('🎯 Cámara activada exitosamente')
+        
+        // Iniciar reconocimiento facial automático
+        startFaceRecognition()
+        
       } catch (err) {
+        console.error('❌ Error iniciando cámara:', err)
         error.value = 'Error al acceder a la cámara: ' + err.message
+        
+        // Mostrar errores específicos
+        if (err.name === 'NotAllowedError') {
+          error.value = 'Permiso denegado para acceder a la cámara. Verifica los permisos del navegador.'
+        } else if (err.name === 'NotFoundError') {
+          error.value = 'No se encontró ninguna cámara en tu dispositivo.'
+        } else if (err.name === 'NotReadableError') {
+          error.value = 'La cámara está siendo usada por otra aplicación.'
+        }
       }
     }
 
     const stopCamera = async () => {
-      if (stream.value) {
-        stream.value.getTracks().forEach(track => track.stop())
-        stream.value = null
+      try {
+        console.log('⏹️ Deteniendo cámara...')
+        
+        if (stream.value) {
+          stream.value.getTracks().forEach(track => {
+            track.stop()
+            console.log('🛑 Track detenido:', track.kind)
+          })
+          stream.value = null
+        }
+        
+        if (videoElement.value) {
+          videoElement.value.srcObject = null
+        }
+        
+        isCameraActive.value = false
+        console.log('✅ Cámara detenida exitosamente')
+        
+      } catch (err) {
+        console.error('❌ Error deteniendo cámara:', err)
       }
-      isCameraActive.value = false
     }
 
     const startFaceRecognition = () => {
-      // Aquí implementarías la lógica de reconocimiento facial
-      // Por ahora solo simulamos el proceso
+      // Función para iniciar reconocimiento facial automático
       console.log('Iniciando reconocimiento facial...')
+    }
+
+    // Función para capturar foto de la cámara
+    const capturePhotoFromCamera = async () => {
+      if (!videoElement.value) return null
       
-      // Simular detección de rostro
+      try {
+        const canvas = document.createElement('canvas')
+        const video = videoElement.value
+        
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(video, 0, 0)
+        
+        // Convertir a base64
+        return canvas.toDataURL('image/jpeg', 0.8)
+      } catch (err) {
+        console.error('Error capturando foto:', err)
+        return null
+      }
+    }
+
+    // Función para obtener credenciales del empleado
+    const getEmployeeCredentials = async (username, password) => {
+      try {
+        const response = await attendanceService.getEmployeeByCredentials(username, password)
+        return response  // Devolver el objeto completo, no solo response.user
+      } catch (err) {
+        console.error('Error obteniendo credenciales:', err)
+        return null
+      }
+    }
+
+    // Función para verificar rostro y marcar asistencia
+    const verifyFaceAndMarkAttendance = async (employeeId, photoBase64, areaId, location) => {
+      try {
+        return await attendanceService.verifyFaceAndMarkAttendance(
+          employeeId,
+          photoBase64,
+          areaId,
+          location.latitude,
+          location.longitude
+        )
+      } catch (err) {
+        console.error('Error en verificación facial:', err)
+        throw err
+      }
+    }
+
+    // Función para obtener ubicación actual
+    const getCurrentLocation = () => {
+      // Por ahora retornamos ubicación simulada
+      // En producción usarías navigator.geolocation
+      return {
+        latitude: -12.0464,  // Lima, Perú (ejemplo)
+        longitude: -77.0428
+      }
+    }
+
+                   return {
+        form,
+        showPassword,
+        loading,
+        error,
+        success,
+        rules,
+        togglePassword,
+        handleRecognition,
+        // Variables de la cámara
+        isCameraActive,
+        videoElement,
+        // Funciones de la cámara
+        startCamera,
+        stopCamera,
+        // Funciones adicionales
+        capturePhotoFromCamera,
+        getEmployeeCredentials,
+        verifyFaceAndMarkAttendance,
+        getCurrentLocation
+      }
+  },
+
+      // Hooks de lifecycle para controlar el scroll
+    onMounted() {
+      document.body.classList.add('recognition-page')
+      
+      // Debug: verificar el elemento de video
+      console.log('🎯 Componente montado, verificando elementos...')
+      console.log('📹 videoElement ref:', videoElement.value)
+      
+      // Verificar después de un momento
       setTimeout(() => {
-        if (isCameraActive.value) {
-          success.value = 'Rostro detectado! Procesando reconocimiento...'
-          // Aquí iría la lógica real de reconocimiento
-        }
-      }, 3000)
+        console.log('⏰ Después de timeout - videoElement:', videoElement.value)
+        const videoEl = document.querySelector('video')
+        console.log('🔍 Video en DOM:', videoEl)
+      }, 500)
+    },
+
+    onUnmounted() {
+      document.body.classList.remove('recognition-page')
     }
-
-    return {
-      form,
-      showPassword,
-      loading,
-      error,
-      success,
-      rules,
-      togglePassword,
-      handleRecognition,
-      // Variables de la cámara
-      isCameraActive,
-      videoElement,
-      // Funciones de la cámara
-      toggleCamera,
-      stopCamera
-    }
-  },
-
-  // Hooks de lifecycle para controlar el scroll
-  onMounted() {
-    document.body.classList.add('recognition-page')
-  },
-
-  onUnmounted() {
-    document.body.classList.remove('recognition-page')
-  }
 }
 </script>
 
@@ -403,18 +568,7 @@ export default {
   pointer-events: none;
 }
 
-.face-detection-box {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 200px;
-  height: 200px;
-  border: 2px solid #00d4ff;
-  border-radius: 50%;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-  animation: pulse 2s infinite;
-}
+
 
 .close-camera-btn {
   position: absolute;
@@ -424,10 +578,23 @@ export default {
   background: rgba(0, 0, 0, 0.7) !important;
 }
 
-.camera-placeholder {
-  flex-direction: column;
-  min-height: 200px;
-}
+ .camera-placeholder {
+   flex-direction: column;
+   min-height: 200px;
+ }
+
+ .activate-camera-btn {
+   background: linear-gradient(135deg, #3b82f6 0%, #00d4ff 100%) !important;
+   font-weight: bold;
+   letter-spacing: 1px;
+   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+   transition: all 0.3s ease;
+ }
+
+ .activate-camera-btn:hover {
+   transform: translateY(-2px);
+   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+ }
 
 .recognition-btn {
   background: linear-gradient(135deg, #3b82f6 0%, #00d4ff 100%) !important;
