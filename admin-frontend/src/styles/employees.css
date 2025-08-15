@@ -1,0 +1,313 @@
+/* ===== ESTILOS ESPECÍFICOS PARA LA PÁGINA DE EMPLEADOS ===== */
+
+/* ===== HEADER DE EMPLEADOS ===== */
+.employee-header {
+  margin-top: 0.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Contenedor principal con espaciado reducido */
+.employee-header .v-col {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/* Asegurar que el contenedor principal tenga el espaciado correcto */
+.employee-header .d-flex {
+  align-items: center !important;
+  min-height: 48px !important;
+}
+
+/* Asegurar que el título tenga el espaciado correcto */
+.employee-header h1 {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* Asegurar que el botón tenga el espaciado correcto */
+.employee-header .v-btn {
+  margin: 0 !important;
+  padding: 0.5rem 1rem !important;
+}
+
+/* ===== TABLA DE EMPLEADOS ===== */
+.employee-table-card {
+  margin-top: 1rem !important;
+  margin-bottom: 2rem !important;
+}
+
+/* ===== CONTENEDOR DE FILTROS ===== */
+.filters-container {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+  width: 100% !important;
+}
+
+/* ===== CONTENEDOR DE CADA FILTRO ===== */
+.filter-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+
+
+/* ===== CAMPO DE BÚSQUEDA ===== */
+.search-field {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  flex-shrink: 0 !important;
+}
+
+.search-field .v-field {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+}
+
+/* ===== OVERRIDE DE ESTILOS GLOBALES ===== */
+.employee-table-card .v-card-title {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 2rem !important;
+  padding: 1.5rem 2rem !important;
+  margin: 0 !important;
+}
+
+.employee-table-card .v-card-title > * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== ESTILOS PARA ALINEACIÓN PERFECTA ===== */
+
+/* Asegurar que los campos internos estén alineados */
+.employee-table-card .v-card-title .filter-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Asegurar que los labels estén alineados */
+.employee-table-card .v-card-title .filter-item .v-field__label {
+  margin-bottom: 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: #9ca3af !important;
+}
+
+/* Asegurar que los campos tengan la misma altura */
+.employee-table-card .v-card-title .filter-item .v-field {
+  height: 56px !important;
+  min-height: 56px !important;
+}
+
+/* Asegurar que los inputs estén alineados */
+.employee-table-card .v-card-title .filter-item .v-field__input {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+/* ===== ESTILOS PARA VISTA DE TARJETAS ===== */
+
+/* Toggle de vista */
+.view-toggle {
+  margin-left: auto !important;
+}
+
+.view-toggle-buttons {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+.view-toggle-buttons .v-btn {
+  color: #9ca3af !important;
+  transition: all 0.3s ease !important;
+}
+
+.view-toggle-buttons .v-btn--selected {
+  color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Contenedor de tarjetas */
+.cards-container {
+  padding: 1rem 0 !important;
+}
+
+/* Tarjeta de empleado */
+.employee-card {
+  height: 100% !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+}
+
+.employee-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Contenedor de foto */
+.employee-photo-container {
+  text-align: center !important;
+  padding: 1.5rem 1rem 1rem 1rem !important;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+}
+
+.employee-photo {
+  border: 3px solid rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
+}
+
+.employee-photo-placeholder {
+  border: 3px solid rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Información del empleado */
+.employee-info {
+  padding: 1rem !important;
+  text-align: center !important;
+}
+
+.employee-info h3 {
+  font-weight: 600 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.employee-info p {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 0.5rem !important;
+  font-size: 0.875rem !important;
+}
+
+.employee-info .v-icon {
+  margin-right: 0.5rem !important;
+}
+
+/* Acciones de la tarjeta */
+.employee-actions {
+  padding: 0.75rem 1rem 1rem 1rem !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+
+.employee-actions .v-btn {
+  transition: all 0.3s ease !important;
+}
+
+.employee-actions .v-btn:hover {
+  transform: scale(1.1) !important;
+}
+
+/* ===== ESTILOS PARA EL FORMULARIO DE EMPLEADOS ===== */
+
+/* Reducir espacio entre los campos del formulario */
+.v-dialog .v-form .v-row {
+  margin-bottom: 0 !important;
+}
+
+.v-dialog .v-form .v-col {
+  padding-bottom: 0.25rem !important;
+  padding-top: 0.25rem !important;
+}
+
+/* Reducir espacio entre campos específicos */
+.v-dialog .v-form .v-col:not(:last-child) {
+  margin-bottom: 0.25rem !important;
+}
+
+/* Reducir espacio en la sección de registro facial */
+.v-dialog .v-form .v-divider {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.v-dialog .v-form h3 {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Reducir espacio en la tarjeta de registro facial */
+.v-dialog .v-form .v-card .v-card-title {
+  padding: 0.5rem !important;
+}
+
+.v-dialog .v-form .v-card .v-card-text {
+  padding: 0.5rem !important;
+}
+
+/* Reducir espacio adicional en campos de texto y select */
+.v-dialog .v-form .v-text-field,
+.v-dialog .v-form .v-select {
+  margin-bottom: 0.25rem !important;
+}
+
+/* Reducir espacio en labels */
+.v-dialog .v-form .v-field__label {
+  margin-bottom: 0.25rem !important;
+}
+
+/* Reducir espacio en inputs */
+.v-dialog .v-form .v-field__input {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/* Reducir espacio en el contenedor del formulario */
+.v-dialog .v-form {
+  padding: 0.5rem !important;
+}
+
+/* Reducir espacio en las acciones del formulario */
+.v-dialog .v-card-actions {
+  padding: 0.5rem !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+  }
+  
+     .search-field {
+     width: 100% !important;
+     min-width: 100% !important;
+     max-width: 100% !important;
+   }
+   
+   .search-field .v-field {
+     width: 100% !important;
+     min-width: 100% !important;
+     max-width: 100% !important;
+   }
+  
+  .view-toggle {
+    margin-left: 0 !important;
+    margin-top: 1rem !important;
+  }
+  
+  .cards-container .v-col {
+    margin-bottom: 1rem !important;
+  }
+  
+  .employee-card {
+    margin-bottom: 0 !important;
+  }
+}

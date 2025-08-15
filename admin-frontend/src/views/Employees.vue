@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-row>
+    <v-row class="mt-2 employee-header">
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Empleados</h1>
@@ -12,35 +12,43 @@
     </v-row>
 
     <!-- Tabla de Empleados -->
-    <v-card class="bg-dark-surface border border-blue-500/20">
-      <v-card-title class="text-white d-flex align-center gap-4">
-        <v-select
-          v-model="statusFilter"
-          :items="statusOptions"
-          label="Estado"
-          variant="outlined"
-          density="compact"
-          color="blue-400"
-          class="text-white"
-          style="width: 150px;"
-          @update:model-value="loadEmployees"
-        ></v-select>
+    <v-card class="bg-dark-surface border border-blue-500/20 mt-6 employee-table-card">
+      <v-card-title class="text-white filters-container">
+        <div class="filter-item">
+          <v-text-field
+            v-model="search"
+            append-icon="mdi-magnify"
+            label="Buscar empleado"
+            single-line
+            hide-details
+            variant="outlined"
+            density="compact"
+            color="blue-400"
+            class="text-white search-field"
+          ></v-text-field>
+        </div>
         
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Buscar empleado"
-          single-line
-          hide-details
-          variant="outlined"
-          density="compact"
-          color="blue-400"
-          class="text-white"
-          style="flex: 1;"
-        ></v-text-field>
+        <!-- Toggle para cambiar entre vista de lista y tarjetas -->
+        <div class="filter-item view-toggle">
+          <v-btn-toggle
+            v-model="viewMode"
+            color="blue-400"
+            group
+            density="compact"
+            class="view-toggle-buttons"
+          >
+            <v-btn value="list" prepend-icon="mdi-format-list-bulleted" title="Vista de Lista">
+              Lista
+            </v-btn>
+            <v-btn value="cards" prepend-icon="mdi-view-grid" title="Vista de Tarjetas">
+              Tarjetas
+            </v-btn>
+          </v-btn-toggle>
+        </div>
       </v-card-title>
 
       <v-data-table
+        v-if="viewMode === 'list'"
         :headers="headers"
         :items="employees"
         :search="search"
@@ -71,12 +79,101 @@
           ></v-btn>
         </template>
         
-        <template v-slot:item.user.is_active="{ item }">
-          <v-chip :color="item.user.is_active ? 'green-500' : 'red-500'" size="small" variant="tonal">
-            {{ item.user.is_active ? 'Activo' : 'Inactivo' }}
-          </v-chip>
-        </template>
+
       </v-data-table>
+      
+      <!-- Vista de Tarjetas -->
+      <div v-if="viewMode === 'cards'" class="cards-container">
+        <v-row>
+          <v-col 
+            v-for="employee in filteredEmployees" 
+            :key="employee.id" 
+            cols="12" 
+            sm="6" 
+            md="4" 
+            lg="3"
+          >
+            <v-card class="employee-card bg-dark-surface border border-blue-500/20" elevation="2">
+              <!-- Foto del empleado -->
+              <div class="employee-photo-container">
+                <v-avatar 
+                  v-if="employee.photo_url" 
+                  size="120" 
+                  class="employee-photo"
+                >
+                  <v-img :src="employee.photo_url" alt="Foto del empleado"></v-img>
+                </v-avatar>
+                <v-avatar 
+                  v-else 
+                  size="120" 
+                  class="employee-photo-placeholder"
+                  color="blue-400"
+                >
+                  <v-icon size="64" color="white">mdi-account</v-icon>
+                </v-avatar>
+              </div>
+              
+              <!-- Información del empleado -->
+              <v-card-text class="employee-info">
+                <h3 class="text-h6 text-white mb-2">{{ employee.full_name }}</h3>
+                <p class="text-grey-300 mb-1">
+                  <v-icon size="16" color="blue-400" class="mr-1">mdi-email</v-icon>
+                  {{ employee.email_display }}
+                </p>
+                <p class="text-grey-300 mb-1">
+                  <v-icon size="16" color="blue-400" class="mr-1">mdi-briefcase</v-icon>
+                  {{ employee.position }}
+                </p>
+                <p class="text-grey-300 mb-2">
+                  <v-icon size="16" color="blue-400" class="mr-1">mdi-domain</v-icon>
+                  {{ employee.area_name }}
+                </p>
+                
+
+              </v-card-text>
+              
+              <!-- Acciones -->
+              <v-card-actions class="employee-actions">
+                <v-btn 
+                  icon="mdi-pencil" 
+                  size="small" 
+                  color="blue-400" 
+                  @click="editEmployee(employee)"
+                  variant="text"
+                  title="Editar empleado"
+                ></v-btn>
+                
+                <v-btn 
+                  v-if="employee.user.is_active"
+                  icon="mdi-account-off" 
+                  size="small" 
+                  color="red-400" 
+                  @click="deleteEmployee(employee)"
+                  variant="text"
+                  title="Desactivar empleado"
+                ></v-btn>
+                
+                <v-btn 
+                  v-else
+                  icon="mdi-account-check" 
+                  size="small" 
+                  color="green-400" 
+                  @click="activateEmployee(employee)"
+                  variant="text"
+                  title="Reactivar empleado"
+                ></v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-col>
+        </v-row>
+        
+        <!-- Mensaje si no hay empleados -->
+        <div v-if="filteredEmployees.length === 0" class="text-center py-8">
+          <v-icon size="64" color="grey-500" class="mb-4">mdi-account-group-outline</v-icon>
+          <h3 class="text-h5 text-grey-400 mb-2">No se encontraron empleados</h3>
+          <p class="text-grey-500">Intenta ajustar los filtros de búsqueda</p>
+        </div>
+      </div>
     </v-card>
 
     <!-- Dialog para Crear/Editar Empleado -->
@@ -277,7 +374,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { employeeService } from '../services/employeeService'
 import { areaService } from '../services/areaService'
 import { faceService } from '../services/faceService'
@@ -291,7 +388,8 @@ export default {
   setup() {
     const search = ref('')
     const loading = ref(false)
-    const statusFilter = ref('active')
+
+    const viewMode = ref('list') // Modo de vista: 'list' o 'cards'
     const saving = ref(false)
     const deleting = ref(false)
     const showDialog = ref(false)
@@ -334,11 +432,7 @@ export default {
       'Operario'
     ]
     
-    const statusOptions = [
-      { title: 'Activos', value: 'active' },
-      { title: 'Inactivos', value: 'inactive' },
-      { title: 'Todos', value: 'all' }
-    ]
+
     
     const headers = [
       { title: 'ID', key: 'employee_id', sortable: true },
@@ -346,16 +440,28 @@ export default {
       { title: 'Email', key: 'email_display', sortable: true },
       { title: 'Cargo', key: 'position', sortable: true },
       { title: 'Área', key: 'area_name', sortable: true },
-      { title: 'Estado', key: 'user.is_active', sortable: true },
+
       { title: 'Acciones', key: 'actions', sortable: false }
     ]
+    
+    // Computed property para empleados filtrados por búsqueda
+    const filteredEmployees = computed(() => {
+      if (!search.value) return employees.value
+      
+      const searchTerm = search.value.toLowerCase()
+      return employees.value.filter(employee => 
+        employee.full_name?.toLowerCase().includes(searchTerm) ||
+        employee.email_display?.toLowerCase().includes(searchTerm) ||
+        employee.position?.toLowerCase().includes(searchTerm) ||
+        employee.area_name?.toLowerCase().includes(searchTerm)
+      )
+    })
     
     const loadEmployees = async () => {
       loading.value = true
       try {
-        // CARGAR DESDE API REAL con filtro de estado
-        const params = statusFilter.value !== 'active' ? `?status=${statusFilter.value}` : ''
-        employees.value = await employeeService.getAllWithStatus(statusFilter.value)
+        // CARGAR DESDE API REAL
+        employees.value = await employeeService.getAll()
       } catch (error) {
         console.error('Error cargando empleados:', error)
       } finally {
@@ -588,9 +694,10 @@ export default {
       areas,
       employeeForm,
       positions,
-      statusFilter,
-      statusOptions,
+      
+      viewMode,
       headers,
+      filteredEmployees,
       loadEmployees,
       loadAreas,
       onDialogOpened,
@@ -610,3 +717,9 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* ===== ESTILOS MIGRADOS A LA CARPETA DE ESTILOS ===== */
+/* Todos los estilos específicos de empleados se encuentran en: */
+/* admin-frontend/src/styles/employees.css */
+</style>
