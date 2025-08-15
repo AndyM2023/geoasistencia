@@ -13,19 +13,9 @@ import '@mdi/font/css/materialdesignicons.css'
 // Importar estilos CSS personalizados
 import './styles/index.css'
 
-// Asegurar que los estilos se carguen correctamente
-document.addEventListener('DOMContentLoaded', () => {
-  // Verificar que los estilos estén cargados
-  const styleSheets = Array.from(document.styleSheets);
-  console.log('Hojas de estilo cargadas:', styleSheets.length);
-  
-  // Aplicar estilos críticos si es necesario
-  if (!styleSheets.some(sheet => sheet.href && sheet.href.includes('index.css'))) {
-    console.warn('Estilos personalizados no cargados, aplicando estilos de respaldo');
-    document.body.style.backgroundColor = '#0a0a0f';
-    document.body.style.color = '#ffffff';
-  }
-});
+// Aplicar estilos críticos inmediatamente
+document.body.style.backgroundColor = '#0a0a0f';
+document.body.style.color = '#ffffff';
 
 const vuetify = createVuetify({
   components,

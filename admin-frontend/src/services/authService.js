@@ -63,5 +63,17 @@ export const authService = {
   getCurrentUser() {
     const userData = localStorage.getItem('user_data')
     return userData ? JSON.parse(userData) : null
+  },
+
+  async validateToken(token) {
+    try {
+      const response = await api.get('/auth/me/', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      return { valid: true, user: response.data }
+    } catch (error) {
+      console.error('Error validando token:', error)
+      return { valid: false, user: null }
+    }
   }
 }

@@ -6,35 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GeoAsistencia - Sistema de Control de Asistencia</title>
     
-    <!-- OpenStreetMap - Completamente GRATIS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" integrity="sha512-0sWvzLuTEjL0hj4NZKTmxf0svK2LLpoWejQyTzB7HHn/l9ZKD5hQQ6XwY9z7oQam5F1I2qJYCyLc7Z7AFCQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" integrity="sha512-7cAptPP30SNBnj6cTfVrM7mW/snM50f5sG+0q4sFdM6qpKqPEvlmni9u+44n+pgnSzIM4PkdRGz5UZ5WBJjI==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    
-    <!-- Fallback si CDN falla -->
-    <script>
-      // Verificar si Leaflet se cargó correctamente
-      window.addEventListener('load', function() {
-        if (typeof L === 'undefined') {
-          console.error('Leaflet no se cargó desde CDN, intentando fallback...');
-          // Intentar cargar desde otro CDN
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-          script.onload = function() {
-            console.log('Leaflet cargado desde fallback');
-            // Recargar la página para que Vue reconozca Leaflet
-            setTimeout(() => {
-              window.location.reload();
-            }, 1000);
-          };
-          script.onerror = function() {
-            console.error('Fallback también falló');
-          };
-          document.head.appendChild(script);
-        } else {
-          console.log('Leaflet cargado correctamente desde CDN');
-        }
-      });
-    </script>
+    <!-- Leaflet CSS - Solo si es necesario para mapas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   </head>
   <body>
     <div id="app"></div>

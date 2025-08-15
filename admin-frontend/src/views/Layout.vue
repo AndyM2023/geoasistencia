@@ -1,17 +1,23 @@
 <template>
   <v-app>
-    <AppBar v-model:drawer="drawer" />
-    <SideNav v-model="drawer" :menu-items="menuItems" />
-    <v-main class="bg-dark-background">
-      <v-container fluid class="pa-6">
-        <router-view />
-      </v-container>
-    </v-main>
+    <div v-if="!isAuthenticated" class="d-flex justify-center align-center" style="height: 100vh;">
+      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
+    </div>
+    <template v-else>
+      <AppBar v-model:drawer="drawer" />
+      <SideNav v-model="drawer" :menu-items="menuItems" />
+      <v-main class="bg-dark-background">
+        <v-container fluid class="pa-6">
+          <router-view />
+        </v-container>
+      </v-main>
+    </template>
   </v-app>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '../stores/auth'
 import AppBar from '../components/AppBar.vue'
 import SideNav from '../components/SideNav.vue'
 
@@ -22,7 +28,9 @@ export default {
     SideNav
   },
   setup() {
+    const authStore = useAuthStore()
     const drawer = ref(true)
+    const isAuthenticated = computed(() => authStore.isAuthenticated)
     
     const menuItems = ref([
       {
@@ -49,7 +57,8 @@ export default {
 
     return {
       drawer,
-      menuItems
+      menuItems,
+      isAuthenticated
     }
   }
 }

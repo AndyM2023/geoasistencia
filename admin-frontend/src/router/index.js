@@ -30,6 +30,7 @@ const routes = [
     children: [
       {
         path: '',
+        name: 'AppHome',
         redirect: '/app/dashboard'
       },
       {
@@ -59,41 +60,68 @@ const routes = [
     name: 'About',
     component: About,
     meta: { requiresAuth: false }
+  },
+  // Ruta catch-all para redirigir cualquier ruta del backend al dashboard
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/app/dashboard'
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   
-  // Inicializar autenticación si no se ha hecho
-  if (!authStore.isAuthenticated) {
-    authStore.initAuth()
+  // Inicializar autenticación solo una vez
+  if (!authStore.isInitialized && !authStore.isLoading) {
+    await authStore.initAuth()
+  }
+  
+  // Esperar a que termine la inicialización
+  if (authStore.isLoading) {
+    // Crear promise para esperar la inicialización
+    const waitForInit = async () => {
+      let attempts = 0
+      while (authStore.isLoading && attempts < 50) { // Max 5 segundos
+        await new Promise(resolve => setTimeout(resolve, 100))
+        attempts++
+      }
+      next()
+    }
+    waitForInit()
+    return
   }
   
   // Ruta requiere autenticación
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log('🚫 Acceso denegado: Ruta requiere autenticación')
     next('/login')
     return
   }
   
   // Ruta requiere ser invitado (no autenticado)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    console.log('🚫 Usuario autenticado intentando acceder a ruta de invitado')
     next('/app/dashboard')
     return
   }
   
   // Prevenir acceso a rutas públicas cuando está autenticado
   if (to.meta.requiresAuth === false && authStore.isAuthenticated && to.path === '/') {
-    console.log('🚫 Usuario autenticado redirigido al dashboard')
     next('/app/dashboard')
+    return
+  }
+  
+  // Manejar rutas no encontradas o acceso directo a URLs
+  if (to.matched.length === 0) {
+    if (authStore.isAuthenticated) {
+      next('/app/dashboard')
+    } else {
+      next('/login')
+    }
     return
   }
   

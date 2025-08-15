@@ -13,9 +13,27 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    historyApiFallback: true, // Crucial para SPAs con Vue Router
     proxy: {
       '/app': {
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+        // Solo proxear requests de API, no rutas del frontend
+        bypass: function (req, res, proxyOptions) {
+          // Si es una request para el frontend (HTML), servir index.html
+          if (req.headers.accept && req.headers.accept.includes('text/html')) {
+            return '/index.html'
+          }
+        }
+      },
+      '/static': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/media': {
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false
       }

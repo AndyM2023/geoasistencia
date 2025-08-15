@@ -25,22 +25,18 @@ api.interceptors.request.use(
 // Interceptor para manejar errores
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.config.method?.toUpperCase(), response.config.url, response.status)
     return response
   },
   (error) => {
     console.error('❌ API Error:', error.config?.method?.toUpperCase(), error.config?.url, error.response?.status)
-    console.error('📊 Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      statusText: error.response?.statusText
-    })
     
     if (error.response?.status === 401) {
-      // Token expirado, redirigir al login
+      // Token expirado, solo limpiar - dejar que Vue Router maneje la redirección
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      localStorage.removeItem('refreshToken')
+      
+      // Emitir evento personalizado para que el auth store lo maneje
+      window.dispatchEvent(new CustomEvent('auth:logout'))
     }
     return Promise.reject(error)
   }

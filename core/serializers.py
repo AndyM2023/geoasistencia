@@ -159,11 +159,14 @@ class LoginSerializer(serializers.Serializer):
 
 class DashboardStatsSerializer(serializers.Serializer):
     """Serializer para estadísticas del dashboard"""
-    total_employees = serializers.IntegerField()
-    total_areas = serializers.IntegerField()
-    today_attendance = serializers.IntegerField()
-    pending_attendance = serializers.IntegerField()
-    recent_activities = serializers.ListField()
+    totalEmployees = serializers.IntegerField()
+    totalAreas = serializers.IntegerField()
+    activeAreas = serializers.IntegerField()
+    todayAttendance = serializers.IntegerField()
+    pendingAttendance = serializers.IntegerField()
+    attendanceRate = serializers.FloatField()
+    monthAttendance = serializers.IntegerField()
+    workingDays = serializers.IntegerField()
 
 class AttendanceReportSerializer(serializers.Serializer):
     """Serializer para reportes de asistencia"""

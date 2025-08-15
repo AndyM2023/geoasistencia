@@ -1,9 +1,15 @@
 <template>
-  <div>
+  <div class="chart-container">
+    <div v-if="!data || data.length === 0" class="text-center pa-6 text-grey-400">
+      <v-icon size="48" color="grey">mdi-chart-line</v-icon>
+      <div class="mt-3">No hay datos de asistencia para mostrar</div>
+    </div>
     <Line
+      v-else
       :data="chartData"
       :options="chartOptions"
-      :height="300"
+      :height="280"
+      class="chart-canvas"
     />
   </div>
 </template>
@@ -45,11 +51,11 @@ export default {
   computed: {
     chartData() {
       return {
-        labels: this.data.map(item => item.date),
+        labels: this.data.map(item => item.shortDay || item.day || item.date),
         datasets: [
           {
             label: 'Asistencias',
-            data: this.data.map(item => item.count),
+            data: this.data.map(item => item.attendance),
             borderColor: '#3B82F6',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             borderWidth: 3,
@@ -119,4 +125,30 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.chart-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Optimizar el contenedor de la gráfica */
+:deep(.chartjs-render-monitor) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ajustar el canvas de Chart.js */
+:deep(canvas) {
+  max-height: 280px !important;
+}
+</style>
 

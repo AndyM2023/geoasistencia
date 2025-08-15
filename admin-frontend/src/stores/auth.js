@@ -5,14 +5,40 @@ import { authService } from '../services/authService'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('token') || null)
+  const isLoading = ref(false)
+  const isInitialized = ref(false)
   const isAuthenticated = computed(() => !!token.value)
 
-  const initAuth = () => {
+  const initAuth = async () => {
+    if (isLoading.value || isInitialized.value) return isAuthenticated.value
+    
     const storedToken = localStorage.getItem('token')
     if (storedToken) {
-      token.value = storedToken
-      // Aquí podrías validar el token con el backend
+      isLoading.value = true
+      try {
+        // Validar token con el backend
+        const response = await authService.validateToken(storedToken)
+        if (response.valid) {
+          token.value = storedToken
+          user.value = response.user
+          isInitialized.value = true
+          return true
+        } else {
+          // Token inválido, limpiar
+          logout()
+          return false
+        }
+      } catch (error) {
+        console.error('Error validando token:', error)
+        logout()
+        return false
+      } finally {
+        isLoading.value = false
+        isInitialized.value = true
+      }
     }
+    isInitialized.value = true
+    return false
   }
 
   const login = async (usuario, contraseña) => {
@@ -49,8 +75,16 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = () => {
     token.value = null
     user.value = null
+    isInitialized.value = false
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
+  }
+
+  // Escuchar eventos de logout desde el interceptor de Axios
+  if (typeof window !== 'undefined') {
+    window.addEventListener('auth:logout', () => {
+      logout()
+    })
   }
 
   const refreshToken = async () => {
@@ -76,6 +110,8 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     token,
+    isLoading,
+    isInitialized,
     isAuthenticated,
     initAuth,
     login,
