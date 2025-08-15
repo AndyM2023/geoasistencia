@@ -12,8 +12,8 @@
 
 <script>
 import { ref } from 'vue'
-import AppBar from '../components/AppBar.vue'
-import SideNav from '../components/SideNav.vue'
+import AppBar from './AppBar.vue'
+import SideNav from './SideNav.vue'
 
 export default {
   name: 'AppLayout',

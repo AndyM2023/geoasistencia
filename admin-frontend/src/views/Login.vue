@@ -1,4 +1,5 @@
 <template>
+  <AppBar />
   <v-container fluid class="login-container pa-0">
     <v-row no-gutters class="h-100">
       <!-- Panel izquierdo con gradiente azul oscuro -->
@@ -141,9 +142,13 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import AppBar from '../components/AppBar.vue'
 
 export default {
   name: 'Login',
+  components: {
+    AppBar
+  },
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
@@ -222,12 +227,13 @@ export default {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 64px); /* Restar altura del AppBar */
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   outline: none !important;
+  margin-top: 64px !important; /* Agregar margen superior para el AppBar */
 }
 
 .left-panel {
@@ -366,5 +372,20 @@ export default {
   .login-card {
     margin: 1rem;
   }
+}
+
+/* Asegurar que el AppBar sea visible */
+:deep(.v-app-bar) {
+  z-index: 1000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* Ajustar el contenedor principal para el AppBar */
+.login-container {
+  position: relative;
+  z-index: 1;
 }
 </style>

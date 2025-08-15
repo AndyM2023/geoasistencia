@@ -1,4 +1,5 @@
 <template>
+  <AppBar />
 
   <v-container fluid class="recognition-container pa-0">
     <!-- Imagen del lado izquierdo -->
