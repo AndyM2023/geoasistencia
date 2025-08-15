@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const BACKEND_URL = 'http://localhost:8000/api';
+import api from './api';
 
 export const attendanceService = {
     // Variable para almacenar el token de autenticación
@@ -57,7 +55,7 @@ export const attendanceService = {
 
     async verifyFace(employeeId, photoBase64) {
         try {
-            const response = await axios.post(`${BACKEND_URL}/employees/${employeeId}/verify_face/`, {
+            const response = await api.post(`/employees/${employeeId}/verify_face/`, {
                 photo: photoBase64
             }, {
                 headers: this.getAuthHeaders()
@@ -72,7 +70,7 @@ export const attendanceService = {
 
     async markAttendance(employeeId, areaId, latitude, longitude, faceVerified = false) {
         try {
-            const response = await axios.post(`${BACKEND_URL}/attendance/mark_attendance/`, {
+            const response = await api.post(`/attendance/mark_attendance/`, {
                 employee_id: employeeId,
                 area_id: areaId,
                 latitude: latitude,
@@ -92,18 +90,28 @@ export const attendanceService = {
     async getEmployeeByCredentials(username, password) {
         try {
             // Hacer login para obtener el usuario
-            const loginResponse = await axios.post(`${BACKEND_URL}/auth/login/`, {
+            const loginResponse = await api.post(`/auth/login/`, {
                 username: username,
                 password: password
             });
             
             const user = loginResponse.data.user;
+            const token = loginResponse.data.token;
             
             console.log('🔍 Respuesta del login:', loginResponse.data);
             console.log('👤 Usuario obtenido:', user);
+            console.log('🔑 Token obtenido:', token ? 'SÍ' : 'NO');
             
-            // Obtener la información del empleado
-            const employeeResponse = await axios.get(`${BACKEND_URL}/employees/`);
+            // Establecer el token de autenticación para futuras peticiones
+            if (token) {
+                this.setAuthToken(token);
+                // También guardar en localStorage para que el interceptor de api.js lo use
+                localStorage.setItem('token', token);
+                localStorage.setItem('refreshToken', loginResponse.data.refresh);
+            }
+            
+            // Obtener la información del empleado usando el token
+            const employeeResponse = await api.get(`/employees/`);
             const responseData = employeeResponse.data;
             
             console.log('🔍 Respuesta del endpoint /employees/:', employeeResponse);
@@ -131,10 +139,7 @@ export const attendanceService = {
                 throw new Error('Usuario no es un empleado registrado');
             }
             
-            // Establecer el token de autenticación para futuras peticiones
-            if (loginResponse.data.token) {
-                this.setAuthToken(loginResponse.data.token);
-            }
+            console.log('✅ Empleado encontrado:', employee);
             
             return {
                 user: user,

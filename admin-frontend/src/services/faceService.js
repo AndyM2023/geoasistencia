@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const BACKEND_URL = 'http://localhost:8000/api';
+import api from './api';
 
 export const faceService = {
     async registerFace(employeeId, photosBase64) {
@@ -10,7 +8,7 @@ export const faceService = {
                 photosCount: photosBase64.length
             });
 
-            const response = await axios.post(`${BACKEND_URL}/employees/${employeeId}/register_face/`, {
+            const response = await api.post(`/employees/${employeeId}/register_face/`, {
                 photos_base64: photosBase64
             }, {
                 headers: {
@@ -44,7 +42,7 @@ export const faceService = {
 
     async getFaceStatus(employeeId) {
         try {
-            const response = await axios.get(`${BACKEND_URL}/employees/${employeeId}/face_status/`);
+            const response = await api.get(`/employees/${employeeId}/face_status/`);
             return response.data;
         } catch (error) {
             console.error('Error obteniendo estado facial:', error);
@@ -54,7 +52,7 @@ export const faceService = {
 
     async verifyFace(employeeId, photoBase64) {
         try {
-            const response = await axios.post(`${BACKEND_URL}/employees/${employeeId}/verify_face/`, {
+            const response = await api.post(`/employees/${employeeId}/verify_face/`, {
                 photo_base64: photoBase64
             });
             return response.data;
