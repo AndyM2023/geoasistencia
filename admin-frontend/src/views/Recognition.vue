@@ -142,9 +142,13 @@
 <script>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import AppBar from '../components/AppBar.vue'
 
 export default {
   name: 'Recognition',
+  components: {
+    AppBar
+  },
   setup() {
     const router = useRouter()
     

@@ -2,29 +2,23 @@ import api from './api'
 
 export const authService = {
   async login(credentials) {
-    const loginData = {
-      username: credentials.username,
-      password: credentials.password
-    }
-    
-    console.log('🔐 Enviando login:', { username: loginData.username, password: '***' })
-    
     try {
-      const response = await api.post('/auth/login/', loginData)
-      console.log('✅ Login exitoso:', response.data)
+      console.log('🔑 Auth Service - Credenciales recibidas:', credentials)
       
-      // Guardar token en localStorage
-      if (response.data.token) {
-        localStorage.setItem('auth_token', response.data.token)
-        if (response.data.refresh) {
-          localStorage.setItem('refresh_token', response.data.refresh)
-        }
-        localStorage.setItem('user_data', JSON.stringify(response.data.user))
+      const payload = {
+        username: credentials.usuario,
+        password: credentials.contraseña
       }
       
+      console.log('📤 Auth Service - Payload enviado al backend:', payload)
+      
+      const response = await api.post('/auth/login/', payload)
+      
+      console.log('🎉 Auth Service - Respuesta del backend:', response.data)
       return response.data
     } catch (error) {
-      console.error('❌ Error en login:', {
+      console.error('💥 Auth Service - Error en login:', error)
+      console.error('💥 Auth Service - Detalles del error:', {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message
@@ -32,31 +26,42 @@ export const authService = {
       throw error
     }
   },
-  
+
+  async refreshToken(refreshToken) {
+    try {
+      const response = await api.post('/auth/refresh/', {
+        refresh: refreshToken
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error refreshing token:', error)
+      throw error
+    }
+  },
+
   async logout() {
-    // Limpiar localStorage
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user_data')
-    
-    return { success: true }
+    try {
+      const token = localStorage.getItem('token')
+      if (token) {
+        await api.post('/auth/logout/', {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      }
+    } catch (error) {
+      console.error('Error en logout:', error)
+    }
   },
-  
-  async me() {
-    const response = await api.get('/auth/me/')
-    return response.data
-  },
-  
-  getCurrentUser() {
-    const user = localStorage.getItem('user_data')
-    return user ? JSON.parse(user) : null
-  },
-  
-  getToken() {
-    return localStorage.getItem('auth_token')
-  },
-  
+
   isAuthenticated() {
-    return !!this.getToken()
+    return !!localStorage.getItem('token')
+  },
+
+  getToken() {
+    return localStorage.getItem('token')
+  },
+
+  getCurrentUser() {
+    const userData = localStorage.getItem('user_data')
+    return userData ? JSON.parse(userData) : null
   }
 }

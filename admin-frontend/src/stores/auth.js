@@ -3,103 +3,83 @@ import { ref, computed } from 'vue'
 import { authService } from '../services/authService'
 
 export const useAuthStore = defineStore('auth', () => {
-  // Estado
-  const isAuthenticated = ref(false)
   const user = ref(null)
-  const token = ref(null)
+  const token = ref(localStorage.getItem('token') || null)
+  const isAuthenticated = computed(() => !!token.value)
 
-  // Getters
-  const isLoggedIn = computed(() => isAuthenticated.value)
-  const currentUser = computed(() => user.value)
+  const initAuth = () => {
+    const storedToken = localStorage.getItem('token')
+    if (storedToken) {
+      token.value = storedToken
+      // Aquí podrías validar el token con el backend
+    }
+  }
 
-  // Acciones
-  const login = async (username, password) => {
-    console.log('🔑 Auth Store - Iniciando login para:', username)
-    
+  const login = async (usuario, contraseña) => {
     try {
-      // USAR API REAL
-      const response = await authService.login({ username, password })
+      console.log('🔐 Auth Store - Iniciando login para:', usuario)
       
-      console.log('🎉 Auth Store - Login exitoso, datos recibidos:', response)
+      const result = await authService.login({ usuario, contraseña })
+      console.log('📥 Auth Store - Respuesta del servicio:', result)
       
-      // Guardar datos de autenticación
-      isAuthenticated.value = true
-      user.value = response.user
-      token.value = response.token
-      
-      return { success: true, user: response.user }
+      if (result.token) {
+        console.log('✅ Auth Store - Login exitoso, token recibido')
+        token.value = result.token
+        user.value = result.user || { usuario }
+        localStorage.setItem('token', result.token)
+        
+        if (result.refresh) {
+          localStorage.setItem('refreshToken', result.refresh)
+        }
+        
+        return { success: true }
+      } else {
+        console.log('❌ Auth Store - Login falló, no hay token')
+        return { success: false, error: 'Credenciales inválidas' }
+      }
     } catch (error) {
       console.error('💥 Auth Store - Error en login:', error)
       return { 
         success: false, 
-        error: error.response?.data?.detail || 
-               error.response?.data?.message || 
-               error.message || 
-               'Error desconocido en login'
+        error: error.response?.data?.detail || 'Error de conexión' 
       }
     }
   }
 
-  const logout = async () => {
-    try {
-      // USAR API REAL
-      await authService.logout()
-    } catch (error) {
-      console.error('Error en logout:', error)
-    } finally {
-      // Limpiar estado
-      isAuthenticated.value = false
-      user.value = null
-      token.value = null
-    }
+  const logout = () => {
+    token.value = null
+    user.value = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
   }
 
-  const checkAuth = () => {
-    // USAR SERVICIO REAL
-    if (authService.isAuthenticated()) {
-      const storedUser = authService.getCurrentUser()
-      const storedToken = authService.getToken()
-      
-      if (storedUser && storedToken) {
-        isAuthenticated.value = true
-        user.value = storedUser
-        token.value = storedToken
+  const refreshToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (!refreshToken) {
+        throw new Error('No refresh token available')
+      }
+
+      const response = await authService.refreshToken(refreshToken)
+      if (response.token) {
+        token.value = response.token
+        localStorage.setItem('token', response.token)
         return true
       }
+    } catch (error) {
+      console.error('Error refreshing token:', error)
+      logout()
+      return false
     }
-    
-    return false
-  }
-
-  const updateUser = (userData) => {
-    user.value = { ...user.value, ...userData }
-    
-    // Actualizar localStorage
-    if (isAuthenticated.value) {
-      localStorage.setItem('user_data', JSON.stringify(user.value))
-    }
-  }
-
-  // Inicializar autenticación al cargar
-  const initAuth = () => {
-    checkAuth()
   }
 
   return {
-    // Estado
-    isAuthenticated,
     user,
     token,
-    
-    // Getters
-    isLoggedIn,
-    currentUser,
-    
-    // Acciones
+    isAuthenticated,
+    initAuth,
     login,
     logout,
-    checkAuth,
-    updateUser,
-    initAuth
+    refreshToken
   }
 })

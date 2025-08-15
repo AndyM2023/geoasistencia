@@ -1,7 +1,7 @@
 <template>
   <v-app>
-    <AppBar />
-    <SideNav :menu-items="menuItems" />
+    <AppBar v-model:drawer="drawer" />
+    <SideNav v-model="drawer" :menu-items="menuItems" />
     <v-main class="bg-dark-background">
       <v-container fluid class="pa-6">
         <router-view />
@@ -22,6 +22,8 @@ export default {
     SideNav
   },
   setup() {
+    const drawer = ref(true)
+    
     const menuItems = ref([
       {
         title: 'Dashboard',
@@ -46,6 +48,7 @@ export default {
     ])
 
     return {
+      drawer,
       menuItems
     }
   }

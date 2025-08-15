@@ -78,13 +78,22 @@ router.beforeEach((to, from, next) => {
   
   // Ruta requiere autenticación
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    console.log('🚫 Acceso denegado: Ruta requiere autenticación')
     next('/login')
     return
   }
   
   // Ruta requiere ser invitado (no autenticado)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    next('/')
+    console.log('🚫 Usuario autenticado intentando acceder a ruta de invitado')
+    next('/app/dashboard')
+    return
+  }
+  
+  // Prevenir acceso a rutas públicas cuando está autenticado
+  if (to.meta.requiresAuth === false && authStore.isAuthenticated && to.path === '/') {
+    console.log('🚫 Usuario autenticado redirigido al dashboard')
+    next('/app/dashboard')
     return
   }
   
