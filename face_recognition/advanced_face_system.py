@@ -199,7 +199,7 @@ class FacialRecognition:
             print(f"Error en el registro facial: {e}")
             return {'success': False, 'error': str(e)}
     
-    def identify_person(self, image, similarity_threshold=0.6):
+    def identify_person(self, image, similarity_threshold=0.8):
         """
         Identifica una persona comparando su rostro con la base de datos
         
@@ -548,7 +548,7 @@ def main():
             image = capture_from_camera()
             
             if image is not None:
-                result = fr.identify_person(image, similarity_threshold=0.6)
+                result = fr.identify_person(image, similarity_threshold=0.8)
                 if result['success']:
                     if result['person_identified']:
                         person = result['person_identified']

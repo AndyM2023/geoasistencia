@@ -126,6 +126,9 @@ export default {
 }
 </script>
 
+
+
+
 <style scoped>
 .chart-container {
   width: 100%;
@@ -151,4 +154,5 @@ export default {
   max-height: 280px !important;
 }
 </style>
+
 

@@ -264,16 +264,29 @@
                 <v-card class="bg-dark-surface border border-blue-500/20">
                   <v-card-title class="text-sm text-blue-400">📷 Registro Facial</v-card-title>
                   <v-card-text>
-                    <!-- Componente de captura de rostros - solo cuando el diálogo esté listo -->
-                    <FaceCameraCapture
-                      v-if="dialogReady"
-                      :disabled="!employeeForm.first_name || !employeeForm.last_name"
-                      :target-count="15"
-                      :auto-capture="true"
-                      @photo-captured="onPhotoCaptured"
-                      @capture-complete="onCaptureComplete"
-                      @capture-stopped="onCaptureStopped"
-                    />
+                                         <!-- Componente de captura de rostros - solo cuando el diálogo esté listo -->
+                     <div v-if="dialogReady" class="text-center">
+                       <v-btn
+                         @click="showFaceRegistration = true"
+                         color="blue-400"
+                         size="large"
+                         prepend-icon="mdi-camera"
+                         :disabled="!employeeForm.first_name || !employeeForm.last_name"
+                         block
+                       >
+                         🎯 Iniciar Registro Facial
+                       </v-btn>
+                       
+                       <p class="text-grey-400 text-sm mt-2">
+                         💡 Completa el nombre y apellido para habilitar el registro facial
+                       </p>
+                       <p class="text-blue-400 text-xs mt-1">
+                         📸 Se capturarán 30 fotos para mejor precisión
+                       </p>
+                       <p class="text-green-400 text-xs mt-1">
+                         🎯 Umbral de confianza: 80% (más permisivo)
+                       </p>
+                     </div>
                     
                     <!-- Mensaje mientras carga el componente -->
                     <div v-else class="text-center py-4">
@@ -281,8 +294,20 @@
                       <p class="text-grey-300">Preparando componente de cámara...</p>
                     </div>
                     
+                    <!-- Estado verificando (mientras se consulta la base de datos) -->
+                    <div v-if="faceRegistration.status === 'checking'" class="mt-4 text-center">
+                      <v-divider class="mb-4"></v-divider>
+                      <v-progress-circular 
+                        indeterminate 
+                        color="blue-400"
+                        size="32"
+                        class="mb-2"
+                      ></v-progress-circular>
+                      <p class="text-grey-300 text-sm">Verificando estado del registro facial...</p>
+                    </div>
+                    
                     <!-- Estado después de captura -->
-                    <div v-if="faceRegistration.status === 'captured'" class="mt-4 text-center">
+                    <div v-else-if="faceRegistration.status === 'captured'" class="mt-4 text-center">
                       <v-divider class="mb-4"></v-divider>
                       <v-icon color="green-400" size="48" class="mb-2">mdi-camera-check</v-icon>
                       <h4 class="text-white mb-2">{{ faceRegistration.statusText }}</h4>
@@ -319,14 +344,26 @@
                       <h4 class="text-green-400 mb-2">Rostro Registrado Correctamente</h4>
                       <p class="text-grey-300 mb-3">{{ faceRegistration.photosCount }} fotos procesadas y guardadas</p>
                       
-                      <v-btn 
-                        @click="resetFaceRegistration"
-                        color="grey-600"
-                        variant="outlined"
-                        size="small"
-                      >
-                        Capturar Nuevamente
-                      </v-btn>
+                      <div class="d-flex gap-2 justify-center">
+                        <v-btn 
+                          @click="showFaceRegistration = true"
+                          color="blue-400"
+                          variant="outlined"
+                          size="small"
+                          prepend-icon="mdi-camera-plus"
+                        >
+                          Actualizar Rostro
+                        </v-btn>
+                        
+                        <v-btn 
+                          @click="resetFaceRegistration"
+                          color="grey-600"
+                          variant="outlined"
+                          size="small"
+                        >
+                          Cancelar
+                        </v-btn>
+                      </div>
                     </div>
                     
                     <!-- Ayuda si faltan datos -->
@@ -368,23 +405,64 @@
           <v-btn color="grey-400" variant="text" @click="showDeleteDialog = false">Cancelar</v-btn>
           <v-btn color="orange-400" @click="confirmDelete" :loading="deleting">Desactivar</v-btn>
         </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </div>
-</template>
+             </v-card>
+     </v-dialog>
+     
+     <!-- Mensajes del sistema -->
+     <v-snackbar
+       :model-value="!!mensaje"
+       :color="mensaje?.tipo === 'success' ? 'success' : mensaje?.tipo === 'error' ? 'error' : 'info'"
+       :timeout="5000"
+       location="top right"
+       class="custom-snackbar"
+     >
+       <div class="d-flex align-center">
+         <v-icon 
+           :icon="mensaje?.tipo === 'success' ? 'mdi-check-circle' : mensaje?.tipo === 'error' ? 'mdi-alert-circle' : 'mdi-information'"
+           class="mr-2"
+         ></v-icon>
+         <span>{{ mensaje?.texto }}</span>
+       </div>
+       
+       <template v-slot:actions>
+         <v-btn
+           color="white"
+           variant="text"
+           @click="mensaje = null"
+         >
+           Cerrar
+         </v-btn>
+       </template>
+     </v-snackbar>
+     
+     <!-- Componente de Registro Facial -->
+     <FaceRegistration
+       v-if="showFaceRegistration"
+       :employee-id="editingEmployee?.id || 'new'"
+       :employee-name="`${employeeForm.first_name} ${employeeForm.last_name}`"
+       :target-count="30"
+       @registro-completo="onRegistroCompleto"
+       @registro-error="onRegistroError"
+       @close="showFaceRegistration = false"
+     />
+   </div>
+ </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
-import { employeeService } from '../services/employeeService'
-import areaService from '../services/areaService'
-import { faceService } from '../services/faceService'
+
+import { ref, onMounted } from 'vue'
+ import { employeeService } from '../services/employeeService'
+ import { areaService } from '../services/areaService'
+ import { faceService } from '../services/faceService'
+ import FaceRegistration from '../components/FaceRegistration.vue'
 import FaceCameraCapture from '../components/FaceCameraCapture.vue'
+
 
 export default {
   name: 'Employees',
-  components: {
-    FaceCameraCapture
-  },
+     components: {
+     FaceRegistration
+   },
   setup() {
     const search = ref('')
     const loading = ref(false)
@@ -392,17 +470,21 @@ export default {
     const viewMode = ref('list') // Modo de vista: 'list' o 'cards'
     const saving = ref(false)
     const deleting = ref(false)
-    const showDialog = ref(false)
-    const showDeleteDialog = ref(false)
-    const valid = ref(false)
-    const form = ref(null)
-    const dialogReady = ref(false)
+         const showDialog = ref(false)
+     const showDeleteDialog = ref(false)
+     const showFaceRegistration = ref(false)
+     const valid = ref(false)
+     const form = ref(null)
+     const dialogReady = ref(false)
     
-    const editingEmployee = ref(null)
-    const employeeToDelete = ref(null)
-    
-    const employees = ref([])
-    const areas = ref([])
+         const editingEmployee = ref(null)
+     const employeeToDelete = ref(null)
+     
+     const employees = ref([])
+     const areas = ref([])
+     
+     // Estado para mensajes
+     const mensaje = ref(null)
     
     // Estados para registro facial
     const faceRegistration = ref({
@@ -496,8 +578,13 @@ export default {
       }
       console.log('Editando empleado:', employee)
       console.log('Formulario mapeado:', employeeForm.value)
+      
+      // Abrir formulario inmediatamente
       showDialog.value = true
       dialogReady.value = false // Resetear estado del diálogo
+      
+      // Verificar estado facial en segundo plano (sin bloquear)
+      checkFaceRegistrationStatus(employee.id)
     }
     
     const deleteEmployee = (employee) => {
@@ -565,17 +652,45 @@ export default {
       faceRegistration.value.capturedPhotos = photos
     }
     
-    const onCaptureStopped = (photos) => {
-      console.log(`⏹️ Captura detenida: ${photos.length} fotos`)
-      if (photos.length > 0) {
-        faceRegistration.value.status = 'captured'
-        faceRegistration.value.statusText = `${photos.length} fotos capturadas - Listo para procesar`
-        faceRegistration.value.photosCount = photos.length
-        faceRegistration.value.capturedPhotos = photos
-      } else {
-        resetFaceRegistration()
-      }
-    }
+         const onCaptureStopped = (photos) => {
+       console.log(`⏹️ Captura detenida: ${photos.length} fotos`)
+       if (photos.length > 0) {
+         faceRegistration.value.status = 'captured'
+         faceRegistration.value.statusText = `${photos.length} fotos capturadas - Listo para procesar`
+         faceRegistration.value.photosCount = photos.length
+         faceRegistration.value.capturedPhotos = photos
+       } else {
+         resetFaceRegistration()
+       }
+     }
+     
+     // Nuevas funciones para el registro facial
+     const onRegistroCompleto = (data) => {
+       console.log('✅ Registro facial completado:', data)
+       faceRegistration.value.status = 'trained'
+       faceRegistration.value.statusText = 'Rostros procesados y guardados correctamente'
+       faceRegistration.value.photosCount = data.photosCount
+       showFaceRegistration.value = false
+       
+       // Mostrar mensaje de éxito
+       mensaje.value = {
+         tipo: 'success',
+         texto: `Registro facial completado: ${data.photosCount} fotos procesadas`
+       }
+     }
+     
+     const onRegistroError = (error) => {
+       console.error('❌ Error en registro facial:', error)
+       faceRegistration.value.status = 'error'
+       faceRegistration.value.statusText = `Error: ${error.message || 'Error en registro'}`
+       showFaceRegistration.value = false
+       
+       // Mostrar mensaje de error
+       mensaje.value = {
+         tipo: 'error',
+         texto: `Error en registro facial: ${error.message || 'Error desconocido'}`
+       }
+     }
     
     const trainFaceModel = async () => {
       if (!faceRegistration.value.capturedPhotos || faceRegistration.value.capturedPhotos.length === 0) {
@@ -583,9 +698,9 @@ export default {
         return
       }
       
-      // Si estamos editando, necesitamos el ID del empleado
+      // Verificar que el empleado esté guardado
       if (!editingEmployee.value || !editingEmployee.value.id) {
-        alert('Guarda el empleado primero antes de entrenar el modelo facial')
+        alert('Primero debes guardar el empleado antes de procesar el rostro facial')
         return
       }
       
@@ -594,12 +709,16 @@ export default {
       
       try {
         console.log('🎯 Entrenando modelo facial...')
+        console.log('📸 Fotos a procesar:', faceRegistration.value.capturedPhotos.length)
+        console.log('👤 Empleado ID:', editingEmployee.value.id)
         
         // Enviar fotos al backend para registro facial
         const result = await faceService.registerFace(
           editingEmployee.value.id,
           faceRegistration.value.capturedPhotos
         )
+        
+        console.log('📡 Respuesta del backend:', result)
         
         if (result.success) {
           faceRegistration.value.status = 'trained'
@@ -609,18 +728,82 @@ export default {
           
           console.log('✅ Rostros procesados:', result.message)
         } else {
-          throw new Error(result.message)
+          throw new Error(result.message || 'Error desconocido en el backend')
         }
         
       } catch (error) {
-        console.error('Error entrenando modelo:', error)
+        console.error('❌ Error entrenando modelo:', error)
         faceRegistration.value.status = 'error'
         faceRegistration.value.statusText = `Error: ${error.message || 'Error en entrenamiento'}`
+        
+        // Mostrar error más detallado
+        if (error.response) {
+          console.error('📡 Respuesta del servidor:', error.response.data)
+          console.error('📊 Estado HTTP:', error.response.status)
+        }
       } finally {
         faceRegistration.value.isTraining = false
       }
     }
     
+    const checkFaceRegistrationStatus = async (employeeId) => {
+      try {
+        console.log('🔍 Verificando estado de registro facial para empleado:', employeeId)
+        
+        // Mostrar estado de verificación
+        faceRegistration.value = {
+          isCapturing: false,
+          isTraining: false,
+          status: 'checking',
+          statusText: 'Verificando...',
+          photosCount: 0,
+          confidence: 90,
+          capturedPhotos: null
+        }
+        
+        // Llamar al servicio para verificar el estado
+        const response = await faceService.getFaceStatus(employeeId)
+        
+        if (response.has_profile && response.is_trained) {
+          // El empleado ya tiene rostro registrado
+          faceRegistration.value = {
+            isCapturing: false,
+            isTraining: false,
+            status: 'trained',
+            statusText: 'Rostro ya registrado',
+            photosCount: response.photos_count || 0,
+            confidence: 90,
+            capturedPhotos: null
+          }
+          console.log('✅ Empleado ya tiene rostro registrado:', response)
+        } else {
+          // El empleado no tiene rostro registrado
+          faceRegistration.value = {
+            isCapturing: false,
+            isTraining: false,
+            status: 'pending',
+            statusText: 'Sin registrar',
+            photosCount: 0,
+            confidence: 90,
+            capturedPhotos: null
+          }
+          console.log('❌ Empleado no tiene rostro registrado')
+        }
+      } catch (error) {
+        console.error('Error verificando estado facial:', error)
+        // En caso de error, asumir que no tiene rostro registrado
+        faceRegistration.value = {
+          isCapturing: false,
+          isTraining: false,
+          status: 'pending',
+          statusText: 'Sin registrar',
+          photosCount: 0,
+          confidence: 90,
+          capturedPhotos: null
+        }
+      }
+    }
+
     const resetFaceRegistration = () => {
       faceRegistration.value = {
         isCapturing: false,
@@ -649,15 +832,30 @@ export default {
         
         console.log('Enviando datos del empleado:', employeeData)
         
+        let savedEmployee = null
+        
         if (editingEmployee.value) {
           // ACTUALIZAR EN API REAL
           console.log('Actualizando empleado ID:', editingEmployee.value.id)
           console.log('Datos para actualizar:', employeeData)
-          await employeeService.update(editingEmployee.value.id, employeeData)
+          savedEmployee = await employeeService.update(editingEmployee.value.id, employeeData)
         } else {
           // CREAR EN API REAL
           console.log('Creando nuevo empleado')
-          await employeeService.create(employeeData)
+          savedEmployee = await employeeService.create(employeeData)
+        }
+        
+        // Si hay fotos faciales capturadas, procesarlas automáticamente
+        if (faceRegistration.value.capturedPhotos && faceRegistration.value.capturedPhotos.length > 0) {
+          console.log('🎯 Procesando fotos faciales automáticamente...')
+          
+          // Actualizar el empleado con el ID real
+          if (savedEmployee && savedEmployee.id) {
+            editingEmployee.value = savedEmployee
+          }
+          
+          // Procesar rostros faciales
+          await trainFaceModel()
         }
         
         await loadEmployees() // Recargar lista
@@ -684,48 +882,67 @@ export default {
       loadAreas()
     })
     
-    return {
-      search,
-      loading,
-      saving,
-      deleting,
-      showDialog,
-      showDeleteDialog,
-      valid,
-      form,
-      dialogReady,
-      editingEmployee,
-      employeeToDelete,
-      employees,
-      areas,
-      employeeForm,
-      positions,
-      
-      viewMode,
-      headers,
-      filteredEmployees,
-      loadEmployees,
-      loadAreas,
-      onDialogOpened,
-      editEmployee,
-      deleteEmployee,
-      confirmDelete,
-      activateEmployee,
-      saveEmployee,
-      // Funciones de registro facial
-      faceRegistration,
-      onPhotoCaptured,
-      onCaptureComplete,
-      onCaptureStopped,
-      trainFaceModel,
-      resetFaceRegistration
-    }
-  }
+return {
+  search,
+  loading,
+  saving,
+  deleting,
+  showDialog,
+  showDeleteDialog,
+  showFaceRegistration,
+  valid,
+  form,
+  dialogReady,
+  editingEmployee,
+  employeeToDelete,
+  employees,
+  areas,
+  employeeForm,
+  positions,
+  statusFilter,
+  statusOptions,
+  headers,
+  mensaje,
+  viewMode,
+  filteredEmployees,
+  loadEmployees,
+  loadAreas,
+  onDialogOpened,
+  editEmployee,
+  deleteEmployee,
+  confirmDelete,
+  activateEmployee,
+  saveEmployee,
+  // Funciones de registro facial
+  faceRegistration,
+  onPhotoCaptured,
+  onCaptureComplete,
+  onCaptureStopped,
+  onRegistroCompleto,
+  onRegistroError,
+  trainFaceModel,
+  resetFaceRegistration
 }
+  }
+ }
 </script>
 
 <style scoped>
+
+.custom-snackbar {
+  z-index: 9999;
+}
+
+.custom-snackbar .v-snackbar__content {
+  font-weight: 500;
+}
+
+.custom-snackbar .v-snackbar__actions {
+  margin-left: 16px;
+}
+=======
 /* ===== ESTILOS MIGRADOS A LA CARPETA DE ESTILOS ===== */
 /* Todos los estilos específicos de empleados se encuentran en: */
 /* admin-frontend/src/styles/employees.css */
+
 </style>

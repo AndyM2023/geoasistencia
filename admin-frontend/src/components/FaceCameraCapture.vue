@@ -68,6 +68,16 @@
         </v-btn>
         
         <v-btn
+          @click="continueCapture"
+          color="orange-400"
+          variant="outlined"
+          prepend-icon="mdi-play"
+          :disabled="capturedCount >= targetCount"
+        >
+          Continuar
+        </v-btn>
+        
+        <v-btn
           @click="capturePhoto"
           color="blue-400"
           :disabled="isCapturing"
@@ -75,21 +85,38 @@
         >
           📸 Capturar Foto Manual
         </v-btn>
+        
+        <v-btn
+          @click="forceCapture"
+          color="green-400"
+          :disabled="isCapturing || capturedCount >= props.targetCount"
+          prepend-icon="mdi-camera-plus"
+          variant="outlined"
+        >
+          🚀 Forzar Captura
+        </v-btn>
       </div>
     </div>
     
-    <!-- Estado de captura automática -->
-    <div v-if="isActive && autoCapture" class="mt-3 text-center">
-      <p class="text-grey-300">
-        {{ status }}
-      </p>
-      <v-progress-circular 
-        v-if="isCapturing"
-        indeterminate
-        color="blue-400"
-        size="24"
-      ></v-progress-circular>
-    </div>
+          <!-- Estado de captura automática -->
+      <div v-if="isActive && autoCapture" class="mt-3 text-center">
+        <p class="text-grey-300">
+          {{ status }}
+        </p>
+        <v-progress-circular 
+          v-if="isCapturing"
+          indeterminate
+          color="blue-400"
+          size="24"
+        ></v-progress-circular>
+        
+        <!-- Debug info -->
+        <div class="mt-2 text-xs text-grey-400">
+          <p>🔍 Rostro detectado: {{ faceDetected ? '✅ Sí' : '❌ No' }}</p>
+          <p>📸 Capturadas: {{ capturedCount }}/{{ targetCount }}</p>
+          <p>🎬 Estado: {{ isCapturing ? 'Capturando...' : 'Listo' }}</p>
+        </div>
+      </div>
   </div>
 </template>
 
@@ -390,13 +417,13 @@ export default {
       })
       
       // Condiciones MUY permisivas para detectar rostros
-      const hasGoodLighting = avgBrightness > 30 && avgBrightness < 250
-      const hasVariety = brightRatio > 0.05 && midToneRatio > 0.10  // Más permisivo
-      const notTooDark = darkRatio < 0.8
-      const hasEnoughBrightness = brightRatio > 0.3  // Al menos 30% pixels brillantes
+      const hasGoodLighting = avgBrightness > 20 && avgBrightness < 250  // Más permisivo
+      const hasVariety = brightRatio > 0.02 && midToneRatio > 0.05  // Mucho más permisivo
+      const notTooDark = darkRatio < 0.9  // Más permisivo
+      const hasEnoughBrightness = brightRatio > 0.1  // Solo 10% pixels brillantes
       
-      // TEMPORALMENTE: Detección simplificada para testing
-      const faceDetected = hasGoodLighting && brightRatio > 0.3  // Solo requiere buena luz y pixeles brillantes
+      // Detección MUY permisiva para testing
+      const faceDetected = hasGoodLighting && (brightRatio > 0.1 || midToneRatio > 0.2)  // Muy permisivo
       
       // Debug detallado de condiciones
       console.log('🔍 Condiciones de detección:', {
@@ -420,8 +447,25 @@ export default {
       status.value = 'Captura automática iniciada...'
       
       captureInterval = setInterval(() => {
-        if (faceDetected.value && !isCapturing.value && capturedCount.value < props.targetCount) {
+        // Capturar si hay rostro detectado O si han pasado más de 3 segundos sin captura
+        const shouldCapture = (
+          (faceDetected.value && !isCapturing.value) || 
+          (capturedCount.value === 0 && !isCapturing.value) // Primera foto siempre
+        )
+        
+        if (shouldCapture && capturedCount.value < props.targetCount) {
+          console.log(`🎯 Intentando captura ${capturedCount.value + 1}/${props.targetCount}`)
           capturePhoto()
+        }
+        
+        // Si no se ha capturado nada en 5 segundos, forzar captura
+        if (capturedCount.value === 0 && !isCapturing.value) {
+          setTimeout(() => {
+            if (capturedCount.value === 0 && !isCapturing.value) {
+              console.log('⏰ Forzando primera captura...')
+              capturePhoto()
+            }
+          }, 5000)
         }
       }, 1000) // Intentar capturar cada segundo
     }
@@ -484,6 +528,20 @@ export default {
       }
     }
     
+    const forceCapture = async () => {
+      console.log('🚀 Forzando captura...')
+      if (capturedCount.value < props.targetCount) {
+        await capturePhoto()
+      }
+    }
+    
+    const continueCapture = () => {
+      console.log('▶️ Continuando captura...')
+      if (capturedCount.value < props.targetCount) {
+        startAutoCapture()
+      }
+    }
+    
     onUnmounted(() => {
       stopCapture()
     })
@@ -498,7 +556,9 @@ export default {
       status,
       startCapture,
       stopCapture,
-      capturePhoto
+      capturePhoto,
+      forceCapture,
+      continueCapture
     }
   }
 }
