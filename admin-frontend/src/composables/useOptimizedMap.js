@@ -31,6 +31,14 @@ export function useOptimizedMap(elementId = 'map') {
 
       console.log('🚀 useOptimizedMap: Inicializando mapa...')
 
+      // Si se fuerza refresh, destruir el mapa existente primero
+      if (options.forceRefresh) {
+        console.log('🔄 useOptimizedMap: Forzando recreación del mapa...')
+        mapService.destroyMap(elementId)
+        mapInstance.value = null
+        isMapReady.value = false
+      }
+
       // Crear mapa usando el servicio singleton
       const map = await mapService.createMap(elementId, options)
       mapInstance.value = map
@@ -219,16 +227,25 @@ export function useOptimizedMap(elementId = 'map') {
   /**
    * Invalidar y recrear mapa
    */
-  const refreshMap = async () => {
+  const refreshMap = async (options = {}) => {
+    console.log('🔄 useOptimizedMap: Refrescando mapa...')
+    
     if (mapInstance.value) {
-      mapService.invalidateMap(elementId)
+      mapService.destroyMap(elementId)
       mapInstance.value = null
       isMapReady.value = false
     }
     
+    // Limpiar marcadores y círculos
+    currentMarker.value = null
+    currentCircle.value = null
+    selectedLocation.value = null
+    
     // Esperar un tick antes de recrear
     await nextTick()
-    await initMap()
+    await initMap({ ...options, forceRefresh: true })
+    
+    console.log('✅ useOptimizedMap: Mapa refrescado')
   }
 
   /**

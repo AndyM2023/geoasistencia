@@ -139,9 +139,19 @@ class MapService {
   destroyMap(elementId) {
     if (this.mapInstances.has(elementId)) {
       const map = this.mapInstances.get(elementId)
-      map.remove()
+      console.log('🗑️ MapService: Destruyendo mapa para', elementId)
+      
+      try {
+        map.remove()
+        console.log('✅ MapService: Mapa removido correctamente')
+      } catch (error) {
+        console.warn('⚠️ MapService: Error removiendo mapa:', error)
+      }
+      
       this.mapInstances.delete(elementId)
-      console.log('🗑️ MapService: Mapa destruido para', elementId)
+      console.log('🗑️ MapService: Mapa eliminado del cache')
+    } else {
+      console.log('ℹ️ MapService: No hay mapa para destruir en', elementId)
     }
   }
 

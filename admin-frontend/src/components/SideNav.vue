@@ -4,6 +4,8 @@
     app
     class="bg-dark-surface"
     width="280"
+    :temporary="$vuetify.display.mdAndDown"
+    :permanent="$vuetify.display.lgAndUp"
   >
   
 
@@ -17,6 +19,7 @@
         :class="{ 'bg-blue-500/20': $route.path === item.to }"
         color="blue-400"
         variant="text"
+        @click="handleNavClick"
       >
         <template v-slot:prepend>
           <v-icon
@@ -59,6 +62,7 @@
 
 <script>
 import { ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 
 export default {
   name: 'SideNav',
@@ -74,6 +78,7 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
+    const { lgAndUp } = useDisplay()
     const internalDrawer = ref(props.modelValue)
 
     watch(
@@ -87,9 +92,27 @@ export default {
       emit('update:modelValue', val)
     })
 
+    // Función para manejar clicks en navegación en móviles
+    const handleNavClick = () => {
+      // Cerrar el drawer en dispositivos móviles y tablets
+      if (!lgAndUp.value) {
+        setTimeout(() => {
+          internalDrawer.value = false
+        }, 150) // Pequeño delay para permitir la navegación
+      }
+    }
+
     return {
-      internalDrawer
+      internalDrawer,
+      handleNavClick
     }
   }
 }
 </script>
+
+<style scoped>
+/* Overlay mejorado para mejor UX */
+:deep(.v-overlay--active) {
+  backdrop-filter: blur(2px);
+}
+</style>

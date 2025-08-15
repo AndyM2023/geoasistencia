@@ -35,7 +35,6 @@ class AreaAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Información Básica', {'fields': ('name', 'description', 'status')}),
         ('Ubicación', {'fields': ('latitude', 'longitude', 'radius')}),
-        ('Información Adicional', {'fields': ('notes',)}),
     )
 
 @admin.register(Employee)

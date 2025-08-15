@@ -135,11 +135,7 @@ body {
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .v-navigation-drawer {
-    width: 100% !important;
-  }
-}
+/* Removed problematic CSS that caused drawer width issues */
 
 /* ===== ESTILOS ESPECÍFICOS PARA EL LOGIN ===== */
 /* Eliminar padding superior y scroll en la página de login */

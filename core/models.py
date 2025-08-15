@@ -50,7 +50,7 @@ class Area(models.Model):
         default='active',
         verbose_name='Estado'
     )
-    notes = models.TextField(blank=True, verbose_name='Notas Adicionales')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
