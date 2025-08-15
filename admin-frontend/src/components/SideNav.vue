@@ -27,8 +27,6 @@
         v-for="item in menuItems"
         :key="item.title"
         :to="item.to"
-        :prepend-icon="item.icon"
-        :title="item.title"
         class="mb-1 rounded-lg"
         :class="{ 'bg-blue-500/20': $route.path === item.to }"
         color="blue-400"

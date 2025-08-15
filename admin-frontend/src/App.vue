@@ -1,17 +1,33 @@
 <template>
-  <div>
-    <!-- Mostrar Layout completo con menú lateral -->
-    <Layout />
-  </div>
+  <v-app>
+    <router-view />
+  </v-app>
 </template>
 
 <script>
-import Layout from './components/Layout.vue'
-
 export default {
-  name: 'App',
-  components: {
-    Layout
-  }
+  name: 'App'
 }
 </script>
+
+<style>
+/* CSS global para eliminar espacios no deseados */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
+}
+
+.v-application {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.v-application__wrap {
+  min-height: 100vh;
+}
+</style>
