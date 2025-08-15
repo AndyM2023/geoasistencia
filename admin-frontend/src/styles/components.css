@@ -230,3 +230,19 @@
   border-color: rgba(59, 130, 246, 0.3);
   color: #3b82f6;
 }
+
+/* ===== LEAFLET MAP TOOLTIPS ===== */
+.radius-tooltip {
+  background-color: rgba(59, 130, 246, 0.9) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.radius-tooltip::before {
+  border-top-color: rgba(59, 130, 246, 0.9) !important;
+}

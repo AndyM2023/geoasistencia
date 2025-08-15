@@ -17,6 +17,10 @@ import './styles/index.css'
 document.body.style.backgroundColor = '#0a0a0f';
 document.body.style.color = '#ffffff';
 
+// Precargar el servicio de mapas para máxima velocidad
+import mapService from './services/mapService'
+// El singleton se inicializa automáticamente
+
 const vuetify = createVuetify({
   components,
   directives,
