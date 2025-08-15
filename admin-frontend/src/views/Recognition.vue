@@ -1,66 +1,65 @@
 <template>
   <AppBar />
-
   <v-container fluid class="recognition-container pa-0">
-    <!-- Imagen del lado izquierdo -->
-    <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image">
+    <!-- Imagen del lado izquierdo - Responsive -->
+    <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image d-none d-md-block">
     
-    <!-- Imagen del lado derecho -->
-    <img src="/src/assets/right-image.png" alt="Imagen derecha" class="side-image right-image">
+    <!-- Imagen del lado derecho - Responsive -->
+    <img src="/src/assets/right-image.png" alt="Imagen derecha" class="side-image right-image d-none d-md-block">
     
     <v-row no-gutters class="h-100">
       <!-- Contenido centrado de reconocimiento -->
       <v-col cols="12" class="d-flex align-center justify-center">
         <v-card class="recognition-card" elevation="0">
-          <v-card-text class="pa-8">
-            <h2 class="text-h6 font-weight-bold text-white mb-6 text-center">Reconocimiento Facial</h2>
+          <v-card-text class="pa-8 pa-4 pa-md-8">
+            <h2 class="text-h6 text-h5-md font-weight-bold text-white mb-6 text-center">Reconocimiento Facial</h2>
             
             <v-row>
               <!-- Columna izquierda: Cámara -->
               <v-col cols="12" md="6" class="d-flex justify-center">
                 <!-- Título invisible para alineación -->
                 <div class="invisible-title mb-6"></div>
-                                                   <div class="camera-area" :class="{ 'camera-active': isCameraActive }">
-                    <!-- Elemento de video siempre presente pero oculto -->
-                    <video ref="videoElement" autoplay muted playsinline class="camera-feed" :style="{ display: isCameraActive ? 'block' : 'none' }"></video>
+                
+                <div class="camera-area" :class="{ 'camera-active': isCameraActive }">
+                  <!-- Elemento de video siempre presente pero oculto -->
+                  <video ref="videoElement" autoplay muted playsinline class="camera-feed" :style="{ display: isCameraActive ? 'block' : 'none' }"></video>
+                  
+                  <!-- Estado inicial: Placeholder -->
+                  <div v-if="!isCameraActive" class="camera-placeholder d-flex align-center justify-center">
+                    <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
+                    <p class="text-body-2 text-grey-lighten-1 mt-2">Activa la cámara para capturar tu rostro</p>
                     
-                    <!-- Estado inicial: Placeholder -->
-                    <div v-if="!isCameraActive" class="camera-placeholder d-flex align-center justify-center">
-                      <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
-                      <p class="text-body-2 text-grey-lighten-1 mt-2">Activa la cámara para capturar tu rostro</p>
-                      
-                      <!-- Botón para activar cámara -->
-                      <v-btn
-                        @click="startCamera"
-                        color="primary"
-                        size="large"
-                        class="mt-4 activate-camera-btn"
-                        :loading="loading"
-                        :disabled="loading"
-                      >
-                        <v-icon left class="mr-2">mdi-camera</v-icon>
-                        📷 Activar Cámara
-                      </v-btn>
-                    </div>
-                    
-                                         <!-- Estado activo: Overlay de la cámara -->
-                      <div v-else class="camera-overlay">
-                        <v-btn
-                          icon
-                          color="red"
-                          size="small"
-                          class="close-camera-btn"
-                          @click.stop="stopCamera"
-                        >
-                          <v-icon>mdi-close</v-icon>
-                        </v-btn>
-                      </div>
+                    <!-- Botón para activar cámara -->
+                    <v-btn
+                      @click="startCamera"
+                      color="primary"
+                      size="large"
+                      class="mt-4 activate-camera-btn"
+                      :loading="loading"
+                      :disabled="loading"
+                    >
+                      <v-icon left class="mr-2">mdi-camera</v-icon>
+                      📷 Activar Cámara
+                    </v-btn>
                   </div>
+                  
+                  <!-- Estado activo: Overlay de la cámara -->
+                  <div v-else class="camera-overlay">
+                    <v-btn
+                      icon
+                      color="red"
+                      size="small"
+                      class="close-camera-btn"
+                      @click.stop="stopCamera"
+                    >
+                      <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
               </v-col>
 
               <!-- Columna derecha: Formulario -->
               <v-col cols="12" md="6">
-
                 <!-- Formulario de reconocimiento -->
                 <v-form @submit.prevent="handleRecognition" class="recognition-form">
                   <v-text-field
@@ -74,7 +73,8 @@
                     class="mb-4"
                     :rules="[rules.required]"
                     hide-details="auto"
-
+                    density="compact"
+                    density-md="default"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-account</v-icon>
@@ -92,6 +92,8 @@
                     class="mb-4"
                     :rules="[rules.required]"
                     hide-details="auto"
+                    density="compact"
+                    density-md="default"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-lock</v-icon>
@@ -102,66 +104,68 @@
                         icon
                         @click="togglePassword"
                         color="grey-lighten-1"
+                        size="small"
+                        size-md="default"
                       >
                         <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                       </v-btn>
-                </template>
-              </v-text-field>
+                    </template>
+                  </v-text-field>
 
-              <v-btn
-                type="submit"
-                color="primary"
-                size="large"
-                block
-                :loading="loading"
-                :disabled="loading"
-                class="mb-6 recognition-btn"
-                elevation="2"
-              >
-                <v-icon left class="mr-2">mdi-face-recognition</v-icon>
-                <span v-if="loading">Reconociendo...</span>
-                <span v-else>RECONOCER ASISTENCIA</span>
-              </v-btn>
-            </v-form>
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    size="large"
+                    block
+                    :loading="loading"
+                    :disabled="loading || !isCameraActive"
+                    class="mb-6 recognition-btn"
+                    elevation="2"
+                  >
+                    <v-icon left class="mr-2">mdi-face-recognition</v-icon>
+                    <span v-if="loading">Reconociendo...</span>
+                    <span v-else>RECONOCER ASISTENCIA</span>
+                  </v-btn>
+                </v-form>
 
-            <!-- Mensajes de estado -->
-            <v-alert
-              v-if="error"
-              type="error"
-              variant="tonal"
-              class="mb-4"
-              closable
-              @click:close="error = ''"
-            >
-              {{ error }}
-            </v-alert>
+                <!-- Mensajes de estado -->
+                <v-alert
+                  v-if="error"
+                  type="error"
+                  variant="tonal"
+                  class="mb-4"
+                  closable
+                  @click:close="error = ''"
+                >
+                  {{ error }}
+                </v-alert>
 
-            <v-alert
-              v-if="success"
-              type="success"
-              variant="tonal"
-              class="mb-4"
-            >
-              {{ success }}
-            </v-alert>
+                <v-alert
+                  v-if="success"
+                  type="success"
+                  variant="tonal"
+                  class="mb-4"
+                >
+                  {{ success }}
+                </v-alert>
 
-            <!-- Instrucciones -->
-            <v-card
-              variant="tonal"
-              color="grey-darken-3"
-              class="instructions-card"
-            >
-              <v-card-text class="pa-4">
-                <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
-                  Instrucciones:
-                </h4>
-                <div class="text-body-2 text-grey-lighten-1">
-                  <p class="mb-1">• Asegúrate de estar bien iluminado</p>
-                  <p class="mb-1">• Mira directamente a la cámara</p>
-                  <p class="mb-0">• Mantén una distancia de 30-50 cm</p>
-                </div>
-              </v-card-text>
-            </v-card>
+                <!-- Instrucciones -->
+                <v-card
+                  variant="tonal"
+                  color="grey-darken-3"
+                  class="instructions-card"
+                >
+                  <v-card-text class="pa-4">
+                    <h4 class="text-subtitle-1 font-weight-bold text-white mb-3">
+                      Instrucciones:
+                    </h4>
+                    <div class="text-body-2 text-grey-lighten-1">
+                      <p class="mb-1">• Asegúrate de estar bien iluminado</p>
+                      <p class="mb-1">• Mira directamente a la cámara</p>
+                      <p class="mb-0">• Mantén una distancia de 30-50 cm</p>
+                    </div>
+                  </v-card-text>
+                </v-card>
               </v-col>
             </v-row>
           </v-card-text>
@@ -169,11 +173,10 @@
       </v-col>
     </v-row>
   </v-container>
-
 </template>
 
 <script>
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppBar from '../components/AppBar.vue'
 import { attendanceService } from '../services/attendanceService'
@@ -186,29 +189,34 @@ export default {
   setup() {
     const router = useRouter()
     
+    // Variables del formulario
     const form = reactive({
       username: '',
       password: ''
     })
     
+    // Variables de estado
     const showPassword = ref(false)
     const loading = ref(false)
     const error = ref('')
     const success = ref('')
     
-    // Variables para la cámara
+    // Variables de la cámara
     const isCameraActive = ref(false)
     const videoElement = ref(null)
     const stream = ref(null)
 
+    // Reglas de validación
     const rules = {
       required: v => !!v || 'Este campo es requerido'
     }
 
+    // Función para alternar visibilidad de contraseña
     const togglePassword = () => {
       showPassword.value = !showPassword.value
     }
 
+    // Función principal de reconocimiento
     const handleRecognition = async () => {
       loading.value = true
       error.value = ''
@@ -241,7 +249,7 @@ export default {
           return
         }
 
-        console.log('🔍 Datos del empleado obtenidos:', employeeData)
+        console.log('�� Datos del empleado obtenidos:', employeeData)
         console.log('🔍 Employee ID:', employeeData.employee_id)
         console.log('🔍 Area ID:', employeeData.area_id)
 
@@ -279,7 +287,6 @@ export default {
     }
 
     // Funciones para manejar la cámara
-
     const startCamera = async () => {
       try {
         console.log('🎬 Iniciando cámara...')
@@ -313,7 +320,7 @@ export default {
         // Esperar a que el video esté listo
         await new Promise((resolve) => {
           videoElement.value.onloadedmetadata = () => {
-            console.log('📹 Video metadata cargado')
+            console.log('�� Video metadata cargado')
             resolve()
           }
         })
@@ -321,9 +328,6 @@ export default {
         // Activar la cámara
         isCameraActive.value = true
         console.log('🎯 Cámara activada exitosamente')
-        
-        // Iniciar reconocimiento facial automático
-        startFaceRecognition()
         
       } catch (err) {
         console.error('❌ Error iniciando cámara:', err)
@@ -362,11 +366,6 @@ export default {
       } catch (err) {
         console.error('❌ Error deteniendo cámara:', err)
       }
-    }
-
-    const startFaceRecognition = () => {
-      // Función para iniciar reconocimiento facial automático
-      console.log('Iniciando reconocimiento facial...')
     }
 
     // Función para capturar foto de la cámara
@@ -427,35 +426,12 @@ export default {
       }
     }
 
-                   return {
-        form,
-        showPassword,
-        loading,
-        error,
-        success,
-        rules,
-        togglePassword,
-        handleRecognition,
-        // Variables de la cámara
-        isCameraActive,
-        videoElement,
-        // Funciones de la cámara
-        startCamera,
-        stopCamera,
-        // Funciones adicionales
-        capturePhotoFromCamera,
-        getEmployeeCredentials,
-        verifyFaceAndMarkAttendance,
-        getCurrentLocation
-      }
-  },
-
-      // Hooks de lifecycle para controlar el scroll
-    onMounted() {
+    // Hooks de lifecycle
+    onMounted(() => {
       document.body.classList.add('recognition-page')
       
       // Debug: verificar el elemento de video
-      console.log('🎯 Componente montado, verificando elementos...')
+      console.log('�� Componente montado, verificando elementos...')
       console.log('📹 videoElement ref:', videoElement.value)
       
       // Verificar después de un momento
@@ -464,26 +440,58 @@ export default {
         const videoEl = document.querySelector('video')
         console.log('🔍 Video en DOM:', videoEl)
       }, 500)
-    },
+    })
 
-    onUnmounted() {
+    onUnmounted(() => {
       document.body.classList.remove('recognition-page')
+      stopCamera()
+    })
+
+    return {
+      // Variables del formulario
+      form,
+      showPassword,
+      loading,
+      error,
+      success,
+      rules,
+      
+      // Variables de la cámara
+      isCameraActive,
+      videoElement,
+      
+      // Funciones del formulario
+      togglePassword,
+      handleRecognition,
+      
+      // Funciones de la cámara
+      startCamera,
+      stopCamera,
+      
+      // Funciones adicionales
+      capturePhotoFromCamera,
+      getEmployeeCredentials,
+      verifyFaceAndMarkAttendance,
+      getCurrentLocation
     }
+  }
 }
 </script>
 
 <style scoped>
 .recognition-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 70px); /* Restar altura del AppBar */
   background: #16213e;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   outline: none !important;
   position: relative;
+  margin-top: 70px !important; /* Agregar margen superior para el AppBar */
+  overflow: hidden; /* Ocultar scroll por defecto */
 }
 
-/* Imágenes de los lados */
+/* Imágenes de los lados - Responsive */
 .side-image {
   position: absolute;
   top: 50%;
@@ -492,6 +500,7 @@ export default {
   height: 300px;
   z-index: 1;
   object-fit: contain;
+  transition: all 0.3s ease;
 }
 
 .left-image {
@@ -502,9 +511,36 @@ export default {
   right: 50px;
 }
 
+/* Responsive para imágenes laterales */
+@media (max-width: 1200px) {
+  .side-image {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .left-image {
+    left: 20px;
+  }
+  
+  .right-image {
+    right: 20px;
+  }
+}
 
-
-
+@media (max-width: 960px) {
+  .side-image {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .left-image {
+    left: 10px;
+  }
+  
+  .right-image {
+    right: 10px;
+  }
+}
 
 .recognition-card {
   background: rgba(30, 41, 59, 0.8) !important;
@@ -514,6 +550,26 @@ export default {
   max-width: 700px;
   width: 100%;
   margin-top: 60px;
+  transition: all 0.3s ease;
+}
+
+/* Responsive para la tarjeta principal */
+@media (max-width: 960px) {
+  .recognition-card {
+    max-width: 95%;
+    margin-top: 40px;
+    margin-left: 2.5%;
+    margin-right: 2.5%;
+  }
+}
+
+@media (max-width: 600px) {
+  .recognition-card {
+    max-width: 98%;
+    margin-top: 20px;
+    margin-left: 1%;
+    margin-right: 1%;
+  }
 }
 
 .invisible-title {
@@ -529,7 +585,6 @@ export default {
   text-align: center;
   width: 100%;
   max-width: 400px;
-  cursor: pointer;
   transition: all 0.3s ease;
 }
 
@@ -568,7 +623,23 @@ export default {
   pointer-events: none;
 }
 
+.camera-placeholder {
+  flex-direction: column;
+  min-height: 200px;
+}
 
+.activate-camera-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #00d4ff 100%) !important;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.activate-camera-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
 
 .close-camera-btn {
   position: absolute;
@@ -578,23 +649,28 @@ export default {
   background: rgba(0, 0, 0, 0.7) !important;
 }
 
- .camera-placeholder {
-   flex-direction: column;
-   min-height: 200px;
- }
+/* Responsive para el área de cámara */
+@media (max-width: 960px) {
+  .camera-area {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+  
+  .camera-placeholder {
+    min-height: 180px;
+  }
+}
 
- .activate-camera-btn {
-   background: linear-gradient(135deg, #3b82f6 0%, #00d4ff 100%) !important;
-   font-weight: bold;
-   letter-spacing: 1px;
-   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-   transition: all 0.3s ease;
- }
-
- .activate-camera-btn:hover {
-   transform: translateY(-2px);
-   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
- }
+@media (max-width: 600px) {
+  .camera-area {
+    padding: 1rem;
+    max-width: 100%;
+  }
+  
+  .camera-placeholder {
+    min-height: 150px;
+  }
+}
 
 .recognition-btn {
   background: linear-gradient(135deg, #3b82f6 0%, #00d4ff 100%) !important;
@@ -651,22 +727,113 @@ export default {
   border: none !important;
 }
 
-/* Responsive */
+/* Responsive general */
 @media (max-width: 960px) {
-  .left-panel {
-    min-height: 200px;
-  }
-  
-  .logo-text {
-    font-size: 1.5rem !important;
+  .recognition-container {
+    padding: 0 1rem;
   }
   
   .recognition-card {
-    margin: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .camera-area {
+    min-height: 180px;
+  }
+  
+  /* Ajustar padding de la tarjeta en tablets */
+  .recognition-card .v-card-text {
+    padding: 1.5rem !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .recognition-container {
+    padding: 0 0.5rem;
+  }
+  
+  .recognition-card {
+    margin: 0.5rem 0;
   }
   
   .camera-area {
     min-height: 150px;
+  }
+  
+  /* Ajustar padding de la tarjeta en móviles */
+  .recognition-card .v-card-text {
+    padding: 1rem !important;
+  }
+  
+  /* Ajustar tamaños de texto en móviles */
+  .text-h6 {
+    font-size: 1.25rem !important;
+  }
+  
+  .text-body-2 {
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Asegurar que el contenedor principal sea responsive */
+@media (max-width: 480px) {
+  .recognition-container {
+    min-height: 100vh;
+    padding: 0 0.25rem;
+  }
+  
+  .recognition-card {
+    margin: 0.25rem 0;
+    border-radius: 12px;
+  }
+  
+  .camera-area {
+    border-radius: 8px;
+  }
+}
+
+/* Clases CSS personalizadas para Vuetify responsive */
+.text-h5-md {
+  font-size: 1.5rem !important;
+}
+
+.text-caption-md {
+  font-size: 0.75rem !important;
+}
+
+/* Asegurar que el AppBar sea visible */
+:deep(.v-app-bar) {
+  z-index: 1000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* Ajustar el contenedor principal para el AppBar */
+.recognition-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive para imágenes laterales */
+@media (max-width: 960px) {
+  .text-h5-md {
+    font-size: 1.25rem !important;
+  }
+  
+  .text-caption-md {
+    font-size: 0.7rem !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .text-h5-md {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-caption-md {
+    font-size: 0.65rem !important;
   }
 }
 </style>

@@ -25,9 +25,7 @@
 
 
             </p>
-            <p class="text-caption text-grey-lighten-2 mb-6">
-              Use your username (not email) to sign in
-            </p>
+            
 
             <v-form @submit.prevent="handleLogin" class="login-form">
               <v-text-field

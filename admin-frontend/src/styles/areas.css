@@ -1,0 +1,105 @@
+/* ===== ESTILOS ESPECÍFICOS PARA LA PÁGINA DE ÁREAS ===== */
+
+/* ===== HEADER DE ÁREAS ===== */
+.areas-header {
+  margin-top: 0.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Contenedor principal con espaciado reducido */
+.areas-header .v-col {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/* Asegurar que el contenedor principal tenga el espaciado correcto */
+.areas-header .d-flex {
+  align-items: center !important;
+  min-height: 48px !important;
+}
+
+/* Asegurar que el título tenga el espaciado correcto */
+.areas-header h1 {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* Asegurar que el botón tenga el espaciado correcto */
+.areas-header .v-btn {
+  margin: 0 !important;
+  padding: 0.5rem 1rem !important;
+}
+
+/* ===== TABLA DE ÁREAS ===== */
+.areas-table-card {
+  margin-top: 1rem !important;
+  margin-bottom: 2rem !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .areas-header {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+     .areas-header .v-col {
+     padding-top: 0.25rem !important;
+     padding-bottom: 0.25rem !important;
+   }
+ }
+ 
+ /* ===== ESTILOS PARA EL MAPA ===== */
+ 
+ /* Contenedor del mapa */
+ .map-container {
+   width: 100% !important;
+ }
+ 
+ /* Campo de búsqueda del mapa */
+ .map-search {
+   background: rgba(59, 130, 246, 0.05) !important;
+   padding: 1rem !important;
+   border-radius: 8px !important;
+   border: 1px solid rgba(59, 130, 246, 0.2) !important;
+ }
+ 
+ /* Contenedor del mapa */
+ .map-wrapper {
+   width: 100% !important;
+   height: 400px !important;
+   border-radius: 8px !important;
+   overflow: hidden !important;
+   border: 2px solid rgba(59, 130, 246, 0.3) !important;
+   background: #f0f0f0 !important;
+ }
+ 
+ /* Controles del mapa */
+ .map-controls {
+   background: rgba(59, 130, 246, 0.1) !important;
+   padding: 1rem !important;
+   border-radius: 8px !important;
+   border: 1px solid rgba(59, 130, 246, 0.2) !important;
+ }
+ 
+ /* Instrucciones del mapa */
+ .map-instructions {
+   background: rgba(59, 130, 246, 0.05) !important;
+   border-radius: 8px !important;
+ }
+ 
+ /* Responsive para el mapa */
+ @media (max-width: 768px) {
+   .map-wrapper {
+     height: 300px !important;
+   }
+   
+   .map-controls {
+     padding: 0.75rem !important;
+   }
+   
+   .map-search {
+     padding: 0.75rem !important;
+   }
+ }

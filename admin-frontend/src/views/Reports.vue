@@ -195,7 +195,7 @@ import { ref, computed, onMounted } from 'vue'
 import AttendancePieChart from '../components/charts/AttendancePieChart.vue'
 import { attendanceService } from '../services/attendanceService'
 import { employeeService } from '../services/employeeService'
-import { areaService } from '../services/areaService'
+import areaService from '../services/areaService'
 
 export default {
   name: 'Reports',
@@ -263,7 +263,10 @@ export default {
     const loadEmployees = async () => {
       try {
         // CARGAR DESDE API REAL
-        employees.value = await employeeService.getAll()
+        const employeesData = await employeeService.getAll()
+        // El backend devuelve {count, next, previous, results}
+        // Necesitamos acceder a results que es el array de empleados
+        employees.value = employeesData.results || employeesData
       } catch (error) {
         console.error('Error cargando empleados:', error)
       }
@@ -272,7 +275,9 @@ export default {
     const loadAreas = async () => {
       try {
         // CARGAR DESDE API REAL
-        areas.value = await areaService.getAll()
+        const areasData = await areaService.getAll()
+        // El backend devuelve results que es el array de áreas
+        areas.value = areasData.results || areasData
       } catch (error) {
         console.error('Error cargando áreas:', error)
       }
@@ -288,7 +293,10 @@ export default {
           const [startDate, endDate] = filters.value.dateRange
           reportData.value = await attendanceService.getByDateRange(startDate, endDate)
         } else {
-          reportData.value = await attendanceService.getAll()
+          const attendanceData = await attendanceService.getAll()
+          // El backend devuelve {count, next, previous, results}
+          // Necesitamos acceder a results que es el array de asistencias
+          reportData.value = attendanceData.results || attendanceData
         }
         
         calculateStats()

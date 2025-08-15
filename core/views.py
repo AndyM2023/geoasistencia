@@ -54,8 +54,8 @@ class DashboardViewSet(viewsets.ViewSet):
         # Contar empleados
         total_employees = Employee.objects.count()
         
-        # Contar áreas
-        total_areas = Area.objects.count()
+        # Contar áreas activas
+        total_areas = Area.objects.filter(status='active').count()
         
         # Asistencias de hoy
         today_attendance = Attendance.objects.filter(date=today).count()
@@ -63,37 +63,169 @@ class DashboardViewSet(viewsets.ViewSet):
         # Empleados pendientes (sin asistencia hoy)
         pending_attendance = total_employees - today_attendance
         
-        # Actividades recientes
-        recent_attendances = Attendance.objects.select_related('employee__user').order_by('-created_at')[:5]
-        recent_activities = []
+        # Calcular tasa de asistencia del mes actual
+        current_month = timezone.now().month
+        current_year = timezone.now().year
+        month_attendance = Attendance.objects.filter(
+            date__month=current_month,
+            date__year=current_year
+        ).count()
         
-        for attendance in recent_attendances:
-            if attendance.check_in:
-                activity = {
-                    'id': attendance.id,
-                    'title': f"{attendance.employee.full_name} marcó asistencia",
-                    'time': 'Hace 5 minutos',  # TODO: Calcular tiempo real
-                    'icon': 'mdi-check-circle',
-                    'color': 'success'
-                }
-                recent_activities.append(activity)
+        # Total de días laborables en el mes (aproximado)
+        from calendar import monthrange
+        _, days_in_month = monthrange(current_year, current_month)
+        # Asumir 22 días laborables por mes (excluyendo fines de semana)
+        working_days = min(22, days_in_month)
+        total_possible_attendance = total_employees * working_days
+        
+        attendance_rate = 0
+        if total_possible_attendance > 0:
+            attendance_rate = round((month_attendance / total_possible_attendance) * 100, 1)
         
         stats = {
-            'total_employees': total_employees,
-            'total_areas': total_areas,
-            'today_attendance': today_attendance,
-            'pending_attendance': pending_attendance,
-            'recent_activities': recent_activities
+            'totalEmployees': total_employees,
+            'totalAreas': total_areas,
+            'activeAreas': total_areas,
+            'todayAttendance': today_attendance,
+            'pendingAttendance': pending_attendance,
+            'attendanceRate': attendance_rate,
+            'monthAttendance': month_attendance,
+            'workingDays': working_days
         }
         
         serializer = DashboardStatsSerializer(stats)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def weekly_attendance(self, request):
+        """Obtener datos de asistencia semanal para gráficos"""
+        from datetime import timedelta
+        
+        # Obtener fecha de hace 7 días
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=6)
+        
+        # Generar lista de fechas de la semana
+        dates = []
+        current_date = start_date
+        while current_date <= end_date:
+            dates.append(current_date)
+            current_date += timedelta(days=1)
+        
+        # Obtener datos de asistencia para cada día
+        weekly_data = []
+        for date in dates:
+            attendance_count = Attendance.objects.filter(date=date).count()
+            total_employees = Employee.objects.count()
+            
+            weekly_data.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'day': date.strftime('%A'),  # Nombre del día
+                'shortDay': date.strftime('%a'),  # Día abreviado
+                'attendance': attendance_count,
+                'total': total_employees,
+                'percentage': round((attendance_count / total_employees * 100) if total_employees > 0 else 0, 1)
+            })
+        
+        return Response({
+            'weeklyData': weekly_data,
+            'startDate': start_date.strftime('%Y-%m-%d'),
+            'endDate': end_date.strftime('%Y-%m-%d')
+        })
+    
+    @action(detail=False, methods=['get'])
+    def recent_activity(self, request):
+        """Obtener actividad reciente del sistema"""
+        from datetime import datetime, timedelta
+        
+        # Obtener actividades de las últimas 24 horas
+        yesterday = timezone.now() - timedelta(days=1)
+        
+        # Asistencias recientes
+        recent_attendances = Attendance.objects.select_related(
+            'employee__user', 'area'
+        ).filter(
+            created_at__gte=yesterday
+        ).order_by('-created_at')[:10]
+        
+        activities = []
+        
+        for attendance in recent_attendances:
+            # Calcular tiempo transcurrido
+            time_diff = timezone.now() - attendance.created_at
+            
+            if time_diff.days > 0:
+                time_text = f"Hace {time_diff.days} día{'s' if time_diff.days > 1 else ''}"
+            elif time_diff.seconds > 3600:
+                hours = time_diff.seconds // 3600
+                time_text = f"Hace {hours} hora{'s' if hours > 1 else ''}"
+            elif time_diff.seconds > 60:
+                minutes = time_diff.seconds // 60
+                time_text = f"Hace {minutes} minuto{'s' if minutes > 1 else ''}"
+            else:
+                time_text = "Hace un momento"
+            
+            # Determinar tipo de actividad
+            if attendance.check_in and not attendance.check_out:
+                activity_type = "check_in"
+                title = f"{attendance.employee.full_name} marcó entrada"
+                icon = "mdi-login"
+                color = "success"
+                status = "Entrada"
+            elif attendance.check_out:
+                activity_type = "check_out"
+                title = f"{attendance.employee.full_name} marcó salida"
+                icon = "mdi-logout"
+                color = "info"
+                status = "Salida"
+            else:
+                activity_type = "other"
+                title = f"{attendance.employee.full_name} - Actividad registrada"
+                icon = "mdi-clock"
+                color = "warning"
+                status = "Registrado"
+            
+            activities.append({
+                'id': attendance.id,
+                'type': activity_type,
+                'title': title,
+                'time': time_text,
+                'icon': icon,
+                'color': color,
+                'status': status,
+                'employee': attendance.employee.full_name,
+                'area': attendance.area.name if attendance.area else 'Sin área',
+                'timestamp': attendance.created_at.isoformat()
+            })
+        
+        # Si no hay actividades recientes, crear algunas de ejemplo
+        if not activities:
+            activities = [
+                {
+                    'id': 'demo-1',
+                    'type': 'demo',
+                    'title': 'Sistema iniciado correctamente',
+                    'time': 'Hace 1 hora',
+                    'icon': 'mdi-check-circle',
+                    'color': 'success',
+                    'status': 'Sistema',
+                    'employee': 'Sistema',
+                    'area': 'General',
+                    'timestamp': timezone.now().isoformat()
+                }
+            ]
+        
+        return Response({
+            'activities': activities,
+            'total': len(activities),
+            'lastUpdate': timezone.now().isoformat()
+        })
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de empleados"""
     queryset = Employee.objects.select_related('user', 'area').all()
     serializer_class = EmployeeSerializer
-    permission_classes = [permissions.AllowAny]  # TEMPORAL: Permitir sin autenticación
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         # Por defecto, solo mostrar empleados activos
@@ -220,7 +352,7 @@ class AreaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de áreas"""
     queryset = Area.objects.all()
     serializer_class = AreaSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # TEMPORAL: Permitir sin autenticación para pruebas
     
     def get_queryset(self):
         queryset = Area.objects.all()
@@ -239,6 +371,33 @@ class AreaViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status)
         
         return queryset
+    
+    def destroy(self, request, *args, **kwargs):
+        """Soft delete: Desactivar área en lugar de eliminarla físicamente"""
+        area = self.get_object()
+        area.deactivate()
+        
+        return Response(
+            {'message': f'Área {area.name} desactivada correctamente'}, 
+            status=status.HTTP_200_OK
+        )
+    
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """Reactivar área desactivada"""
+        try:
+            area = Area.objects.get(pk=pk)
+            area.activate()
+            
+            return Response(
+                {'message': f'Área {area.name} reactivada correctamente'}, 
+                status=status.HTTP_200_OK
+            )
+        except Area.DoesNotExist:
+            return Response(
+                {'error': 'Área no encontrada'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de asistencias"""

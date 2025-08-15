@@ -9,24 +9,47 @@
 .stats-card {
   border-radius: 12px;
   overflow: hidden;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
 }
 
 .stats-card .v-card-text {
-  padding: 1.5rem;
+  padding: 0.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .stats-card .text-h4 {
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.125rem;
+  font-size: 0.875rem;
+  line-height: 1.1;
 }
 
 .stats-card .text-h6 {
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.125rem;
+  font-size: 0.7rem;
+  line-height: 1.1;
 }
 
 .stats-card .text-body-2 {
   opacity: 0.8;
+  font-size: 0.6rem;
+  margin-bottom: 0.125rem;
+  line-height: 1.1;
+}
+
+/* ===== DASHBOARD GRID ===== */
+.dashboard-stats-row .v-col {
+  display: flex;
+}
+
+.dashboard-stats-row .v-col > * {
+  width: 100%;
 }
 
 /* ===== DATA TABLE COMPONENT ===== */
