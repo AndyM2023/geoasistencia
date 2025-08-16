@@ -256,7 +256,7 @@
                         💡 Completa el nombre y apellido para habilitar el registro facial
                       </p>
                       <p class="text-blue-400 text-xs mt-1">
-                        📸 Se capturarán 30 fotos para mejor precisión
+                                                 📸 Se capturarán 15 fotos para máxima velocidad
                       </p>
                       <p class="text-green-400 text-xs mt-1">
                         🎯 Umbral de confianza: 80% (más permisivo)
@@ -422,7 +422,7 @@
       v-if="showFaceRegistration"
       :employee-id="editingEmployee?.id || 'new'"
       :employee-name="`${employeeForm.first_name} ${employeeForm.last_name}`"
-      :target-count="30"
+      :target-count="15"
       @registro-completo="onRegistroCompleto"
       @registro-error="onRegistroError"
       @close="showFaceRegistration = false"

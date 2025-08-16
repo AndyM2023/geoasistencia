@@ -133,7 +133,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'employee', 'employee_name', 'date', 'check_in', 'check_out',
             'status', 'area', 'area_name', 'latitude', 'longitude',
-            'face_verified', 'notes', 'hours_worked', 'created_at', 'updated_at'
+            'face_verified', 'hours_worked', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'employee_name', 'area_name', 'hours_worked']
 

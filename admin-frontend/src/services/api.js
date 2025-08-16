@@ -5,7 +5,7 @@ const API_BASE_URL = '/app'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 120000, // 2 minutos para procesar 50 fotos con embeddings
   headers: {
     'Content-Type': 'application/json',
   }

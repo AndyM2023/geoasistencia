@@ -20,7 +20,7 @@ export const faceService = {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                timeout: 30000 // 30 segundos para procesar múltiples fotos
+                timeout: 180000 // 3 minutos para procesar 50 fotos con Facenet-512
             });
 
             console.log('✅ Respuesta del backend Django:', response.data);
