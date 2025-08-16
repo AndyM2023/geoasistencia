@@ -21,10 +21,24 @@
       </v-card-title>
       
       <v-card-text>
-        <!-- Video Container -->
-        <div class="video-container mb-4">
-          <video ref="videoElement" autoplay playsinline muted class="camera-video"></video>
+        <!-- Mensaje de error si el ID no es válido -->
+        <div v-if="!props.employeeId || props.employeeId === 'new' || isNaN(props.employeeId)" class="text-center py-8">
+          <v-icon color="orange" size="64" class="mb-4">mdi-alert-circle</v-icon>
+          <h3 class="text-orange-400 mb-2">ID de Empleado Inválido</h3>
+          <p class="text-grey-300 mb-4">
+            Debes guardar el empleado antes de poder registrar su rostro facial.
+          </p>
+          <v-btn color="blue-400" @click="closeDialog">
+            Cerrar
+          </v-btn>
         </div>
+        
+        <!-- Contenido normal solo si el ID es válido -->
+        <template v-else>
+          <!-- Video Container -->
+          <div class="video-container mb-4">
+            <video ref="videoElement" autoplay playsinline muted class="camera-video"></video>
+          </div>
         
         <!-- Progress Info -->
         <div class="progress-section">
@@ -53,6 +67,7 @@
         >
           {{ mensaje.texto }}
         </v-alert>
+        </template>
       </v-card-text>
       
       <v-card-actions class="justify-center pa-4">
@@ -169,7 +184,13 @@ const statusText = computed(() => {
 
 const startCapture = async () => {
   try {
+    // Validar que el employeeId sea válido antes de iniciar
+    if (!props.employeeId || props.employeeId === 'new' || isNaN(props.employeeId)) {
+      throw new Error('ID de empleado inválido. Debes guardar el empleado antes de registrar su rostro.');
+    }
+    
     console.log('🎬 Iniciando captura de video...');
+    console.log('👤 Employee ID válido:', props.employeeId);
     
     stream.value = await navigator.mediaDevices.getUserMedia({ 
       video: { 
@@ -429,6 +450,11 @@ const captureManual = async () => {
 
 const processPhotos = async () => {
   try {
+    // Validar que el employeeId sea válido
+    if (!props.employeeId || props.employeeId === 'new' || isNaN(props.employeeId)) {
+      throw new Error('ID de empleado inválido. Debes guardar el empleado antes de registrar su rostro.');
+    }
+    
     isUploading.value = true;
     mensaje.value = {
       tipo: 'info',
@@ -436,6 +462,7 @@ const processPhotos = async () => {
     };
     
     console.log('🚀 Procesando fotos:', capturedPhotos.value.length);
+    console.log('👤 Employee ID:', props.employeeId);
     
     // Enviar al backend Django
     const result = await faceService.registerFace(

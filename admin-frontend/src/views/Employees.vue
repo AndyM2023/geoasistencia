@@ -451,7 +451,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { employeeService } from '../services/employeeService'
 import areaService from '../services/areaService'
 import { faceService } from '../services/faceService'
@@ -666,6 +666,14 @@ export default {
         await loadEmployees() // Recargar lista
         showDialog.value = false
         dialogReady.value = false // Resetear estado del diálogo
+        
+        // 🔄 ACTUALIZAR LISTA INMEDIATAMENTE después de cerrar diálogo
+        try {
+          await loadEmployees()
+          console.log('✅ Lista de empleados actualizada después de cerrar diálogo')
+        } catch (error) {
+          console.error('❌ Error actualizando lista después de cerrar diálogo:', error)
+        }
         editingEmployee.value = null
         employeeForm.value = {
           first_name: '',
@@ -708,6 +716,14 @@ export default {
       faceRegistration.value.statusText = 'Rostros procesados y guardados correctamente'
       faceRegistration.value.photosCount = result.photosCount
       showFaceRegistration.value = false
+      
+      // 🔄 ACTUALIZAR LISTA INMEDIATAMENTE después del registro facial
+      try {
+        await loadEmployees()
+        console.log('✅ Lista de empleados actualizada después del registro facial')
+      } catch (error) {
+        console.error('❌ Error actualizando lista después del registro facial:', error)
+      }
       
       // Mostrar mensaje de éxito
       showMessage('Registro facial completado exitosamente')
@@ -850,6 +866,24 @@ export default {
     onMounted(() => {
       loadEmployees()
       loadAreas()
+      
+      // 🚀 IMPLEMENTAR POLLING AUTOMÁTICO
+      // Actualizar lista de empleados cada 30 segundos
+      const pollingInterval = setInterval(async () => {
+        console.log('🔄 Polling automático: actualizando lista de empleados...')
+        try {
+          await loadEmployees()
+          console.log('✅ Lista de empleados actualizada automáticamente')
+        } catch (error) {
+          console.error('❌ Error en polling automático:', error)
+        }
+      }, 30000) // 30 segundos
+      
+      // Limpiar intervalo cuando el componente se desmonte
+      onUnmounted(() => {
+        clearInterval(pollingInterval)
+        console.log('🧹 Polling automático detenido')
+      })
     })
     
     return {

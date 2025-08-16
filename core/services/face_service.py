@@ -16,13 +16,25 @@ from ..models import FaceProfile
 
 # Agregar el directorio de reconocimiento facial al path
 FACE_RECOGNITION_DIR = os.path.join(settings.BASE_DIR, 'face_recognition')
-sys.path.append(FACE_RECOGNITION_DIR)
+if FACE_RECOGNITION_DIR not in sys.path:
+    sys.path.insert(0, FACE_RECOGNITION_DIR)
+
+print(f"🔍 DEBUG: IMPORT PATHS DURANTE CARGA DEL MÓDULO")
+print(f"   - FACE_RECOGNITION_DIR: {FACE_RECOGNITION_DIR}")
+print(f"   - sys.path contiene FACE_RECOGNITION_DIR: {FACE_RECOGNITION_DIR in sys.path}")
+print(f"   - sys.path[0]: {sys.path[0] if sys.path else 'Empty'}")
+print(f"   - Current working directory: {os.getcwd()}")
 
 try:
     from advanced_face_system import FacialRecognition
     FACIAL_RECOGNITION_AVAILABLE = True
+    print(f"✅ Sistema facial importado correctamente desde: {FACE_RECOGNITION_DIR}")
+    print(f"   - FacialRecognition class: {FacialRecognition}")
+    print(f"   - FacialRecognition type: {type(FacialRecognition)}")
 except ImportError as e:
     print(f"⚠️ Sistema facial no disponible: {e}")
+    print(f"   Path actual: {sys.path}")
+    print(f"   Archivo buscado: {os.path.join(FACE_RECOGNITION_DIR, 'advanced_face_system.py')}")
     FacialRecognition = None
     FACIAL_RECOGNITION_AVAILABLE = False
 
@@ -30,21 +42,52 @@ class FaceRecognitionService:
     """Servicio para integrar el sistema de reconocimiento facial"""
     
     def __init__(self):
+        print(f"🔍 DEBUG: INICIALIZANDO FaceRecognitionService")
+        print(f"   - Current working directory: {os.getcwd()}")
+        print(f"   - BASE_DIR: {settings.BASE_DIR}")
+        
         self.face_system_path = os.path.join(settings.BASE_DIR, 'face_recognition')
         self.faces_dir = os.path.join(self.face_system_path, 'faces')
         
+        print(f"   - face_system_path: {self.face_system_path}")
+        print(f"   - faces_dir: {self.faces_dir}")
+        print(f"   - face_system_path exists: {os.path.exists(self.face_system_path)}")
+        print(f"   - faces_dir exists: {os.path.exists(self.faces_dir)}")
+        
         # Inicializar sistema facial si está disponible
+        print(f"   - FACIAL_RECOGNITION_AVAILABLE: {FACIAL_RECOGNITION_AVAILABLE}")
+        print(f"   - FacialRecognition class: {FacialRecognition}")
+        
         if FACIAL_RECOGNITION_AVAILABLE:
             try:
+                print(f"   - Intentando crear FacialRecognition...")
                 self.facial_system = FacialRecognition(
                     base_dir=self.face_system_path,
                     database_name="faces"
                 )
+                print(f"   - FacialRecognition creado: {self.facial_system}")
+                print(f"   - facial_system type: {type(self.facial_system)}")
+                print(f"   - facial_system is None: {self.facial_system is None}")
+                
+                if self.facial_system:
+                    print(f"   - facial_system methods: {[m for m in dir(self.facial_system) if not m.startswith('_')]}")
+                    print(f"   - facial_system base_dir: {getattr(self.facial_system, 'base_dir', 'N/A')}")
+                    print(f"   - facial_system face_dir: {getattr(self.facial_system, 'face_dir', 'N/A')}")
+                else:
+                    print(f"   ❌ FacialRecognition se creó pero es None")
+                    
             except Exception as e:
-                print(f"⚠️ Error inicializando sistema facial: {e}")
+                print(f"   ❌ Error inicializando sistema facial: {e}")
+                import traceback
+                traceback.print_exc()
                 self.facial_system = None
         else:
+            print(f"   ❌ FACIAL_RECOGNITION_AVAILABLE es False")
             self.facial_system = None
+        
+        print(f"   - FINAL: facial_system = {self.facial_system}")
+        print(f"   - FINAL: facial_system is None = {self.facial_system is None}")
+        print(f"   - FINAL: bool(facial_system) = {bool(self.facial_system)}")
     
     def register_employee_face(self, employee, photos_data):
         """Alias para mantener compatibilidad - redirige al método principal"""
@@ -62,6 +105,34 @@ class FaceRecognitionService:
         Returns:
             dict: Resultado del registro/actualización
         """
+        print(f"🔍 FACE_SERVICE.register_or_update_employee_face INICIADO")
+        print(f"   - Employee: {employee.full_name}")
+        print(f"   - Photos data type: {type(photos_data)}")
+        print(f"   - Photos data length: {len(photos_data) if photos_data else 0}")
+        
+        # 🔍 DEBUG: Verificar estado del servicio facial ANTES de procesar
+        print(f"\n🔍 DEBUG: VERIFICANDO ESTADO DEL SERVICIO FACIAL EN FACE_SERVICE")
+        print(f"   - self: {self}")
+        print(f"   - self type: {type(self)}")
+        print(f"   - self.facial_system: {self.facial_system}")
+        print(f"   - self.facial_system type: {type(self.facial_system)}")
+        print(f"   - self.facial_system is None: {self.facial_system is None}")
+        print(f"   - self.facial_system bool evaluation: {bool(self.facial_system)}")
+        print(f"   - self.face_system_path: {self.face_system_path}")
+        print(f"   - self.faces_dir: {self.faces_dir}")
+        
+        if self.facial_system:
+            print(f"   - facial_system methods: {[m for m in dir(self.facial_system) if not m.startswith('_')]}")
+            print(f"   - facial_system base_dir: {getattr(self.facial_system, 'base_dir', 'N/A')}")
+            print(f"   - facial_system face_dir: {getattr(self.facial_system, 'face_dir', 'N/A')}")
+        else:
+            print("   ❌ facial_system es None o False")
+            
+        # 🔍 DEBUG: Verificar si hay algún problema con la inicialización
+        print(f"\n🔍 DEBUG: VERIFICANDO INICIALIZACIÓN DEL SERVICIO")
+        print(f"   - FACE_RECOGNITION_AVAILABLE (module level): {FACIAL_RECOGNITION_AVAILABLE}")
+        print(f"   - FacialRecognition class: {FacialRecognition}")
+        
         try:
             # Verificar si ya existe un perfil facial
             is_update = False
@@ -77,6 +148,10 @@ class FaceRecognitionService:
             
             if not self.facial_system:
                 print("❌ Sistema facial no disponible")
+                print("🔍 DEBUG: facial_system es None/False, verificando por qué...")
+                print(f"   - self.facial_system: {self.facial_system}")
+                print(f"   - bool(self.facial_system): {bool(self.facial_system)}")
+                print(f"   - self.facial_system is None: {self.facial_system is None}")
                 return {
                     'success': False,
                     'message': 'Sistema de reconocimiento facial no disponible'
@@ -86,11 +161,23 @@ class FaceRecognitionService:
             employee_id = f"{employee.employee_id or employee.id}"
             employee_name = f"{employee.user.first_name}{employee.user.last_name}".replace(" ", "")
             
+            # ✅ SANITIZAR NOMBRE PARA EVITAR CARACTERES ESPECIALES
+            import unicodedata
+            import re
+            
+            # Normalizar caracteres Unicode y remover acentos
+            employee_name_sanitized = unicodedata.normalize('NFD', employee_name)
+            employee_name_sanitized = ''.join(c for c in employee_name_sanitized if not unicodedata.combining(c))
+            
+            # Remover caracteres no alfanuméricos
+            employee_name_sanitized = re.sub(r'[^a-zA-Z0-9]', '', employee_name_sanitized)
+            
             print(f"🆔 ID del empleado: {employee_id}")
             print(f"📝 Nombre del empleado: {employee_name}")
+            print(f"📝 Nombre sanitizado: {employee_name_sanitized}")
             
-            # Crear carpeta para el empleado
-            employee_folder = os.path.join(self.faces_dir, f"{employee_id}{employee_name}")
+            # Crear carpeta para el empleado (usar nombre sanitizado)
+            employee_folder = os.path.join(self.faces_dir, f"{employee_id}{employee_name_sanitized}")
             
             # Si es actualización, limpiar carpeta anterior
             if is_update and os.path.exists(employee_folder):
@@ -141,7 +228,14 @@ class FaceRecognitionService:
                     photo_path = os.path.join(employee_folder, f"face_{timestamp}.jpg")
                     
                     # ✅ COMPRESIÓN ULTRA-OPTIMIZADA para máxima velocidad
+                    print(f"      💾 Intentando guardar imagen...")
+                    print(f"      📁 Ruta: {photo_path}")
+                    print(f"      🖼️  Imagen shape: {face_image.shape}")
+                    print(f"      🖼️  Imagen dtype: {face_image.dtype}")
+                    print(f"      🖼️  Imagen min/max: {face_image.min()}/{face_image.max()}")
+                    
                     save_result = cv2.imwrite(photo_path, face_image, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    print(f"      💾 Resultado de cv2.imwrite: {save_result}")
                     
                     if save_result and os.path.exists(photo_path):
                         # ✅ Generar embedding Facenet-512
@@ -171,6 +265,12 @@ class FaceRecognitionService:
                     else:
                         rejected_photos += 1
                         print(f"   ❌ Error guardando imagen")
+                        print(f"      💾 save_result: {save_result}")
+                        print(f"      📁 Archivo existe: {os.path.exists(photo_path)}")
+                        if os.path.exists(photo_path):
+                            print(f"      📁 Tamaño del archivo: {os.path.getsize(photo_path)} bytes")
+                        else:
+                            print(f"      📁 Archivo NO creado")
                         
                 except Exception as e:
                     rejected_photos += 1
@@ -208,12 +308,20 @@ class FaceRecognitionService:
                 face_profile.last_training = timezone.now()
                 face_profile.save()
             
-            return {
+            print(f"✅ FACE_SERVICE: Registro facial completado exitosamente")
+            print(f"   - Fotos guardadas: {saved_photos}")
+            print(f"   - Empleado: {employee.full_name}")
+            print(f"   - Employee ID: {employee_id}")
+            
+            result = {
                 'success': True,
                 'message': f'Registradas {saved_photos} fotos para {employee.full_name}',
                 'photos_count': saved_photos,
                 'employee_id': employee_id
             }
+            
+            print(f"🔍 FACE_SERVICE: Retornando resultado: {result}")
+            return result
             
         except Exception as e:
             return {
@@ -397,7 +505,19 @@ class FaceRecognitionService:
             # Verificar si existe carpeta física
             employee_id = str(employee.employee_id or employee.id)
             employee_name = f"{employee.user.first_name}{employee.user.last_name}".replace(" ", "")
-            employee_folder = os.path.join(self.faces_dir, f"{employee_id}{employee_name}")
+            
+            # ✅ SANITIZAR NOMBRE PARA EVITAR CARACTERES ESPECIALES
+            import unicodedata
+            import re
+            
+            # Normalizar caracteres Unicode y remover acentos
+            employee_name_sanitized = unicodedata.normalize('NFD', employee_name)
+            employee_name_sanitized = ''.join(c for c in employee_name_sanitized if not unicodedata.combining(c))
+            
+            # Remover caracteres no alfanuméricos
+            employee_name_sanitized = re.sub(r'[^a-zA-Z0-9]', '', employee_name_sanitized)
+            
+            employee_folder = os.path.join(self.faces_dir, f"{employee_id}{employee_name_sanitized}")
             folder_exists = os.path.exists(employee_folder)
             
             # Verificar si está en el sistema facial

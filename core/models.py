@@ -11,7 +11,7 @@ class User(AbstractUser):
     ]
     
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
-    phone = models.CharField(max_length=15, blank=True, null=True)
+
     cedula = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='ID Card Number')
     position = models.CharField(max_length=100, blank=True, null=True, verbose_name='Position')
     is_active = models.BooleanField(default=True)
@@ -86,7 +86,7 @@ class Area(models.Model):
 class Employee(models.Model):
     """Empleado del sistema"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
-    employee_id = models.CharField(max_length=20, unique=True, blank=True, verbose_name='ID de Empleado')
+    employee_id = models.PositiveIntegerField(unique=True, blank=True, null=True, verbose_name='ID de Empleado')
     position = models.CharField(max_length=100, verbose_name='Cargo')
     area = models.ForeignKey(
         Area, 
@@ -128,21 +128,16 @@ class Employee(models.Model):
         if not self.employee_id:
             # Obtener el último número de empleado
             last_employee = Employee.objects.filter(
-                employee_id__startswith='EMP'
+                employee_id__isnull=False
             ).order_by('employee_id').last()
             
             if last_employee and last_employee.employee_id:
-                # Extraer el número del último employee_id
-                try:
-                    last_number = int(last_employee.employee_id[3:])  # Quitar 'EMP'
-                    new_number = last_number + 1
-                except (ValueError, IndexError):
-                    new_number = 1
+                new_number = last_employee.employee_id + 1
             else:
                 new_number = 1
             
-            # Generar el nuevo employee_id con formato EMP001, EMP002, etc.
-            self.employee_id = f'EMP{new_number:03d}'
+            # Generar el nuevo employee_id numérico
+            self.employee_id = new_number
         
         super().save(*args, **kwargs)
 
