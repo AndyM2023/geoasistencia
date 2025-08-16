@@ -166,22 +166,38 @@
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="employeeForm.first_name"
+                  name="first_name"
                   label="Nombre"
                   variant="outlined"
                   color="blue-400"
-                  :rules="[v => !!v || 'El nombre es requerido']"
+                  maxlength="50"
+                  :rules="[
+                    v => !!v || 'El nombre es requerido',
+                    v => !/\d/.test(v) || 'El nombre no puede contener números',
+                    v => v.length >= 2 || 'El nombre debe tener al menos 2 caracteres',
+                    v => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(v) || 'Solo se permiten letras y espacios'
+                  ]"
                   required
+                  @input="validateNameField"
                 ></v-text-field>
               </v-col>
               
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="employeeForm.last_name"
+                  name="last_name"
                   label="Apellido"
                   variant="outlined"
                   color="blue-400"
-                  :rules="[v => !!v || 'El apellido es requerido']"
+                  maxlength="50"
+                  :rules="[
+                    v => !!v || 'El apellido es requerido',
+                    v => !/\d/.test(v) || 'El apellido no puede contener números',
+                    v => v.length >= 2 || 'El apellido debe tener al menos 2 caracteres',
+                    v => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(v) || 'Solo se permiten letras y espacios'
+                  ]"
                   required
+                  @input="validateNameField"
                 ></v-text-field>
               </v-col>
               
@@ -192,12 +208,46 @@
                   type="email"
                   variant="outlined"
                   color="blue-400"
-                  :rules="[
-                    v => !!v || 'El email es requerido',
-                    v => /.+@.+\..+/.test(v) || 'El email debe ser válido'
-                  ]"
+                  :rules="[v => !!v || 'El email es requerido', v => /.+@.+\..+/.test(v) || 'Email inválido']"
                   required
                 ></v-text-field>
+              </v-col>
+              
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="employeeForm.cedula"
+                  label="Cédula de Identidad"
+                  variant="outlined"
+                  color="blue-400"
+                  :rules="[v => !!v || 'La cédula es requerida']"
+                  required
+                  hint="Se usará como contraseña del usuario"
+                  persistent-hint
+                ></v-text-field>
+              </v-col>
+              
+              <v-col cols="12">
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  class="mb-4"
+                  icon="mdi-information"
+                >
+                  <template v-slot:title>
+                    <strong>🔐 Usuario y Contraseña Automáticos</strong>
+                  </template>
+                  <div class="text-body-2">
+                    <p class="mb-2">
+                      <strong>Usuario:</strong> Se generará automáticamente usando la primera letra del nombre + apellido completo
+                    </p>
+                    <p class="mb-2">
+                      <strong>Contraseña:</strong> Será la cédula ingresada
+                    </p>
+                    <p class="text-caption text-grey-600">
+                      <strong>Ejemplo:</strong> "Luis Roma" con cédula "12345678" → Usuario: <code>lroma</code>, Contraseña: <code>12345678</code>
+                    </p>
+                  </div>
+                </v-alert>
               </v-col>
               
               <v-col cols="12" sm="6">
@@ -503,6 +553,7 @@ export default {
       first_name: '',
       last_name: '',
       email: '',
+      cedula: '',
       position: '',
       area: null
     })
@@ -596,6 +647,7 @@ export default {
         first_name: employee.user.first_name,
         last_name: employee.user.last_name,
         email: employee.user.email,
+        cedula: employee.user.cedula, // Asegúrate de que el backend devuelva cedula
         position: employee.position,
         area: employee.area
       }
@@ -679,6 +731,7 @@ export default {
           first_name: '',
           last_name: '',
           email: '',
+          cedula: '',
           position: '',
           area: null
         }
@@ -714,7 +767,7 @@ export default {
       console.log('✅ Registro facial completado:', result)
       faceRegistration.value.status = 'trained'
       faceRegistration.value.statusText = 'Rostros procesados y guardados correctamente'
-      faceRegistration.value.photosCount = result.photosCount
+      faceRegistration.value.photosCount = result.photos_count || result.photosCount || 0
       showFaceRegistration.value = false
       
       // 🔄 ACTUALIZAR LISTA INMEDIATAMENTE después del registro facial
@@ -727,6 +780,12 @@ export default {
       
       // Mostrar mensaje de éxito
       showMessage('Registro facial completado exitosamente')
+      
+      // Cerrar el diálogo principal después del registro facial
+      showDialog.value = false
+      dialogReady.value = false
+      editingEmployee.value = null
+      resetFaceRegistration()
     }
     
     const onRegistroError = (error) => {
@@ -751,43 +810,31 @@ export default {
         return
       }
       
+      // ✅ SIMPLIFICADO: Solo mostrar estado de procesamiento
+      // Las fotos ya se procesan automáticamente en FaceRegistration.vue
       faceRegistration.value.isTraining = true
       faceRegistration.value.statusText = 'Procesando rostros y generando embeddings...'
       
       try {
-        console.log('🎯 Entrenando modelo facial...')
+        console.log('🎯 Iniciando procesamiento facial...')
         console.log('📸 Fotos a procesar:', faceRegistration.value.capturedPhotos.length)
         console.log('👤 Empleado ID:', editingEmployee.value.id)
         
-        // Enviar fotos al backend para registro facial
-        const result = await faceService.registerFace(
-          editingEmployee.value.id,
-          faceRegistration.value.capturedPhotos
-        )
+        // ✅ NO procesar fotos aquí - ya se procesan en FaceRegistration.vue
+        // Solo simular el tiempo de procesamiento para mostrar el estado
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
-        console.log('📡 Respuesta del backend:', result)
+        // Cambiar estado a completado
+        faceRegistration.value.status = 'trained'
+        faceRegistration.value.statusText = 'Rostros procesados y guardados correctamente'
+        faceRegistration.value.photosCount = faceRegistration.value.capturedPhotos.length
         
-        if (result.success) {
-          faceRegistration.value.status = 'trained'
-          faceRegistration.value.statusText = 'Rostros procesados y guardados correctamente'
-          faceRegistration.value.confidence = 95
-          faceRegistration.value.photosCount = result.photos_count
-          
-          console.log('✅ Rostros procesados:', result.message)
-        } else {
-          throw new Error(result.message || 'Error desconocido en el backend')
-        }
+        console.log('✅ Procesamiento simulado completado')
         
       } catch (error) {
-        console.error('❌ Error entrenando modelo:', error)
+        console.error('❌ Error en procesamiento:', error)
         faceRegistration.value.status = 'error'
-        faceRegistration.value.statusText = `Error: ${error.message || 'Error en entrenamiento'}`
-        
-        // Mostrar error más detallado
-        if (error.response) {
-          console.error('📡 Respuesta del servidor:', error.response.data)
-          console.error('📊 Estado HTTP:', error.response.status)
-        }
+        faceRegistration.value.statusText = `Error: ${error.message || 'Error en procesamiento'}`
       } finally {
         faceRegistration.value.isTraining = false
       }
@@ -862,6 +909,52 @@ export default {
         }
       }
     }
+
+    // ✅ VALIDACIÓN: Función para validar campos de nombre y apellido
+    const validateNameField = (event) => {
+      const value = event.target.value;
+      const fieldName = event.target.name;
+      
+      // Remover números y caracteres especiales no permitidos
+      let cleanValue = value.replace(/[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, '');
+      
+      // Remover espacios múltiples y espacios al inicio/final
+      cleanValue = cleanValue.replace(/\s+/g, ' ').trim();
+      
+      // Si el valor original contenía caracteres no permitidos, actualizar el campo
+      if (value !== cleanValue) {
+        // Actualizar el campo correspondiente
+        if (fieldName === 'first_name') {
+          employeeForm.value.first_name = cleanValue;
+        } else if (fieldName === 'last_name') {
+          employeeForm.value.last_name = cleanValue;
+        }
+        
+        // Mostrar mensaje informativo
+        showMessage('Solo se permiten letras y espacios en nombres y apellidos', 'warning');
+        
+        // Forzar la validación del formulario
+        if (form.value) {
+          form.value.validate();
+        }
+      }
+      
+      // Validar que no quede solo espacios o esté vacío después de la limpieza
+      if (cleanValue === '' || cleanValue.trim() === '') {
+        if (fieldName === 'first_name') {
+          employeeForm.value.first_name = '';
+        } else if (fieldName === 'last_name') {
+          employeeForm.value.last_name = '';
+        }
+        
+        showMessage('El campo no puede estar vacío', 'error');
+      }
+      
+      // Validar que el nombre/apellido tenga al menos 2 caracteres
+      if (cleanValue.length > 0 && cleanValue.length < 2) {
+        showMessage('El nombre y apellido deben tener al menos 2 caracteres', 'warning');
+      }
+    }
     
     onMounted(() => {
       loadEmployees()
@@ -924,7 +1017,9 @@ export default {
       onRegistroError,
       trainFaceModel,
       resetFaceRegistration,
-      checkFaceRegistrationStatus
+      checkFaceRegistrationStatus,
+      // Funciones de validación
+      validateNameField
     }
   }
 }

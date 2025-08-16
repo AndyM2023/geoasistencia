@@ -87,6 +87,7 @@ class Employee(models.Model):
     """Empleado del sistema"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     employee_id = models.PositiveIntegerField(unique=True, blank=True, null=True, verbose_name='ID de Empleado')
+    cedula = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='Cédula de Identidad')
     position = models.CharField(max_length=100, verbose_name='Cargo')
     area = models.ForeignKey(
         Area, 
@@ -155,7 +156,7 @@ class FaceProfile(models.Model):
     )
     photos_count = models.IntegerField(default=0, verbose_name='Número de Fotos')
     is_trained = models.BooleanField(default=False, verbose_name='Entrenado')
-    confidence_threshold = models.FloatField(default=0.60, verbose_name='Umbral de Confianza')
+    confidence_threshold = models.FloatField(default=0.90, verbose_name='Umbral de Confianza')
     last_training = models.DateTimeField(null=True, blank=True, verbose_name='Último Entrenamiento')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -40,15 +40,15 @@ class AreaAdmin(admin.ModelAdmin):
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
     """Admin para el modelo Employee"""
-    list_display = ('employee_id', 'full_name', 'email', 'position', 'area', 'hire_date', 'is_active')
+    list_display = ('employee_id', 'full_name', 'cedula', 'email', 'position', 'area', 'hire_date', 'is_active')
     list_filter = ('area', 'hire_date', 'user__is_active')
-    search_fields = ('employee_id', 'user__first_name', 'user__last_name', 'user__email')
+    search_fields = ('employee_id', 'cedula', 'user__first_name', 'user__last_name', 'user__email')
     ordering = ('user__first_name', 'user__last_name')
     
     fieldsets = (
-        ('Información del Usuario', {'fields': ('user', 'employee_id')}),
-        ('Información Laboral', {'fields': ('position', 'area', 'hire_date', 'salary')}),
-        ('Contacto de Emergencia', {'fields': ('emergency_contact', 'emergency_phone')}),
+        ('Información del Usuario', {'fields': ('user', 'employee_id', 'cedula')}),
+        ('Información Laboral', {'fields': ('position', 'area', 'hire_date')}),
+        ('Foto', {'fields': ('photo',)}),
     )
     
     def full_name(self, obj):
