@@ -78,11 +78,11 @@ class AttendanceAdmin(admin.ModelAdmin):
         ('Información de Asistencia', {'fields': ('employee', 'date', 'status')}),
         ('Horarios', {'fields': ('check_in', 'check_out')}),
         ('Ubicación', {'fields': ('area', 'latitude', 'longitude')}),
-        ('Verificación', {'fields': ('face_verified', 'notes')}),
+        ('Verificación', {'fields': ('face_verified',)}),
     )
     
     def employee_name(self, obj):
-        return obj.employee_name
+        return obj.employee.full_name
     employee_name.short_description = 'Empleado'
     
     def hours_worked(self, obj):

@@ -70,19 +70,40 @@ export const attendanceService = {
 
     async markAttendance(employeeId, areaId, latitude, longitude, faceVerified = false) {
         try {
-            const response = await api.post(`/attendance/mark_attendance/`, {
+            console.log('📝 MARK_ATTENDANCE - Enviando datos:');
+            console.log(`   - Employee ID: ${employeeId}`);
+            console.log(`   - Area ID: ${areaId}`);
+            console.log(`   - Latitude: ${latitude}`);
+            console.log(`   - Longitude: ${longitude}`);
+            console.log(`   - Face verified: ${faceVerified}`);
+            
+            const requestData = {
                 employee_id: employeeId,
                 area_id: areaId,
                 latitude: latitude,
                 longitude: longitude,
                 face_verified: faceVerified
-            }, {
+            };
+            
+            console.log('📤 Request data completo:', requestData);
+            
+            const url = `/attendance/mark_attendance/`;
+            console.log('🌐 URL completa:', url);
+            console.log('🔑 Headers de autenticación:', this.getAuthHeaders());
+            
+            const response = await api.post(url, requestData, {
                 headers: this.getAuthHeaders()
             });
             
+            console.log('✅ Respuesta del backend:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Error marcando asistencia:', error);
+            console.error('❌ Error marcando asistencia:', error);
+            if (error.response) {
+                console.error('📡 Respuesta del servidor:', error.response.data);
+                console.error('📊 Estado HTTP:', error.response.status);
+                console.error('🌐 URL que falló:', error.config?.url);
+            }
             throw error;
         }
     },

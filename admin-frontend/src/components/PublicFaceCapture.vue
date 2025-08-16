@@ -25,7 +25,7 @@
         block
         class="camera-button"
       >
-        📷 Activar Cámara
+        Activar Cámara
       </v-btn>
       
       <!-- Botón para capturar -->
@@ -275,4 +275,5 @@ onBeforeUnmount(() => {
   font-size: 16px;
 }
 </style>
+
 

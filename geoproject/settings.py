@@ -28,6 +28,11 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# ✅ CONFIGURACIÓN PARA PROCESAMIENTO DE 50 FOTOS CON EMBEDDINGS DE 512
+# Aumentar timeouts para evitar errores con el procesamiento facial
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100 MB para 50 fotos
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100 MB
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -106,7 +111,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'es-es'
 
-TIME_ZONE = 'America/Mexico_City'
+TIME_ZONE = 'America/Guayaquil'
 
 USE_I18N = True
 

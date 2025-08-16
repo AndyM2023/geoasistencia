@@ -39,7 +39,7 @@
                       :disabled="loading"
                     >
                       <v-icon left class="mr-2">mdi-camera</v-icon>
-                      📷 Activar Cámara
+                       Activar Cámara
                     </v-btn>
                   </div>
                   
@@ -267,7 +267,32 @@ export default {
           console.log('📊 Confianza calculada:', Math.round(result.confidence * 100))
           console.log('📊 Tipo de confianza:', typeof result.confidence)
           
-          success.value = `¡Asistencia registrada exitosamente! Rostro verificado con ${Math.round(result.confidence * 100)}% de confianza`
+          // Acceder a los datos desde result.attendance
+          const attendanceData = result.attendance
+          console.log('🎯 Datos de asistencia:', attendanceData)
+          console.log('🎯 ACTION_TYPE recibido:', attendanceData.action_type)
+          console.log('🎯 ACTION_TYPE tipo:', typeof attendanceData.action_type)
+          console.log('🎯 EMPLOYEE_NAME recibido:', attendanceData.employee_name)
+          console.log('🔍 TODAS las claves del resultado:', Object.keys(result))
+          console.log('🔍 VALOR de cada clave:')
+          Object.keys(result).forEach(key => {
+            console.log(`   - ${key}:`, result[key])
+          })
+          
+          // Mostrar mensaje específico según el tipo de acción
+          if (attendanceData.action_type === 'entrada') {
+            console.log('✅ Procesando ENTRADA')
+            success.value = `✅ ENTRADA registrada exitosamente para ${attendanceData.employee_name}`
+          } else if (attendanceData.action_type === 'salida') {
+            console.log('⏰ Procesando SALIDA')
+            success.value = `⏰ SALIDA registrada exitosamente para ${attendanceData.employee_name}`
+          } else if (attendanceData.action_type === 'completo') {
+            console.log('ℹ️ Procesando COMPLETO')
+            success.value = `ℹ️ ${attendanceData.employee_name} ya tiene entrada y salida registradas para hoy`
+          } else {
+            console.log('❓ ACTION_TYPE no reconocido, usando mensaje genérico')
+            success.value = `¡Asistencia registrada exitosamente! Rostro verificado con ${Math.round(result.confidence * 100)}% de confianza`
+          }
           
           // Limpiar formulario
           form.username = ''
@@ -280,12 +305,45 @@ export default {
             success.value = ''
           }, 5000)
         } else {
-          error.value = result.message || 'Error en el reconocimiento facial'
+          // Manejar errores del backend con mensajes personalizados
+          if (result.action_type === 'completo') {
+            // Caso especial: ya tiene entrada y salida (no es realmente un error)
+            success.value = `ℹ️ ${result.message}`
+            setTimeout(() => {
+              success.value = ''
+            }, 5000)
+          } else {
+            // Otros errores reales
+            error.value = result.message || 'Error en el reconocimiento facial'
+          }
         }
         
       } catch (err) {
         console.error('Error en reconocimiento:', err)
-        error.value = 'Error en el reconocimiento: ' + (err.message || 'Error desconocido')
+        
+        // Verificar si es un error HTTP 400 con respuesta del backend
+        if (err.response && err.response.status === 400 && err.response.data) {
+          const backendResponse = err.response.data
+          console.log('🔍 Respuesta del backend en error 400:', backendResponse)
+          
+          // Manejar casos especiales del backend
+          if (backendResponse.action_type === 'completo') {
+            // Caso especial: ya tiene entrada y salida (no es realmente un error)
+            success.value = `ℹ️ ${backendResponse.message}`
+            setTimeout(() => {
+              success.value = ''
+            }, 5000)
+          } else if (backendResponse.message) {
+            // Otros mensajes personalizados del backend
+            error.value = backendResponse.message
+          } else {
+            // Error genérico si no hay mensaje personalizado
+            error.value = 'Error en el reconocimiento: ' + (err.message || 'Error desconocido')
+          }
+        } else {
+          // Otros tipos de errores
+          error.value = 'Error en el reconocimiento: ' + (err.message || 'Error desconocido')
+        }
       } finally {
         loading.value = false
       }

@@ -258,6 +258,11 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def register_face(self, request, pk=None):
         """Registrar rostro de empleado"""
+        print(f"\n🎯 ========== INICIO REGISTRO FACIAL ==========")
+        print(f"🆔 Employee ID: {pk}")
+        print(f"📤 Request method: {request.method}")
+        print(f"📊 Request data keys: {list(request.data.keys())}")
+        print(f"📝 Content-Type: {request.content_type}")
         employee = self.get_object()
         
         print(f"🔍 REGISTER_FACE - Datos recibidos:")
@@ -278,7 +283,16 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         print(f"✅ Fotos recibidas: {len(photos_base64)}")
         
         try:
+            print(f"🚀 Llamando a face_service.register_face...")
+            print(f"   - Employee: {employee.full_name}")
+            print(f"   - Photos count: {len(photos_base64)}")
+            
             result = face_service_singleton.register_face(employee, photos_base64)
+            
+            print(f"📊 Resultado del face_service:")
+            print(f"   - Success: {result.get('success')}")
+            print(f"   - Message: {result.get('message')}")
+            print(f"   - Photos count: {result.get('photos_count')}")
             
             if result['success']:
                 return Response({
@@ -447,6 +461,14 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def mark_attendance(self, request):
         """Marcar asistencia de un empleado"""
+        print("🎯 MARK_ATTENDANCE - Datos recibidos:")
+        print(f"   - Request data: {request.data}")
+        print(f"   - Employee ID: {request.data.get('employee_id')}")
+        print(f"   - Area ID: {request.data.get('area_id')}")
+        print(f"   - Latitude: {request.data.get('latitude')}")
+        print(f"   - Longitude: {request.data.get('longitude')}")
+        print(f"   - Face verified: {request.data.get('face_verified')}")
+        
         employee_id = request.data.get('employee_id')
         area_id = request.data.get('area_id')
         latitude = request.data.get('latitude')
@@ -456,10 +478,15 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         try:
             # Buscar empleado por ID de base de datos, no por employee_id
             employee = Employee.objects.get(id=employee_id)
+            print(f"✅ Empleado encontrado: {employee.full_name} (ID: {employee.id})")
+            
             area = Area.objects.get(id=area_id)
+            print(f"✅ Área encontrada: {area.name} (ID: {area.id})")
             
             # Verificar si ya tiene asistencia hoy
             today = timezone.now().date()
+            print(f"📅 Fecha actual: {today}")
+            
             attendance, created = Attendance.objects.get_or_create(
                 employee=employee,
                 date=today,
@@ -473,18 +500,72 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 }
             )
             
-            if not created:
-                # Ya existe, actualizar hora de salida
-                attendance.check_out = timezone.now().time()
-                attendance.save()
+            if created:
+                print(f"✅ NUEVA asistencia creada para {employee.full_name}")
+                message = f"Entrada registrada exitosamente para {employee.full_name}"
+                action_type = "entrada"
+            else:
+                print(f"🔄 Asistencia existente encontrada para {employee.full_name}")
+                # Verificar si ya tiene hora de salida
+                if attendance.check_out is None:
+                    # Solo actualizar si no tiene hora de salida
+                    attendance.check_out = timezone.now().time()
+                    attendance.save()
+                    print(f"⏰ Hora de salida actualizada: {attendance.check_out}")
+                    message = f"Salida registrada exitosamente para {employee.full_name}"
+                    action_type = "salida"
+                else:
+                    print(f"ℹ️ Empleado ya tiene entrada y salida registradas para hoy")
+                    print(f"   Entrada: {attendance.check_in}")
+                    print(f"   Salida: {attendance.check_out}")
+                    message = f"{employee.full_name} ya tiene entrada y salida registradas para hoy"
+                    action_type = "completo"
+                    
+                    # Cuando ya está completo, devolver error informativo
+                    return Response({
+                        'success': False,
+                        'message': message,
+                        'action_type': action_type,
+                        'check_in': attendance.check_in,
+                        'check_out': attendance.check_out,
+                        'employee_name': employee.full_name,
+                        'error_type': 'already_complete'
+                    }, status=status.HTTP_400_BAD_REQUEST)
             
+            print(f"📊 Asistencia final: {attendance}")
             serializer = AttendanceSerializer(attendance)
-            return Response(serializer.data)
             
-        except (Employee.DoesNotExist, Area.DoesNotExist):
+            # Crear respuesta personalizada
+            response_data = {
+                'attendance': serializer.data,
+                'message': message,
+                'action_type': action_type,
+                'check_in': attendance.check_in,
+                'check_out': attendance.check_out,
+                'employee_name': employee.full_name
+            }
+            
+            print(f"🎯 RESPUESTA COMPLETA que se envía al frontend:")
+            print(f"   - action_type: {action_type}")
+            print(f"   - employee_name: {employee.full_name}")
+            print(f"   - message: {message}")
+            print(f"   - response_data keys: {list(response_data.keys())}")
+            
+            return Response(response_data)
+            
+        except (Employee.DoesNotExist, Area.DoesNotExist) as e:
+            print(f"❌ Error: {e}")
             return Response(
                 {'error': 'Empleado o área no encontrada'}, 
                 status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            print(f"❌ Error inesperado: {e}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': f'Error interno: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
     @action(detail=False, methods=['get'])
