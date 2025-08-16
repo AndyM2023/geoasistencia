@@ -191,5 +191,109 @@ export const attendanceService = {
             console.error('Error en login:', error);
             throw error;
         }
+    },
+
+    // Método para obtener todas las asistencias
+    async getAll(filters = {}) {
+        try {
+            console.log('📊 Obteniendo todas las asistencias con filtros:', filters);
+            console.log('🔑 Token disponible:', this.authToken ? 'SÍ' : 'NO');
+            console.log('🔑 Token en localStorage:', localStorage.getItem('token') ? 'SÍ' : 'NO');
+            
+            let url = '/attendance/';
+            const params = new URLSearchParams();
+            
+            // Aplicar filtros si están presentes
+            if (filters.employee) {
+                params.append('employee_id', filters.employee);
+            }
+            if (filters.area) {
+                params.append('area_id', filters.area);
+            }
+            if (filters.status && filters.status !== 'all') {
+                params.append('status', filters.status);
+            }
+            if (filters.dateFrom) {
+                params.append('date_from', filters.dateFrom);
+            }
+            if (filters.dateTo) {
+                params.append('date_to', filters.dateTo);
+            }
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            console.log('🌐 URL de consulta:', url);
+            console.log('🔑 Headers de autenticación:', this.getAuthHeaders());
+            
+            // Verificar que el token esté disponible antes de hacer la petición
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No hay token de autenticación disponible');
+            }
+            
+            console.log('🔑 Token que se enviará:', token.substring(0, 30) + '...');
+            
+            // Verificar que la URL base esté configurada correctamente
+            console.log('🌐 URL base de la API:', api.defaults.baseURL);
+            console.log('🌐 URL completa que se enviará:', api.defaults.baseURL + url);
+            
+            // Comparar con la petición exitosa
+            console.log('🔍 COMPARACIÓN CON PETICIÓN EXITOSA:');
+            console.log('   - URL del proxy (exitosa): /app/attendance/');
+            console.log('   - URL del servicio: ' + api.defaults.baseURL + url);
+            console.log('   - ¿Son iguales?', '/app/attendance/' === (api.defaults.baseURL + url));
+            
+            const response = await api.get(url, {
+                headers: this.getAuthHeaders()
+            });
+            
+            console.log('✅ Respuesta del backend:', response.data);
+            console.log('📊 Estado HTTP:', response.status);
+            console.log('📊 Headers de respuesta:', response.headers);
+            
+            // Manejar respuesta paginada del backend
+            if (response.data.results && Array.isArray(response.data.results)) {
+                console.log('✅ Respuesta paginada, usando results');
+                return response.data.results;
+            } else if (Array.isArray(response.data)) {
+                console.log('✅ Respuesta directa como array');
+                return response.data;
+            } else {
+                console.error('❌ Formato de respuesta no reconocido:', response.data);
+                return [];
+            }
+        } catch (error) {
+            console.error('❌ Error obteniendo asistencias:', error);
+            console.error('📡 Detalles del error:', {
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                config: error.config,
+                url: error.config?.url,
+                method: error.config?.method
+            });
+            throw error;
+        }
+    },
+
+    // Método para obtener asistencias por rango de fechas
+    async getByDateRange(startDate, endDate, additionalFilters = {}) {
+        try {
+            console.log('📅 Obteniendo asistencias por rango de fechas:', { startDate, endDate, additionalFilters });
+            
+            const filters = {
+                dateFrom: startDate,
+                dateTo: endDate,
+                ...additionalFilters
+            };
+            
+            return await this.getAll(filters);
+        } catch (error) {
+            console.error('❌ Error obteniendo asistencias por rango de fechas:', error);
+            throw error;
+        }
     }
 };

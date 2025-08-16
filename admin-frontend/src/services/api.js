@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// Usar el proxy de Vite configurado
+// Usar el proxy de Vite configurado - CORREGIDO para coincidir con backend
 const API_BASE_URL = '/app'
 
 const api = axios.create({
@@ -15,8 +15,21 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
+    console.log('🔍 API Interceptor - Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: config.baseURL + config.url,
+      hasToken: !!token,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'NO'
+    })
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log('✅ Token agregado a headers:', config.headers.Authorization.substring(0, 30) + '...')
+      console.log('🔍 Headers completos que se enviarán:', config.headers)
+    } else {
+      console.log('⚠️ No hay token disponible para la petición')
     }
     return config
   }

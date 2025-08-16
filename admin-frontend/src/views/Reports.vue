@@ -8,17 +8,39 @@
 
     <!-- Filtros -->
     <v-card class="mb-6">
-      <v-card-title>Filtros</v-card-title>
+      <v-card-title class="d-flex align-center justify-space-between">
+        <span>Filtros</span>
+        <v-select
+          v-model="filters.status"
+          label="Estado"
+          :items="[
+            { title: 'Todos', value: 'all' },
+            { title: 'Presente', value: 'present' },
+            { title: 'Ausente', value: 'absent' },
+            { title: 'Tarde', value: 'late' }
+          ]"
+          item-title="title"
+          item-value="value"
+          variant="outlined"
+          density="compact"
+          style="min-width: 150px; max-width: 200px;"
+        ></v-select>
+      </v-card-title>
       <v-card-text>
         <v-row>
           <v-col cols="12" sm="6" md="3">
             <v-select
               v-model="filters.employee"
               label="Empleado"
-              :items="employees"
-              item-title="name"
-              item-value="id"
-              clearable
+              :items="[
+                { title: 'Todos los empleados', value: null },
+                ...employees.map(emp => ({
+                  title: emp.user.full_name,
+                  value: emp.id
+                }))
+              ]"
+              item-title="title"
+              item-value="value"
               variant="outlined"
               density="compact"
             ></v-select>
@@ -28,57 +50,102 @@
             <v-select
               v-model="filters.area"
               label="Área"
-              :items="areas"
-              item-title="name"
-              item-value="id"
-              clearable
+              :items="[
+                { title: 'Todas las áreas', value: null },
+                ...areas.map(area => ({
+                  title: area.name,
+                  value: area.id
+                }))
+              ]"
+              item-title="title"
+              item-value="value"
               variant="outlined"
               density="compact"
+              :disabled="filters.employee !== null"
+              :prepend-icon="filters.employee ? 'mdi-lock' : 'mdi-map-marker'"
+              :color="filters.employee ? 'warning' : 'primary'"
             ></v-select>
           </v-col>
           
           <v-col cols="12" sm="6" md="3">
-            <v-menu v-model="showDatePicker" :close-on-content-click="false">
+            <v-menu v-model="showDatePickerFrom" :close-on-content-click="false">
               <template v-slot:activator="{ props }">
                 <v-text-field
-                  v-model="filters.dateRange"
-                  label="Rango de Fechas"
+                  v-model="filters.dateFrom"
+                  label="Desde"
                   readonly
                   v-bind="props"
                   variant="outlined"
                   density="compact"
                   prepend-icon="mdi-calendar"
+                  :hint="filters.dateTo && new Date(filters.dateFrom) > new Date(filters.dateTo) ? 'Fecha debe ser menor que Hasta' : ''"
+                  :error="filters.dateTo && new Date(filters.dateFrom) > new Date(filters.dateTo)"
                 ></v-text-field>
               </template>
               <v-date-picker
-                v-model="filters.dateRange"
-                range
-                @update:model-value="showDatePicker = false"
+                v-model="filters.dateFrom"
+                @update:model-value="showDatePickerFrom = false"
+                :max="filters.dateTo"
               ></v-date-picker>
             </v-menu>
           </v-col>
           
           <v-col cols="12" sm="6" md="3">
-            <v-select
-              v-model="filters.status"
-              label="Estado"
-              :items="['all', 'present', 'absent', 'late']"
-              item-title="name"
-              item-value="value"
-              variant="outlined"
-              density="compact"
-            ></v-select>
+            <v-menu v-model="showDatePickerTo" :close-on-content-click="false">
+              <template v-slot:activator="{ props }">
+                <v-text-field
+                  v-model="filters.dateTo"
+                  label="Hasta"
+                  readonly
+                  v-bind="props"
+                  variant="outlined"
+                  density="compact"
+                  prepend-icon="mdi-calendar"
+                  :hint="filters.dateFrom && new Date(filters.dateFrom) > new Date(filters.dateTo) ? 'Fecha debe ser mayor que Desde' : ''"
+                  :error="filters.dateFrom && new Date(filters.dateFrom) > new Date(filters.dateTo)"
+                ></v-text-field>
+              </template>
+              <v-date-picker
+                v-model="filters.dateTo"
+                @update:model-value="showDatePickerTo = false"
+                :min="filters.dateFrom"
+              ></v-date-picker>
+            </v-menu>
           </v-col>
         </v-row>
         
-        <v-row>
+        <v-row class="mt-0">
           <v-col cols="12" class="text-center">
-            <v-btn color="primary" @click="generateReport" :loading="generating">
+            <!-- Botón de prueba temporal -->
+            <v-btn color="info" @click="testAuth" class="mr-2" size="small">
+              🔍 Test Auth
+            </v-btn>
+            
+            <!-- Botón de prueba para conexión directa -->
+            <v-btn color="warning" @click="testBackendConnection" class="mr-2" size="small">
+              🌐 Test Backend
+            </v-btn>
+            
+            <!-- Botón de prueba para el servicio de asistencia -->
+            <v-btn color="success" @click="testAttendanceService" class="mr-2" size="small">
+              📊 Test Service
+            </v-btn>
+            
+            <v-btn color="primary" @click="generateReport" :loading="generating" :disabled="!canGenerateReport">
               Generar Reporte
             </v-btn>
             <v-btn color="secondary" @click="exportReport" :disabled="!reportData.length" class="ml-2">
               Exportar Excel
             </v-btn>
+            <v-btn color="outline" @click="clearFilters" class="ml-2">
+              Limpiar Filtros
+            </v-btn>
+          </v-col>
+        </v-row>
+        
+        <v-row>
+          <v-col cols="12">
+            
           </v-col>
         </v-row>
       </v-card-text>
@@ -190,12 +257,17 @@
   </div>
 </template>
 
+<style scoped>
+/* Estilos específicos para los filtros si son necesarios */
+</style>
+
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AttendancePieChart from '../components/charts/AttendancePieChart.vue'
 import { attendanceService } from '../services/attendanceService'
 import { employeeService } from '../services/employeeService'
 import areaService from '../services/areaService'
+import { useAuthStore } from '../stores/auth'
 
 export default {
   name: 'Reports',
@@ -203,15 +275,29 @@ export default {
     AttendancePieChart
   },
   setup() {
+    const authStore = useAuthStore()
+    
+    // Verificar autenticación
+    if (!authStore.isAuthenticated) {
+      console.error('❌ Usuario no autenticado')
+      // Redirigir al login o mostrar error
+      return
+    }
+    
+    console.log('✅ Usuario autenticado:', authStore.user)
+    console.log('🔑 Token disponible:', authStore.token ? 'SÍ' : 'NO')
+    
     const search = ref('')
     const loading = ref(false)
     const generating = ref(false)
-    const showDatePicker = ref(false)
+    const showDatePickerFrom = ref(false)
+    const showDatePickerTo = ref(false)
     
     const filters = ref({
       employee: null,
       area: null,
-      dateRange: [],
+      dateFrom: null,
+      dateTo: null,
       status: 'all'
     })
     
@@ -262,6 +348,12 @@ export default {
     
     const loadEmployees = async () => {
       try {
+        // Verificar autenticación
+        if (!authStore.isAuthenticated) {
+          console.error('❌ No se pueden cargar empleados: usuario no autenticado')
+          return
+        }
+        
         // CARGAR DESDE API REAL
         const employeesData = await employeeService.getAll()
         // El backend devuelve {count, next, previous, results}
@@ -274,6 +366,12 @@ export default {
     
     const loadAreas = async () => {
       try {
+        // Verificar autenticación
+        if (!authStore.isAuthenticated) {
+          console.error('❌ No se pueden cargar áreas: usuario no autenticado')
+          return
+        }
+        
         // CARGAR DESDE API REAL
         const areasData = await areaService.getAll()
         // El backend devuelve results que es el array de áreas
@@ -283,28 +381,138 @@ export default {
       }
     }
     
+    // Watcher para establecer automáticamente el área cuando se selecciona un empleado
+    watch(() => filters.value.employee, (newEmployeeId) => {
+      if (newEmployeeId) {
+        // Buscar el empleado seleccionado
+        const selectedEmployee = employees.value.find(emp => emp.id === newEmployeeId)
+        if (selectedEmployee && selectedEmployee.area) {
+          // Establecer automáticamente el área del empleado
+          filters.value.area = selectedEmployee.area
+          console.log(`✅ Área automáticamente establecida para ${selectedEmployee.user.full_name}: ${selectedEmployee.area}`)
+        }
+      } else {
+        // Si se deselecciona el empleado, liberar el área
+        filters.value.area = null
+        console.log('🔄 Empleado deseleccionado, área liberada')
+      }
+    })
+    
     const generateReport = async () => {
+      // Verificar autenticación antes de proceder
+      if (!authStore.isAuthenticated) {
+        alert('❌ No estás autenticado. Por favor, inicia sesión.')
+        return
+      }
+      
       generating.value = true
       loading.value = true
       
       try {
-        // GENERAR REPORTE DESDE API REAL
-        if (filters.value.dateRange.length === 2) {
-          const [startDate, endDate] = filters.value.dateRange
-          reportData.value = await attendanceService.getByDateRange(startDate, endDate)
-        } else {
-          const attendanceData = await attendanceService.getAll()
-          // El backend devuelve {count, next, previous, results}
-          // Necesitamos acceder a results que es el array de asistencias
-          reportData.value = attendanceData.results || attendanceData
+        console.log('🔍 Generando reporte con filtros:', filters.value);
+        console.log('🔑 Token de autenticación:', localStorage.getItem('token') ? 'SÍ' : 'NO');
+        console.log('🔑 Token preview:', localStorage.getItem('token')?.substring(0, 30) + '...');
+        
+        // Validar fechas si están seleccionadas
+        if (filters.value.dateFrom && filters.value.dateTo) {
+          const fromDate = new Date(filters.value.dateFrom);
+          const toDate = new Date(filters.value.dateTo);
+          
+          if (fromDate > toDate) {
+            throw new Error('La fecha "Desde" no puede ser mayor que la fecha "Hasta"');
+          }
         }
         
-        calculateStats()
+        // Crear objeto de filtros para el servicio
+        const reportFilters = {};
+        
+        // Aplicar filtros si están seleccionados
+        if (filters.value.employee) {
+          reportFilters.employee = filters.value.employee;
+          
+          // Verificar que el área esté establecida para el empleado seleccionado
+          if (!filters.value.area) {
+            const selectedEmployee = employees.value.find(emp => emp.id === filters.value.employee);
+            if (selectedEmployee && selectedEmployee.area) {
+              filters.value.area = selectedEmployee.area;
+              reportFilters.area = selectedEmployee.area;
+              console.log(`🔒 Área automáticamente establecida para reporte: ${selectedEmployee.area}`);
+            }
+          }
+        }
+        if (filters.value.area) {
+          reportFilters.area = filters.value.area;
+        }
+        if (filters.value.status && filters.value.status !== 'all') {
+          reportFilters.status = filters.value.status;
+        }
+        if (filters.value.dateFrom && filters.value.dateTo) {
+          reportFilters.dateFrom = filters.value.dateFrom;
+          reportFilters.dateTo = filters.value.dateTo;
+        }
+        
+        console.log('📊 Filtros aplicados:', reportFilters);
+        console.log('🔑 Token de autenticación:', localStorage.getItem('token') ? 'SÍ' : 'NO');
+        
+        // Obtener datos con filtros aplicados
+        let responseData;
+        console.log('🚀 Iniciando petición al servicio...');
+        
+        if (filters.value.dateFrom && filters.value.dateTo) {
+          // Usar rango de fechas específico
+          console.log('📅 Usando getByDateRange con fechas:', filters.value.dateFrom, filters.value.dateTo);
+          responseData = await attendanceService.getByDateRange(
+            filters.value.dateFrom, 
+            filters.value.dateTo, 
+            reportFilters
+          );
+        } else {
+          // Obtener todas las asistencias con filtros
+          console.log('📊 Usando getAll con filtros:', reportFilters);
+          responseData = await attendanceService.getAll(reportFilters);
+        }
+        
+        console.log('✅ Datos obtenidos del servicio:', responseData);
+        
+        // Verificar que responseData sea un array
+        if (Array.isArray(responseData)) {
+          reportData.value = responseData;
+          console.log('✅ Datos asignados correctamente:', reportData.value.length, 'registros');
+        } else {
+          console.warn('⚠️ Respuesta no es un array:', responseData);
+          reportData.value = responseData.results || responseData.data || [];
+          console.log('✅ Datos extraídos de respuesta:', reportData.value.length, 'registros');
+        }
+        
+        calculateStats();
       } catch (error) {
-        console.error('Error generando reporte:', error)
+        console.error('❌ Error generando reporte:', error);
+        console.error('📡 Detalles del error:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          config: error.config
+        });
+        
+        // Mostrar mensaje de error más detallado
+        let errorMessage = 'Error generando reporte';
+        if (error.response?.status === 500) {
+          errorMessage = 'Error interno del servidor (500). Verifica que el backend esté funcionando.';
+        } else if (error.response?.status === 401) {
+          errorMessage = 'No autorizado. Verifica tu sesión.';
+        } else if (error.response?.status === 404) {
+          errorMessage = 'Endpoint no encontrado. Verifica la configuración del backend.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        // Mostrar mensaje de error al usuario
+        reportData.value = [];
+        alert(errorMessage);
       } finally {
-        generating.value = false
-        loading.value = false
+        generating.value = false;
+        loading.value = false;
       }
     }
     
@@ -354,17 +562,162 @@ export default {
       }
       return texts[status] || status
     }
-    
-    onMounted(() => {
-      loadEmployees()
-      loadAreas()
+
+    const clearFilters = () => {
+      filters.value = {
+        employee: null,
+        area: null,
+        dateFrom: null,
+        dateTo: null,
+        status: 'all'
+      }
+      showDatePickerFrom.value = false
+      showDatePickerTo.value = false
+      search.value = ''
+      console.log('🧹 Filtros limpiados, área liberada')
+      // No generar reporte automáticamente al limpiar, solo limpiar los filtros
+    }
+
+    const canGenerateReport = computed(() => {
+      // Al menos debe tener un filtro activo o fechas seleccionadas
+      const hasFilters = filters.value.employee !== undefined || 
+                        filters.value.area !== undefined || 
+                        filters.value.status !== 'all' ||
+                        filters.value.dateFrom || 
+                        filters.value.dateTo;
+      
+      // Si tiene fechas, ambas deben estar seleccionadas
+      if (filters.value.dateFrom || filters.value.dateTo) {
+        if (!filters.value.dateFrom || !filters.value.dateTo) {
+          return false;
+        }
+        
+        // Validar que la fecha "Desde" no sea mayor que "Hasta"
+        const fromDate = new Date(filters.value.dateFrom);
+        const toDate = new Date(filters.value.dateTo);
+        if (fromDate > toDate) {
+          return false;
+        }
+      }
+      
+      return hasFilters;
     })
+
+    const activeFiltersCount = computed(() => {
+      let count = 0;
+      if (filters.value.employee !== undefined) count++;
+      if (filters.value.area !== undefined) count++;
+      if (filters.value.status !== 'all') count++;
+      if (filters.value.dateFrom) count++;
+      if (filters.value.dateTo) count++;
+      return count;
+    });
+    
+    onMounted(async () => {
+      // Verificar autenticación antes de cargar datos
+      if (!authStore.isAuthenticated) {
+        console.error('❌ Usuario no autenticado en onMounted')
+        return
+      }
+      
+      console.log('🚀 Reports.vue montado, usuario autenticado, cargando datos...')
+      await loadEmployees()
+      await loadAreas()
+    })
+
+    const testAuth = () => {
+      console.log('🔑 Token actual:', authStore.token);
+      console.log('👤 Usuario actual:', authStore.user);
+      console.log('🔑 Autenticación actual:', authStore.isAuthenticated);
+      console.log('🔑 Token en localStorage:', localStorage.getItem('token'));
+      console.log('🔑 Usuario en localStorage:', localStorage.getItem('user_data'));
+      
+      // Verificar si el token está expirado
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // Decodificar el token JWT (solo para ver la estructura, no para validar)
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const exp = new Date(payload.exp * 1000);
+          const now = new Date();
+          console.log('🔑 Token expira en:', exp);
+          console.log('🔑 Tiempo actual:', now);
+          console.log('🔑 Token expirado:', now > exp);
+          
+          if (now > exp) {
+            alert('⚠️ El token ha expirado. Por favor, inicia sesión nuevamente.');
+          } else {
+            alert('✅ Token válido. Estado de autenticación (consola)');
+          }
+        } catch (e) {
+          console.error('Error decodificando token:', e);
+          alert('❌ Error decodificando token');
+        }
+      } else {
+        alert('❌ No hay token disponible');
+      }
+    };
+
+    const testBackendConnection = async () => {
+      try {
+        console.log('🌐 Probando conexión con el backend...');
+        console.log('🔑 Token disponible:', localStorage.getItem('token') ? 'SÍ' : 'NO');
+        
+        // Usar la URL del proxy (que debería redirigir a localhost:8000)
+        const response = await fetch('/app/attendance/', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('📡 Status de respuesta:', response.status);
+        console.log('📡 Headers de respuesta:', response.headers);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Respuesta de prueba del backend:', data);
+          alert('✅ Conexión con el backend exitosa!');
+        } else {
+          console.error('❌ Error HTTP:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('❌ Respuesta de error:', errorText);
+          alert(`❌ Error HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('❌ Error de conexión con el backend:', error);
+        alert('❌ Error de conexión con el backend. Verifica la configuración de la URL y el backend.');
+      }
+    };
+
+    const testAttendanceService = async () => {
+      try {
+        console.log('📊 Probando el servicio de asistencia...');
+        console.log('🔑 Token disponible:', localStorage.getItem('token') ? 'SÍ' : 'NO');
+        
+        // Intentar obtener todas las asistencias
+        const response = await attendanceService.getAll();
+        console.log('📊 Respuesta del servicio de asistencia (getAll):', response);
+        alert('✅ Servicio de asistencia (getAll) funcionando correctamente!');
+      } catch (error) {
+        console.error('❌ Error al probar el servicio de asistencia:', error);
+        console.error('📡 Detalles del error:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          config: error.config
+        });
+        alert('❌ Servicio de asistencia (getAll) no está funcionando. Verifica la configuración del backend.');
+      }
+    };
     
     return {
       search,
       loading,
       generating,
-      showDatePicker,
+      showDatePickerFrom,
+      showDatePickerTo,
       filters,
       employees,
       areas,
@@ -377,7 +730,13 @@ export default {
       formatDate,
       formatTime,
       getStatusColor,
-      getStatusText
+      getStatusText,
+      clearFilters,
+      canGenerateReport,
+      activeFiltersCount,
+      testAuth,
+      testBackendConnection,
+      testAttendanceService
     }
   }
 }
