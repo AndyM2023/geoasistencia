@@ -116,6 +116,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
             from django.utils import timezone
             validated_data['hire_date'] = timezone.now().date()
         
+        # CRÍTICO: Asignar la cédula al empleado
+        if cedula:
+            validated_data['cedula'] = cedula
+        
         # Crear empleado
         employee = Employee.objects.create(**validated_data)
         return employee
