@@ -41,11 +41,14 @@
                     type="text"
                     placeholder="Ingresa tu nombre"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('first_name')"
                     bg-color="dark-surface"
                     class="mb-1"
-                    :rules="[rules.required]"
+                    :rules="[rules.required, rules.first_name]"
                     hide-details="auto"
+                    @input="(value) => filterLettersOnly(value, 'first_name')"
+                    :error-messages="getFieldError('first_name')"
+                    @keydown="blockInvalidCharacters($event, 'first_name')"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-account</v-icon>
@@ -60,11 +63,14 @@
                     type="text"
                     placeholder="Ingresa tus apellidos"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('last_name')"
                     bg-color="dark-surface"
                     class="mb-1"
-                    :rules="[rules.required]"
+                    :rules="[rules.required, rules.last_name]"
                     hide-details="auto"
+                    @input="(value) => filterLettersOnly(value, 'last_name')"
+                    :error-messages="getFieldError('last_name')"
+                    @keydown="blockInvalidCharacters($event, 'last_name')"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-account-outline</v-icon>
@@ -82,11 +88,14 @@
                     type="email"
                     placeholder="ejemplo@correo.com"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('email')"
                     bg-color="dark-surface"
                     class="mb-1"
                     :rules="[rules.required, rules.email]"
                     hide-details="auto"
+                    @input="filterEmail"
+                    @keydown="blockInvalidEmailCharacters"
+                    :error-messages="getFieldError('email')"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-email</v-icon>
@@ -101,11 +110,15 @@
                     type="text"
                     placeholder="Número de cédula"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('cedula')"
                     bg-color="dark-surface"
                     class="mb-1"
                     :rules="[rules.required, rules.cedula]"
                     hide-details="auto"
+                    @input="filterNumbersOnly"
+                    @keydown="blockNonNumericCharacters"
+                    @paste="blockCedulaPaste"
+                    :error-messages="getFieldError('cedula')"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-card-account-details</v-icon>
@@ -123,11 +136,14 @@
                     type="text"
                     placeholder="Nombre de usuario"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('username')"
                     bg-color="dark-surface"
                     class="mb-1"
                     :rules="[rules.required, rules.username]"
                     hide-details="auto"
+                    @input="(value) => filterAlphanumeric(value, 'username')"
+                    :error-messages="getFieldError('username')"
+                    @keydown="blockInvalidUsernameCharacters"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-at</v-icon>
@@ -143,12 +159,14 @@
                     item-title="text"
                     item-value="value"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('position')"
                     bg-color="dark-surface"
                     class="mb-1"
                     :rules="[rules.required]"
                     hide-details="auto"
                     placeholder="Selecciona un cargo"
+                    @update:model-value="validateField('position')"
+                    :error-messages="getFieldError('position')"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-briefcase</v-icon>
@@ -166,11 +184,13 @@
                     :type="showPassword ? 'text' : 'password'"
                     placeholder="Contraseña segura"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('password')"
                     bg-color="dark-surface"
                     class="mb-1"
                     :rules="[rules.required, rules.password]"
                     hide-details="auto"
+                    @input="validateField('password')"
+                    :error-messages="getFieldError('password')"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-lock</v-icon>
@@ -195,11 +215,13 @@
                     :type="showConfirmPassword ? 'text' : 'password'"
                     placeholder="Repetir contraseña"
                     variant="outlined"
-                    color="primary"
+                    :color="getFieldColor('confirmPassword')"
                     bg-color="dark-surface"
                     class="mb-1"
                     :rules="[rules.required, rules.confirmPassword]"
                     hide-details="auto"
+                    @input="validateField('confirmPassword')"
+                    :error-messages="getFieldError('confirmPassword')"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-lock-check</v-icon>
@@ -318,28 +340,333 @@ export default {
 
     const rules = {
       required: v => !!v || 'Este campo es requerido',
+      
+      // Nombre: máximo 20 caracteres, solo letras
+      first_name: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v.length > 20) return 'El nombre no puede exceder 20 caracteres'
+        if (!/^[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+$/.test(v)) return 'El nombre solo puede contener letras'
+        return true
+      },
+      
+      // Apellidos: máximo 30 caracteres, solo letras y espacios
+      last_name: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v.length > 30) return 'Los apellidos no pueden exceder 30 caracteres'
+        if (!/^[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+$/.test(v)) return 'Los apellidos solo pueden contener letras y espacios'
+        return true
+      },
+      
+      // Email: formato válido
       email: v => {
+        if (!v) return 'Este campo es requerido'
         const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
         return pattern.test(v) || 'Debe ser un email válido'
       },
+      
+      // Cédula: exactamente 10 dígitos, validación ecuatoriana
       cedula: v => {
-        const pattern = /^[0-9]{8,15}$/
-        return pattern.test(v) || 'La cédula debe tener entre 8 y 15 dígitos'
-      },
-      username: v => {
-        const pattern = /^[a-zA-Z0-9._-]{3,20}$/
-        return pattern.test(v) || 'Usuario debe tener 3-20 caracteres (letras, números, ., _, -)'
-      },
-      password: v => {
         if (!v) return 'Este campo es requerido'
-        if (v.length < 6) return 'La contraseña debe tener al menos 6 caracteres'
+        if (!/^\d{10}$/.test(v)) return 'La cédula debe tener exactamente 10 dígitos'
+        
+        // Validación ecuatoriana (algoritmo de verificación)
+        if (!validateEcuadorianCedula(v)) return 'Cédula ecuatoriana inválida'
         return true
       },
+      
+      // Usuario: alfanumérico, 3-20 caracteres
+      username: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v.length < 3) return 'El usuario debe tener al menos 3 caracteres'
+        if (v.length > 20) return 'El usuario no puede exceder 20 caracteres'
+        if (!/^[a-zA-Z0-9]+$/.test(v)) return 'El usuario solo puede contener letras y números'
+        return true
+      },
+      
+      // Contraseña: mínimo 8 caracteres, mayúsculas, minúsculas, números
+      password: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v.length < 8) return 'La contraseña debe tener al menos 8 caracteres'
+        if (!/(?=.*[a-z])/.test(v)) return 'La contraseña debe contener al menos una minúscula'
+        if (!/(?=.*[A-Z])/.test(v)) return 'La contraseña debe contener al menos una mayúscula'
+        if (!/(?=.*\d)/.test(v)) return 'La contraseña debe contener al menos un número'
+        if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(v)) return 'La contraseña debe contener al menos un carácter especial'
+        return true
+      },
+      
+      // Confirmar contraseña: debe coincidir
       confirmPassword: v => {
         if (!v) return 'Este campo es requerido'
         if (v !== formData.password) return 'Las contraseñas no coinciden'
         return true
       }
+    }
+
+    // Función para validar cédula ecuatoriana
+    const validateEcuadorianCedula = (cedula) => {
+      if (cedula.length !== 10) return false
+      
+      // Verificar que todos sean dígitos
+      if (!/^\d+$/.test(cedula)) return false
+      
+      // Verificar que no sea una cédula de ceros
+      if (cedula === '0000000000') return false
+      
+      // Algoritmo de validación ecuatoriana
+      let suma = 0
+      const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
+      
+      for (let i = 0; i < 9; i++) {
+        let producto = parseInt(cedula[i]) * coeficientes[i]
+        if (producto >= 10) {
+          producto = Math.floor(producto / 10) + (producto % 10)
+        }
+        suma += producto
+      }
+      
+      const digitoVerificador = parseInt(cedula[9])
+      const modulo = suma % 10
+      const resultado = modulo === 0 ? 0 : 10 - modulo
+      
+      return resultado === digitoVerificador
+    }
+
+    // Estado de validación en tiempo real
+    const fieldValidation = reactive({
+      first_name: { valid: true, message: '' },
+      last_name: { valid: true, message: '' },
+      email: { valid: true, message: '' },
+      cedula: { valid: true, message: '' },
+      username: { valid: true, message: '' },
+      position: { valid: true, message: '' },
+      password: { valid: true, message: '' },
+      confirmPassword: { valid: true, message: '' }
+    })
+
+    // Función para validar campo en tiempo real
+    const validateField = (fieldName) => {
+      if (!formData[fieldName]) {
+        fieldValidation[fieldName] = { valid: true, message: '' }
+        return
+      }
+
+      let isValid = true
+      let message = ''
+
+      // Aplicar regla específica del campo
+      if (rules[fieldName]) {
+        const result = rules[fieldName](formData[fieldName])
+        if (result !== true) {
+          isValid = false
+          message = result
+        }
+      }
+
+      fieldValidation[fieldName] = { valid: isValid, message: message }
+    }
+
+    // Función para obtener el color del campo según validación
+    const getFieldColor = (fieldName) => {
+      if (!formData[fieldName]) return 'primary'
+      return fieldValidation[fieldName].valid ? 'success' : 'error'
+    }
+
+    // Función para obtener el mensaje de error del campo
+    const getFieldError = (fieldName) => {
+      if (!formData[fieldName]) return ''
+      return fieldValidation[fieldName].message
+    }
+
+    // Función para filtrar solo letras y espacios (para nombre y apellidos)
+    const filterLettersOnly = (value, fieldName) => {
+      // Remover números y caracteres especiales, mantener solo letras, espacios y acentos
+      const filtered = value.replace(/[^A-Za-zÁáÉéÍíÓóÚúÑñ\s]/g, '')
+      
+      // Actualizar el valor del campo con solo caracteres permitidos
+      formData[fieldName] = filtered
+      
+      // Validar el campo después del filtrado
+      validateField(fieldName)
+      
+      return filtered
+    }
+
+    // Función para filtrar solo letras y números (para username)
+    const filterAlphanumeric = (value, fieldName) => {
+      // Remover caracteres especiales, mantener solo letras y números
+      const filtered = value.replace(/[^A-Za-z0-9]/g, '')
+      
+      // Actualizar el valor del campo con solo caracteres permitidos
+      formData[fieldName] = filtered
+      
+      // Validar el campo después del filtrado
+      validateField(fieldName)
+      
+      return filtered
+    }
+
+    // Función para filtrar email (permitir solo caracteres válidos para email)
+    const filterEmail = (value) => {
+      // Permitir letras, números, puntos, guiones bajos, guiones medios, arrobas y puntos
+      const filtered = value.replace(/[^a-zA-Z0-9._%+-@]/g, '')
+      
+      // Actualizar el valor del campo
+      formData.email = filtered
+      
+      // Validar el campo después del filtrado
+      validateField('email')
+      
+      return filtered
+    }
+
+    // Función para filtrar solo números (para cédula)
+    const filterNumbersOnly = (value) => {
+      // Remover todo excepto números
+      const filtered = value.replace(/\D/g, '')
+      
+      // BLOQUEO TOTAL: Si ya tiene 10 dígitos, no permitir más entrada
+      if (filtered.length > 10) {
+        // Mantener solo los primeros 10 dígitos
+        formData.cedula = filtered.slice(0, 10)
+        return filtered.slice(0, 10)
+      }
+      
+      // Limitar a 10 dígitos máximo
+      formData.cedula = filtered.slice(0, 10)
+      
+      // Validar el campo después del filtrado
+      validateField('cedula')
+      
+      return filtered.slice(0, 10)
+    }
+
+    // Función para bloquear caracteres no permitidos en nombre y apellidos
+    const blockInvalidCharacters = (event, fieldName) => {
+      const key = event.key
+      const allowedKeys = [
+        'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+      ]
+      
+      // Permitir teclas de navegación y control
+      if (allowedKeys.includes(key)) {
+        return true
+      }
+      
+      // Permitir solo letras, espacios y acentos
+      const allowedPattern = /^[A-Za-zÁáÉéÍíÓóÚúÑñ\s]$/
+      
+      if (!allowedPattern.test(key)) {
+        // Prevenir la entrada del carácter
+        event.preventDefault()
+        return false
+      }
+      
+      return true
+    }
+
+    // Función para bloquear caracteres no permitidos en username
+    const blockInvalidUsernameCharacters = (event) => {
+      const key = event.key
+      const allowedKeys = [
+        'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+      ]
+      
+      // Permitir teclas de navegación y control
+      if (allowedKeys.includes(key)) {
+        return true
+      }
+      
+      // Permitir solo letras y números
+      const allowedPattern = /^[A-Za-z0-9]$/
+      
+      if (!allowedPattern.test(key)) {
+        // Prevenir la entrada del carácter
+        event.preventDefault()
+        return false
+      }
+      
+      return true
+    }
+
+    // Función para bloquear solo números en cédula
+    const blockNonNumericCharacters = (event) => {
+      const key = event.key
+      const allowedKeys = [
+        'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+      ]
+      
+      // Permitir teclas de navegación y control
+      if (allowedKeys.includes(key)) {
+        return true
+      }
+      
+      // BLOQUEO TOTAL: Si ya tiene 10 dígitos, solo permitir Backspace y Delete
+      if (formData.cedula.length >= 10 && key !== 'Backspace' && key !== 'Delete') {
+        // Prevenir la entrada del carácter
+        event.preventDefault()
+        return false
+      }
+      
+      // Permitir solo números
+      const allowedPattern = /^[0-9]$/
+      
+      if (!allowedPattern.test(key)) {
+        // Prevenir la entrada del carácter
+        event.preventDefault()
+        return false
+      }
+      
+      return true
+    }
+
+    // Función para bloquear caracteres no válidos en email
+    const blockInvalidEmailCharacters = (event) => {
+      const key = event.key
+      const allowedKeys = [
+        'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+      ]
+      
+      // Permitir teclas de navegación y control
+      if (allowedKeys.includes(key)) {
+        return true
+      }
+      
+      // Permitir letras, números, puntos, guiones, arrobas y símbolos válidos para email
+      const allowedPattern = /^[a-zA-Z0-9._%+-@]$/
+      
+      if (!allowedPattern.test(key)) {
+        // Prevenir la entrada del carácter
+        event.preventDefault()
+        return false
+      }
+      
+      return true
+    }
+
+    // Función para bloquear pegado de texto que exceda 10 dígitos en cédula
+    const blockCedulaPaste = (event) => {
+      // Obtener el texto del portapapeles
+      const clipboardData = event.clipboardData || window.clipboardData
+      const pastedText = clipboardData.getData('text')
+      
+      // Si el texto pegado contiene caracteres no numéricos, bloquear
+      if (!/^\d+$/.test(pastedText)) {
+        event.preventDefault()
+        return false
+      }
+      
+      // Si al pegar excedería los 10 dígitos, bloquear
+      const currentLength = formData.cedula.length
+      if (currentLength + pastedText.length > 10) {
+        event.preventDefault()
+        return false
+      }
+      
+      return true
     }
 
     const togglePassword = () => {
@@ -472,10 +799,23 @@ export default {
       success,
       positionOptions,
       rules,
+      fieldValidation,
       togglePassword,
       toggleConfirmPassword,
       goToLogin,
-      handleRegister
+      handleRegister,
+      validateField,
+      getFieldColor,
+      getFieldError,
+      filterLettersOnly,
+      filterAlphanumeric,
+      filterNumbersOnly,
+      filterEmail,
+      blockInvalidCharacters,
+      blockInvalidUsernameCharacters,
+      blockNonNumericCharacters,
+      blockInvalidEmailCharacters,
+      blockCedulaPaste
     }
   }
 }
