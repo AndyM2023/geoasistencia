@@ -135,11 +135,7 @@ body {
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .v-navigation-drawer {
-    width: 100% !important;
-  }
-}
+/* Removed problematic CSS that caused drawer width issues */
 
 /* ===== ESTILOS ESPECÍFICOS PARA EL LOGIN ===== */
 /* Eliminar padding superior y scroll en la página de login */
@@ -203,4 +199,39 @@ body.recognition-page {
     transparent 100%
   );
   box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}
+
+/* ===== ESTILOS DEL LOGO Y ICONO ===== */
+/* Espaciado del contenedor del logo */
+.app-bar-with-border .d-flex.align-center {
+  padding-left: 2px;
+}
+
+/* Espaciado específico del icono de huella */
+.app-bar-with-border .d-flex.align-center .v-icon {
+  margin-left: 8px;
+  margin-right: 12px;
+}
+
+/* Responsive para el logo */
+@media (max-width: 600px) {
+  .app-bar-with-border .d-flex.align-center {
+    padding-left: 12px;
+  }
+  
+  .app-bar-with-border .d-flex.align-center .v-icon {
+    margin-left: 6px;
+    margin-right: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-bar-with-border .d-flex.align-center {
+    padding-left: 8px;
+  }
+  
+  .app-bar-with-border .d-flex.align-center .v-icon {
+    margin-left: 4px;
+    margin-right: 8px;
+  }
 }

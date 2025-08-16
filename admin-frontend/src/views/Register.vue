@@ -1,0 +1,804 @@
+<template>
+  <AppBar />
+  <v-container fluid class="register-container pa-0">
+    <v-row no-gutters class="h-100">
+      <!-- Panel izquierdo con gradiente azul oscuro -->
+      <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
+        <div class="text-center">
+          <h1 class="logo-text text-h3 font-weight-bold text-white">
+            GEOASISTENCIA
+            <br>
+            ADMIN
+          </h1>
+          <div class="logo-glow"></div>
+        </div>
+      </v-col>
+
+      <!-- Panel derecho con formulario -->
+      <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
+        <v-card class="register-card" elevation="0">
+          <v-card-text class="pa-4">
+            <h2 class="text-h5 font-weight-bold text-white mb-1">Registrar Administrador</h2>
+            <p class="text-body-2 text-grey-lighten-1 mb-2">
+              ¿Ya tienes cuenta? 
+              <v-btn 
+                variant="text" 
+                color="primary" 
+                class="text-none px-1"
+                @click="goToLogin"
+              >
+                Iniciar Sesión
+              </v-btn>
+            </p>
+            
+            <v-form @submit.prevent="handleRegister" class="register-form" ref="formRef" v-show="!success">
+              <!-- Nombre y Apellidos -->
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.first_name"
+                    label="NOMBRE"
+                    type="text"
+                    placeholder="Ingresa tu nombre"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-account</v-icon>
+                    </template>
+                  </v-text-field>
+                </v-col>
+                
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.last_name"
+                    label="APELLIDOS"
+                    type="text"
+                    placeholder="Ingresa tus apellidos"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-account-outline</v-icon>
+                    </template>
+                  </v-text-field>
+                </v-col>
+              </v-row>
+
+              <!-- Email y Cédula -->
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.email"
+                    label="CORREO ELECTRÓNICO"
+                    type="email"
+                    placeholder="ejemplo@correo.com"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required, rules.email]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-email</v-icon>
+                    </template>
+                  </v-text-field>
+                </v-col>
+                
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.cedula"
+                    label="CÉDULA"
+                    type="text"
+                    placeholder="Número de cédula"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required, rules.cedula]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-card-account-details</v-icon>
+                    </template>
+                  </v-text-field>
+                </v-col>
+              </v-row>
+
+              <!-- Usuario y Cargo -->
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.username"
+                    label="USUARIO"
+                    type="text"
+                    placeholder="Nombre de usuario"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required, rules.username]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-at</v-icon>
+                    </template>
+                  </v-text-field>
+                </v-col>
+                
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="formData.position"
+                    label="ELEGIR CARGO"
+                    :items="positionOptions"
+                    item-title="text"
+                    item-value="value"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required]"
+                    hide-details="auto"
+                    placeholder="Selecciona un cargo"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-briefcase</v-icon>
+                    </template>
+                  </v-select>
+                </v-col>
+              </v-row>
+
+              <!-- Contraseña y Confirmar Contraseña -->
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.password"
+                    label="CONTRASEÑA"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Contraseña segura"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required, rules.password]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-lock</v-icon>
+                    </template>
+                    <template v-slot:append-inner>
+                      <v-btn
+                        variant="text"
+                        icon
+                        @click="togglePassword"
+                        color="grey-lighten-1"
+                      >
+                        <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-text-field>
+                </v-col>
+                
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.confirmPassword"
+                    label="CONFIRMAR CONTRASEÑA"
+                    :type="showConfirmPassword ? 'text' : 'password'"
+                    placeholder="Repetir contraseña"
+                    variant="outlined"
+                    color="primary"
+                    bg-color="dark-surface"
+                    class="mb-1"
+                    :rules="[rules.required, rules.confirmPassword]"
+                    hide-details="auto"
+                  >
+                    <template v-slot:prepend-inner>
+                      <v-icon color="primary">mdi-lock-check</v-icon>
+                    </template>
+                    <template v-slot:append-inner>
+                      <v-btn
+                        variant="text"
+                        icon
+                        @click="toggleConfirmPassword"
+                        color="grey-lighten-1"
+                      >
+                        <v-icon>{{ showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-text-field>
+                </v-col>
+              </v-row>
+
+              
+
+              <v-row justify="center">
+                <v-col cols="12" sm="10">
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    size="large"
+                    block
+                    :loading="loading"
+                    :disabled="loading"
+                    class="mb-2"
+                    elevation="2"
+                  >
+                                    <span v-if="loading">Registrando...</span>
+                    <span v-else>Registrar Administrador</span>
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-form>
+
+            <!-- Mensaje de éxito grande cuando se oculta el formulario -->
+            <div v-if="success" class="text-center py-8">
+              <v-icon size="80" color="success" class="mb-4">mdi-check-circle</v-icon>
+              <h3 class="text-h4 font-weight-bold text-white mb-4">
+                {{ success.includes('inicio de sesión') ? '¡Registro e Inicio de Sesión Exitosos!' : '¡Registro Exitoso!' }}
+              </h3>
+              <p class="text-h6 text-grey-lighten-1 mb-4">{{ success }}</p>
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                size="30"
+                class="mb-2"
+              ></v-progress-circular>
+              <p class="text-body-2 text-grey-lighten-2">
+                {{ success.includes('dashboard') ? 'Accediendo al dashboard...' : 'Redirigiendo...' }}
+              </p>
+            </div>
+
+            <!-- Mensajes de error cuando el formulario está visible -->
+            <v-alert
+              v-if="error && !success"
+              type="error"
+              variant="tonal"
+              class="mb-4"
+              closable
+              @click:close="error = ''"
+            >
+              {{ error }}
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AppBar from '../components/AppBar.vue'
+import { authService } from '../services/authService'
+import { useAuthStore } from '../stores/auth'
+
+export default {
+  name: 'Register',
+  components: {
+    AppBar
+  },
+  setup() {
+    const router = useRouter()
+    const authStore = useAuthStore()
+    const formRef = ref(null)
+    
+    const formData = reactive({
+      first_name: '',
+      last_name: '',
+      email: '',
+      cedula: '',
+      username: '',
+      position: '',
+      password: '',
+      confirmPassword: ''
+    })
+    
+    const showPassword = ref(false)
+    const showConfirmPassword = ref(false)
+    const loading = ref(false)
+    const error = ref('')
+    const success = ref('')
+
+    // Opciones para el campo cargo
+    const positionOptions = [
+      { text: 'Administrador de Personal', value: 'Administrador de Personal' },
+      { text: 'Asistente de RR. HH.', value: 'Asistente de RR. HH.' },
+      { text: 'Técnico de RR. HH.', value: 'Técnico de RR. HH.' }
+    ]
+
+    const rules = {
+      required: v => !!v || 'Este campo es requerido',
+      email: v => {
+        const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+        return pattern.test(v) || 'Debe ser un email válido'
+      },
+      cedula: v => {
+        const pattern = /^[0-9]{8,15}$/
+        return pattern.test(v) || 'La cédula debe tener entre 8 y 15 dígitos'
+      },
+      username: v => {
+        const pattern = /^[a-zA-Z0-9._-]{3,20}$/
+        return pattern.test(v) || 'Usuario debe tener 3-20 caracteres (letras, números, ., _, -)'
+      },
+      password: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v.length < 6) return 'La contraseña debe tener al menos 6 caracteres'
+        return true
+      },
+      confirmPassword: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v !== formData.password) return 'Las contraseñas no coinciden'
+        return true
+      }
+    }
+
+    const togglePassword = () => {
+      showPassword.value = !showPassword.value
+    }
+
+    const toggleConfirmPassword = () => {
+      showConfirmPassword.value = !showConfirmPassword.value
+    }
+
+    const goToLogin = () => {
+      router.push('/login')
+    }
+
+    const handleRegister = async () => {
+      console.log('🚀 Iniciando proceso de registro...')
+      
+      // Validar que formRef existe
+      if (!formRef.value) {
+        console.error('❌ FormRef es null')
+        error.value = 'Error en el formulario. Recarga la página.'
+        return
+      }
+
+      // Validar formulario
+      console.log('🔍 Validando formulario...')
+      const { valid } = await formRef.value.validate()
+      console.log('✅ Formulario válido:', valid)
+      
+      if (!valid) {
+        console.log('❌ Formulario no válido, deteniendo registro')
+        return
+      }
+
+      loading.value = true
+      error.value = ''
+      success.value = ''
+
+      try {
+        // Preparar datos para enviar al backend
+        const registerData = {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          cedula: formData.cedula,
+          username: formData.username,
+          position: formData.position,
+          password: formData.password,
+          role: 'admin' // Por defecto administrador
+        }
+
+        console.log('📤 Datos a enviar:', { ...registerData, password: '[OCULTA]' })
+        console.log('📡 Llamando a authService.register...')
+
+        const result = await authService.register(registerData)
+        
+        console.log('📊 Resultado del registro:', result)
+        
+        if (result.success) {
+          console.log('✅ Registro exitoso!')
+          success.value = '¡Administrador registrado exitosamente! Iniciando sesión...'
+          
+          // Limpiar formulario y resetear validaciones
+          Object.keys(formData).forEach(key => {
+            formData[key] = ''
+          })
+          
+          // Resetear validaciones del formulario
+          if (formRef.value) {
+            formRef.value.resetValidation()
+          }
+          
+          // Hacer login automático con las credenciales recién creadas
+          console.log('🔐 Iniciando login automático...')
+          try {
+            const loginResult = await authStore.login(registerData.username, registerData.password)
+            
+            if (loginResult.success) {
+              console.log('✅ Login automático exitoso!')
+              success.value = '¡Registro e inicio de sesión exitosos! Redirigiendo al dashboard...'
+              
+              setTimeout(() => {
+                router.push('/app/dashboard')
+              }, 1500)
+            } else {
+              console.log('❌ Error en login automático, redirigiendo al login manual')
+              success.value = '¡Registro exitoso! Redirigiendo al login...'
+              
+              setTimeout(() => {
+                router.push('/login')
+              }, 1500)
+            }
+          } catch (loginError) {
+            console.error('💥 Error en login automático:', loginError)
+            success.value = '¡Registro exitoso! Redirigiendo al login...'
+            
+            setTimeout(() => {
+              router.push('/login')
+            }, 1500)
+          }
+        } else {
+          console.log('❌ Error en resultado:', result.error)
+          error.value = result.error || 'Error durante el registro'
+        }
+      } catch (err) {
+        console.error('💥 Excepción en registro:', err)
+        console.error('💥 Detalles de la respuesta:', err.response)
+        error.value = err.response?.data?.detail || 'Error de conexión. Intenta de nuevo.'
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // Lifecycle hooks para controlar el scroll
+    onMounted(() => {
+      document.body.classList.add('register-page')
+    })
+
+    onUnmounted(() => {
+      document.body.classList.remove('register-page')
+    })
+
+    return {
+      formData,
+      formRef,
+      showPassword,
+      showConfirmPassword,
+      loading,
+      error,
+      success,
+      positionOptions,
+      rules,
+      togglePassword,
+      toggleConfirmPassword,
+      goToLogin,
+      handleRegister
+    }
+  }
+}
+</script>
+
+<style scoped>
+.register-container {
+  height: calc(100vh - 64px);
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  margin-top: 64px !important;
+  overflow-y: auto;
+}
+
+.left-panel {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  min-height: 100%;
+}
+
+.left-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 70%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.logo-text {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  letter-spacing: 2px;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%;
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.right-panel {
+  background: #16213e;
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding: 16px 0;
+}
+
+.right-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+  .register-card {
+    background: rgba(30, 41, 59, 0.8) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    margin: 20px 0 4px 0;
+  }
+
+/* Personalización de Vuetify para modo oscuro */
+:deep(.v-field) {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+:deep(.v-field--focused) {
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2) !important;
+}
+
+:deep(.v-field__input) {
+  color: #ffffff !important;
+}
+
+:deep(.v-field__label) {
+  color: #cbd5e1 !important;
+}
+
+:deep(.v-btn--variant-text) {
+  color: #3b82f6 !important;
+}
+
+:deep(.v-btn--variant-text:hover) {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+:deep(.v-checkbox .v-selection-control__input) {
+  color: #00d4ff !important;
+}
+
+:deep(.v-checkbox .v-label) {
+  color: #cbd5e1 !important;
+}
+
+/* Personalización para v-select */
+:deep(.v-select .v-field) {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+:deep(.v-select .v-field--focused) {
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2) !important;
+}
+
+:deep(.v-select .v-field__input) {
+  color: #ffffff !important;
+}
+
+:deep(.v-select .v-select__selection) {
+  color: #ffffff !important;
+}
+
+:deep(.v-select .v-field__placeholder) {
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+:deep(.v-select .v-field__label) {
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+:deep(.v-select .v-field__label--floating) {
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+/* Eliminar bordes y márgenes globales */
+:deep(.v-container) {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+:deep(.v-row) {
+  margin: 0 !important;
+  border: none !important;
+}
+
+:deep(.v-col) {
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Reducir espaciado entre campos y eliminar bordes verticales */
+.register-form :deep(.v-row) {
+  margin-bottom: 0 !important;
+}
+
+.register-form :deep(.v-col) {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  border: none !important;
+}
+
+.register-form :deep(.v-col:first-child) {
+  padding-left: 0 !important;
+}
+
+.register-form :deep(.v-col:last-child) {
+  padding-right: 0 !important;
+}
+
+/* Espaciado uniforme para todos los campos */
+.register-form :deep(.v-input) {
+  margin-bottom: 4px !important;
+}
+
+.register-form :deep(.v-field) {
+  margin-bottom: 0 !important;
+}
+
+/* Asegurar que los campos individuales (no en filas) tengan el mismo espaciado */
+.register-form > .v-text-field {
+  margin-bottom: 4px !important;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .logo-text {
+    font-size: 2rem !important;
+    letter-spacing: 1px !important;
+  }
+  
+  .left-panel {
+    padding: 2rem !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .register-container {
+    height: auto;
+    min-height: calc(100vh - 64px);
+  }
+  
+  .left-panel {
+    min-height: 120px;
+    height: auto;
+    padding: 1.5rem !important;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .right-panel {
+    height: auto;
+    min-height: calc(100vh - 184px);
+    align-items: center !important;
+    padding: 8px 0;
+  }
+  
+  .logo-text {
+    font-size: 1.5rem !important;
+    letter-spacing: 1px !important;
+    line-height: 1.2 !important;
+  }
+  
+  .register-card {
+    margin: 30px 0 4px 0;
+  }
+  
+  .register-card :deep(.v-card-text) {
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .logo-text {
+    font-size: 1.25rem !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1.1 !important;
+  }
+  
+  .left-panel {
+    padding: 1rem !important;
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .logo-text {
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1 !important;
+  }
+  
+  .left-panel {
+    padding: 0.75rem !important;
+    min-height: 80px;
+  }
+  
+  .register-card {
+    margin: 20px 0 4px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-text {
+    font-size: 0.875rem !important;
+    letter-spacing: 0.25px !important;
+    line-height: 1 !important;
+  }
+  
+  .left-panel {
+    padding: 0.5rem !important;
+    min-height: 60px;
+  }
+}
+
+
+
+/* Asegurar que el AppBar sea visible */
+:deep(.v-app-bar) {
+  z-index: 1000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+.register-container {
+  position: relative;
+  z-index: 1;
+}
+</style>

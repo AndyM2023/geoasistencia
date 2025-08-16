@@ -41,6 +41,66 @@ class AuthViewSet(viewsets.ViewSet):
         if request.user.is_authenticated:
             return Response(UserSerializer(request.user).data)
         return Response({'error': 'No autenticado'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    @action(detail=False, methods=['post'])
+    def register(self, request):
+        """Endpoint para registro de administradores"""
+        try:
+            data = request.data.copy()
+            
+            # Validaciones básicas
+            required_fields = ['first_name', 'last_name', 'email', 'cedula', 'username', 'password', 'position']
+            for field in required_fields:
+                if not data.get(field):
+                    return Response(
+                        {'error': f'El campo {field} es requerido'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Verificar que no exista usuario con el mismo username
+            if User.objects.filter(username=data['username']).exists():
+                return Response(
+                    {'error': 'Ya existe un usuario con ese nombre de usuario'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Verificar que no exista usuario con el mismo email
+            if User.objects.filter(email=data['email']).exists():
+                return Response(
+                    {'error': 'Ya existe un usuario con ese email'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Verificar que no exista usuario con la misma cédula
+            if User.objects.filter(cedula=data['cedula']).exists():
+                return Response(
+                    {'error': 'Ya existe un usuario con esa cédula'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Crear el usuario administrador
+            user = User.objects.create_user(
+                username=data['username'],
+                email=data['email'],
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                cedula=data['cedula'],
+                position=data['position'],
+                password=data['password'],
+                role='admin',
+                is_active=True
+            )
+            
+            return Response({
+                'message': 'Administrador registrado exitosamente',
+                'user': UserSerializer(user).data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error durante el registro: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class DashboardViewSet(viewsets.ViewSet):
     """ViewSet para estadísticas del dashboard"""

@@ -516,11 +516,33 @@ export default {
   right: 50px;
 }
 
-/* Responsive para imágenes laterales */
-@media (max-width: 1200px) {
+/* Responsive para imágenes laterales - Solución mejorada */
+@media (max-width: 1400px) {
   .side-image {
     width: 250px;
     height: 250px;
+  }
+  
+  .left-image {
+    left: 30px;
+  }
+  
+  .right-image {
+    right: 30px;
+  }
+  
+  /* Ajustar botones en pantallas grandes */
+  .activate-camera-btn,
+  .recognition-btn {
+    font-size: 0.9rem !important;
+    padding: 10px 20px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .side-image {
+    width: 200px;
+    height: 200px;
   }
   
   .left-image {
@@ -532,10 +554,25 @@ export default {
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1000px) {
   .side-image {
-    width: 200px;
-    height: 200px;
+    width: 160px;
+    height: 160px;
+  }
+  
+  .left-image {
+    left: 15px;
+  }
+  
+  .right-image {
+    right: 15px;
+  }
+}
+
+@media (max-width: 900px) {
+  .side-image {
+    width: 120px;
+    height: 120px;
   }
   
   .left-image {
@@ -544,6 +581,21 @@ export default {
   
   .right-image {
     right: 10px;
+  }
+}
+
+@media (max-width: 800px) {
+  .side-image {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .left-image {
+    left: 5px;
+  }
+  
+  .right-image {
+    right: 5px;
   }
 }
 
@@ -559,7 +611,35 @@ export default {
 }
 
 /* Responsive para la tarjeta principal */
-@media (max-width: 960px) {
+@media (max-width: 1200px) {
+  .recognition-card {
+    max-width: 600px;
+    margin-top: 50px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .recognition-card {
+    max-width: 550px;
+    margin-top: 45px;
+  }
+}
+
+@media (max-width: 900px) {
+  .recognition-card {
+    max-width: 500px;
+    margin-top: 40px;
+  }
+}
+
+@media (max-width: 800px) {
+  .recognition-card {
+    max-width: 450px;
+    margin-top: 35px;
+  }
+}
+
+@media (max-width: 768px) {
   .recognition-card {
     max-width: 95%;
     margin-top: 40px;
@@ -590,7 +670,12 @@ export default {
   text-align: center;
   width: 100%;
   max-width: 400px;
+  min-height: 280px;
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .camera-area:hover {
@@ -631,6 +716,11 @@ export default {
 .camera-placeholder {
   flex-direction: column;
   min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
 }
 
 .activate-camera-btn {
@@ -639,6 +729,14 @@ export default {
   letter-spacing: 1px;
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
   transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  min-width: fit-content;
+  width: auto;
+  max-width: none;
+  height: auto;
+  line-height: 1.2;
 }
 
 .activate-camera-btn:hover {
@@ -655,14 +753,60 @@ export default {
 }
 
 /* Responsive para el área de cámara */
+@media (max-width: 1200px) {
+  .activate-camera-btn {
+    font-size: 0.875rem !important;
+    padding: 8px 16px !important;
+    min-width: fit-content !important;
+  }
+  
+  .recognition-btn {
+    font-size: 0.875rem !important;
+    padding: 8px 16px !important;
+  }
+  
+  .camera-area {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .activate-camera-btn {
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
+    min-width: fit-content !important;
+  }
+  
+  .recognition-btn {
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
+  }
+  
+  .camera-area {
+    min-height: 250px;
+  }
+}
+
 @media (max-width: 960px) {
   .camera-area {
     padding: 1.5rem;
     max-width: 100%;
+    min-height: 240px;
   }
   
   .camera-placeholder {
     min-height: 180px;
+  }
+  
+  .activate-camera-btn {
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
+    min-width: fit-content !important;
+  }
+  
+  .recognition-btn {
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
   }
 }
 
@@ -681,6 +825,12 @@ export default {
   background: linear-gradient(135deg, #3b82f6 0%, #00d4ff 100%) !important;
   font-weight: bold;
   letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
 }
 
 .instructions-card {
@@ -733,9 +883,33 @@ export default {
 }
 
 /* Responsive general */
-@media (max-width: 960px) {
+@media (max-width: 1200px) {
   .recognition-container {
-    padding: 0 1rem;
+    padding: 0 280px; /* Espacio para las imágenes de 250px + margen */
+  }
+}
+
+@media (max-width: 1000px) {
+  .recognition-container {
+    padding: 0 200px; /* Espacio para las imágenes de 160px + margen */
+  }
+}
+
+@media (max-width: 900px) {
+  .recognition-container {
+    padding: 0 150px; /* Espacio para las imágenes de 120px + margen */
+  }
+}
+
+@media (max-width: 800px) {
+  .recognition-container {
+    padding: 0 120px; /* Espacio para las imágenes de 100px + margen */
+  }
+}
+
+@media (max-width: 768px) {
+  .recognition-container {
+    padding: 0 1rem; /* En tablets y móviles las imágenes se ocultan */
   }
   
   .recognition-card {
@@ -762,7 +936,7 @@ export default {
   }
   
   .camera-area {
-    min-height: 150px;
+    min-height: 220px;
   }
   
   /* Ajustar padding de la tarjeta en móviles */
@@ -777,6 +951,18 @@ export default {
   
   .text-body-2 {
     font-size: 0.875rem !important;
+  }
+  
+  /* Botones en móviles */
+  .activate-camera-btn {
+    font-size: 0.7rem !important;
+    padding: 4px 8px !important;
+    min-width: fit-content !important;
+  }
+  
+  .recognition-btn {
+    font-size: 0.7rem !important;
+    padding: 4px 8px !important;
   }
 }
 
@@ -794,6 +980,19 @@ export default {
   
   .camera-area {
     border-radius: 8px;
+    min-height: 200px;
+  }
+  
+  /* Botones en pantallas muy pequeñas */
+  .activate-camera-btn {
+    font-size: 0.65rem !important;
+    padding: 3px 6px !important;
+    min-width: fit-content !important;
+  }
+  
+  .recognition-btn {
+    font-size: 0.65rem !important;
+    padding: 3px 6px !important;
   }
 }
 

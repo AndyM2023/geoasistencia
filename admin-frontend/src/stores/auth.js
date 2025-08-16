@@ -13,14 +13,26 @@ export const useAuthStore = defineStore('auth', () => {
     if (isLoading.value || isInitialized.value) return isAuthenticated.value
     
     const storedToken = localStorage.getItem('token')
+    const storedUser = localStorage.getItem('user_data')
+    
     if (storedToken) {
       isLoading.value = true
       try {
+        // Primero cargar datos del usuario desde localStorage
+        if (storedUser) {
+          user.value = JSON.parse(storedUser)
+          console.log('👤 Auth Store - Usuario cargado desde localStorage:', user.value)
+        }
+        
         // Validar token con el backend
         const response = await authService.validateToken(storedToken)
         if (response.valid) {
           token.value = storedToken
-          user.value = response.user
+          // Actualizar datos del usuario si vienen del backend
+          if (response.user) {
+            user.value = response.user
+            localStorage.setItem('user_data', JSON.stringify(response.user))
+          }
           isInitialized.value = true
           return true
         } else {
@@ -50,9 +62,16 @@ export const useAuthStore = defineStore('auth', () => {
       
       if (result.token) {
         console.log('✅ Auth Store - Login exitoso, token recibido')
+        console.log('👤 Auth Store - Datos del usuario:', result.user)
+        
         token.value = result.token
         user.value = result.user || { usuario }
         localStorage.setItem('token', result.token)
+        
+        // Guardar información del usuario en localStorage
+        if (result.user) {
+          localStorage.setItem('user_data', JSON.stringify(result.user))
+        }
         
         if (result.refresh) {
           localStorage.setItem('refreshToken', result.refresh)
@@ -78,6 +97,7 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized.value = false
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
+    localStorage.removeItem('user_data')
   }
 
   // Escuchar eventos de logout desde el interceptor de Axios

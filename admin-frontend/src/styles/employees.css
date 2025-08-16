@@ -73,6 +73,23 @@
   max-width: 320px !important;
 }
 
+/* Forzar ancho completo en responsive */
+@media (max-width: 1024px) {
+  .search-field {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    flex-shrink: 1 !important;
+    flex-grow: 1 !important;
+  }
+  
+  .search-field .v-field {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
 /* ===== OVERRIDE DE ESTILOS GLOBALES ===== */
 .employee-table-card .v-card-title {
   display: flex !important;
@@ -278,7 +295,7 @@
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .filters-container {
     flex-direction: column !important;
     align-items: stretch !important;
@@ -286,17 +303,25 @@
     padding: 1rem !important;
   }
   
-     .search-field {
-     width: 100% !important;
-     min-width: 100% !important;
-     max-width: 100% !important;
-   }
+  .search-field {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
    
-   .search-field .v-field {
-     width: 100% !important;
-     min-width: 100% !important;
-     max-width: 100% !important;
-   }
+  .search-field .v-field {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .search-field .v-field__input {
+    width: 100% !important;
+  }
+  
+  .search-field .v-input__control {
+    width: 100% !important;
+  }
   
   .view-toggle {
     margin-left: 0 !important;
@@ -309,5 +334,25 @@
   
   .employee-card {
     margin-bottom: 0 !important;
+  }
+}
+
+/* Responsive más específico para móviles */
+@media (max-width: 768px) {
+  .filters-container {
+    padding: 0.75rem !important;
+  }
+  
+  .filter-item {
+    width: 100% !important;
+  }
+  
+  .search-field,
+  .search-field .v-field,
+  .search-field .v-field__input,
+  .search-field .v-input__control {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
   }
 }

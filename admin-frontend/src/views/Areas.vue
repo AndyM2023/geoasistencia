@@ -4,7 +4,7 @@
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Áreas</h1>
-          <v-btn color="blue-400" prepend-icon="mdi-plus" @click="showDialog = true" class="neon-border">
+          <v-btn color="blue-400" prepend-icon="mdi-plus" @click="openNewAreaDialog" class="neon-border">
             Nueva Área
           </v-btn>
         </div>
@@ -32,13 +32,13 @@
          :items="areas"
          :search="search"
          :loading="loading"
+         :sort-by="[{ key: 'name', order: 'asc' }]"
          class="elevation-1 bg-dark-surface"
          theme="dark"
          :no-data-text="loading ? 'Cargando áreas...' : 'No hay áreas registradas'"
          :no-results-text="'No se encontraron áreas que coincidan con la búsqueda'"
        >
         <template v-slot:item.actions="{ item }">
-          <v-btn icon="mdi-map-marker" size="small" color="green-400" @click="showMap(item)" title="Ver ubicación"></v-btn>
           <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editArea(item)" title="Editar área"></v-btn>
           <v-btn icon="mdi-delete" size="small" color="red-400" @click="deleteArea(item)" title="Eliminar área"></v-btn>
         </template>
@@ -70,6 +70,10 @@
       <v-card class="bg-dark-surface border border-blue-500/20">
         <v-card-title class="text-white">
           <span class="text-h5">{{ editingArea ? 'Editar' : 'Nueva' }} Área</span>
+          <v-spacer></v-spacer>
+          <v-chip v-if="editingArea" color="blue-400" variant="tonal" size="small">
+            Editando
+          </v-chip>
         </v-card-title>
         
         <v-card-text>
@@ -99,14 +103,14 @@
               
               <v-col cols="12">
                 <v-btn 
-                  color="green-400" 
-                  variant="outlined" 
-                  prepend-icon="mdi-map-marker" 
+                  :color="areaForm.latitude && areaForm.longitude ? 'blue-400' : 'green-400'" 
+                  :variant="areaForm.latitude && areaForm.longitude ? 'flat' : 'outlined'"
+                  :prepend-icon="areaForm.latitude && areaForm.longitude ? 'mdi-check-circle' : 'mdi-map-marker'" 
                   @click="showMapSelectorModal"
                   class="mb-4"
                   block
                 >
-                  📍 Seleccionar Ubicación en el Mapa
+                  {{ areaForm.latitude && areaForm.longitude ? '✅ Ubicación Seleccionada - Cambiar' : '📍 Seleccionar Ubicación en el Mapa' }}
                 </v-btn>
               </v-col>
               
@@ -114,14 +118,13 @@
                 <v-text-field
                   v-model="areaForm.latitude"
                   label="Latitud"
-                  type="number"
-                  step="0.000001"
-                  required
-                  :rules="[v => !!v || 'Latitud es requerida']"
-                  color="blue-400"
-                  variant="outlined"
                   readonly
-                  prepend-icon="mdi-crosshairs-gps"
+                  required
+                  :rules="[v => !!v || 'Selecciona ubicación en el mapa']"
+                  :color="areaForm.latitude ? 'blue-400' : 'error'"
+                  variant="outlined"
+                  :prepend-icon="areaForm.latitude ? 'mdi-crosshairs-gps' : 'mdi-alert-circle'"
+                  :placeholder="areaForm.latitude ? areaForm.latitude : 'Selecciona en el mapa'"
                 ></v-text-field>
               </v-col>
               
@@ -129,14 +132,13 @@
                 <v-text-field
                   v-model="areaForm.longitude"
                   label="Longitud"
-                  type="number"
-                  step="0.000001"
-                  required
-                  :rules="[v => !!v || 'Longitud es requerida']"
-                  color="blue-400"
-                  variant="outlined"
                   readonly
-                  prepend-icon="mdi-crosshairs-gps"
+                  required
+                  :rules="[v => !!v || 'Selecciona ubicación en el mapa']"
+                  :color="areaForm.longitude ? 'blue-400' : 'error'"
+                  variant="outlined"
+                  :prepend-icon="areaForm.longitude ? 'mdi-crosshairs-gps' : 'mdi-alert-circle'"
+                  :placeholder="areaForm.longitude ? areaForm.longitude : 'Selecciona en el mapa'"
                 ></v-text-field>
               </v-col>
               
@@ -144,33 +146,24 @@
                 <v-text-field
                   v-model="areaForm.radius"
                   label="Radio (metros)"
-                  type="number"
-                  min="10"
-                  max="10000"
+                  readonly
                   required
-                  :rules="[v => !!v || 'Radio es requerido', v => v >= 10 || 'Radio mínimo 10m', v => v <= 10000 || 'Radio máximo 10km']"
-                  color="blue-400"
+                  :rules="[v => (!!v && v >= 10) || 'Radio mínimo: 10 metros']"
+                  :color="areaForm.radius >= 10 ? 'blue-400' : 'error'"
                   variant="outlined"
-                  prepend-icon="mdi-radius"
+                  :prepend-icon="areaForm.radius >= 10 ? 'mdi-radius' : 'mdi-alert-circle'"
+                  :placeholder="areaForm.radius ? areaForm.radius + 'm' : 'Selecciona en el mapa'"
                 ></v-text-field>
               </v-col>
               
-              <v-col cols="12">
-                <v-textarea
-                  v-model="areaForm.notes"
-                  label="Notas Adicionales"
-                  rows="3"
-                  variant="outlined"
-                  color="blue-400"
-                ></v-textarea>
-              </v-col>
+
             </v-row>
           </v-form>
         </v-card-text>
         
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey-400" variant="text" @click="showDialog = false">Cancelar</v-btn>
+          <v-btn color="grey-400" variant="text" @click="cancelDialog">Cancelar</v-btn>
           <v-btn color="blue-400" @click="saveArea" :loading="saving" class="neon-border">Guardar</v-btn>
         </v-card-actions>
       </v-card>
@@ -297,34 +290,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- Dialog del Mapa -->
-    <v-dialog v-model="showMapDialog" max-width="800px">
-      <v-card class="bg-dark-surface border border-blue-500/20">
-        <v-card-title class="text-white">
-          <span class="text-h5">Ubicación del Área: {{ selectedArea?.name }}</span>
-        </v-card-title>
-        
-        <v-card-text>
-          <div class="text-center pa-8">
-            <v-icon size="64" color="green-400">mdi-map-marker</v-icon>
-            <div class="text-h6 mt-4 text-white">Mapa de Ubicación</div>
-            <div class="text-body-2 text-grey-300 mb-4">
-              Coordenadas: {{ selectedArea?.latitude }}, {{ selectedArea?.longitude }}
-              <br>
-              Radio: {{ selectedArea?.radius }} metros
-            </div>
-            <v-alert type="info" variant="tonal">
-              Aquí se implementará un mapa interactivo para visualizar y editar la ubicación del área.
-            </v-alert>
-          </div>
-        </v-card-text>
-        
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue-400" @click="showMapDialog = false" class="neon-border">Cerrar</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+
   </div>
 </template>
 
@@ -346,7 +312,8 @@ export default {
       setRadius,
       searchLocation,
       getCurrentLocation,
-      clearMap
+      clearMap,
+      refreshMap
     } = useOptimizedMap('map-selector')
     
     const search = ref('')
@@ -362,14 +329,14 @@ export default {
     }
     const showDialog = ref(false)
     const showDeleteDialog = ref(false)
-    const showMapDialog = ref(false)
+
     const showMapSelector = ref(false)
     const valid = ref(false)
     const form = ref(null)
     
     const editingArea = ref(null)
     const areaToDelete = ref(null)
-    const selectedArea = ref(null)
+
     
          // Variables para el selector de mapa
      const mapRadius = ref(100)
@@ -386,7 +353,7 @@ export default {
       latitude: '',
       longitude: '',
       radius: 100,
-      notes: ''
+      status: 'active'  // CRÍTICO: Incluir status por defecto
     })
     
     const headers = [
@@ -406,11 +373,16 @@ export default {
         // El backend devuelve {count, next, previous, results}
         // Necesitamos acceder a results que es el array de áreas
         const areasArray = areasData.results || areasData
-        areas.value = areasArray.map(area => ({
+        const areasWithCounts = areasArray.map(area => ({
           ...area,
           employee_count: area.employees?.length || 0
         }))
-        console.log('Áreas cargadas:', areas.value)
+        
+        // Ordenar alfabéticamente por nombre
+        areas.value = sortAreasAlphabetically(areasWithCounts)
+        
+        console.log('✅ Áreas cargadas y ordenadas alfabéticamente:', areas.value.length, 'áreas')
+        console.log('📋 Orden actual:', areas.value.map(area => area.name))
       } catch (error) {
         console.error('Error cargando áreas:', error)
         // Mostrar mensaje de error al usuario
@@ -431,17 +403,26 @@ export default {
     
                    const editArea = async (area) => {
         try {
+          console.log('✏️ Iniciando edición de área:', area.name)
+          
           // Cargar datos completos del área desde la API
           const fullArea = await areaService.getById(area.id)
           editingArea.value = fullArea
+          
+          console.log('📊 Datos completos del área desde BD:', fullArea)
+          
+          // Cargar datos en el formulario
           areaForm.value = { 
             name: fullArea.name,
             description: fullArea.description,
             latitude: fullArea.latitude,
             longitude: fullArea.longitude,
             radius: fullArea.radius,
-            notes: fullArea.notes || ''
+            status: fullArea.status || 'active'  // CRÍTICO: Incluir status
           }
+          
+          // Sincronizar radio del mapa
+          mapRadius.value = fullArea.radius || 100
           
           // Guardar las coordenadas para usar en el mapa
           editingArea.value.savedCoordinates = {
@@ -449,11 +430,14 @@ export default {
             lng: parseFloat(fullArea.longitude)
           }
           
+          console.log('📋 Formulario cargado con:', areaForm.value)
+          console.log('📍 Coordenadas para el mapa:', editingArea.value.savedCoordinates)
+          
           showDialog.value = true
-          console.log('Editando área:', fullArea)
-          console.log('Coordenadas guardadas para el mapa:', editingArea.value.savedCoordinates)
+          console.log('✅ Área cargada para edición:', fullArea)
+          console.log('📍 Coordenadas para el mapa:', editingArea.value.savedCoordinates)
         } catch (error) {
-          console.error('Error cargando área para editar:', error)
+          console.error('❌ Error cargando área para editar:', error)
           alert('Error cargando área: ' + (error.response?.data?.message || error.message))
         }
       }
@@ -475,10 +459,7 @@ export default {
       }
     }
     
-    const showMap = (area) => {
-      selectedArea.value = area
-      showMapDialog.value = true
-    }
+
     
          const confirmDelete = async () => {
        if (!areaToDelete.value) return
@@ -507,6 +488,77 @@ export default {
        }
      }
     
+    // Función para ordenar áreas alfabéticamente
+    const sortAreasAlphabetically = (areasArray) => {
+      return areasArray.sort((a, b) => {
+        // Ordenar por nombre de forma alfabética, insensible a mayúsculas/minúsculas
+        const nameA = a.name.toLowerCase().trim()
+        const nameB = b.name.toLowerCase().trim()
+        
+        // Usando localeCompare para un ordenamiento más robusto
+        return nameA.localeCompare(nameB, 'es', { 
+          sensitivity: 'base',
+          numeric: true,
+          ignorePunctuation: true
+        })
+      })
+    }
+
+    // Función para reordenar la lista actual
+    const reorderAreasList = () => {
+      console.log('🔄 Reordenando lista de áreas alfabéticamente...')
+      const currentOrder = areas.value.map(area => area.name)
+      console.log('📋 Orden anterior:', currentOrder)
+      
+      areas.value = sortAreasAlphabetically([...areas.value])
+      
+      const newOrder = areas.value.map(area => area.name)
+      console.log('📋 Nuevo orden:', newOrder)
+      console.log('✅ Lista reordenada correctamente')
+    }
+
+    // Funciones de gestión del formulario
+    const resetForm = () => {
+      // Resetear datos del formulario
+      areaForm.value = {
+        name: '',
+        description: '',
+        latitude: '',
+        longitude: '',
+        radius: 100,
+        status: 'active'  // CRÍTICO: Incluir status por defecto
+      }
+      
+      // Resetear variables de edición
+      editingArea.value = null
+      
+      // Resetear mapa
+      mapRadius.value = 100
+      clearMap()
+      
+      // Resetear validación del formulario
+      if (form.value) {
+        form.value.resetValidation()
+      }
+      
+      console.log('📝 Formulario reseteado')
+    }
+
+    const openNewAreaDialog = () => {
+      console.log('🆕 Abriendo diálogo para nueva área')
+      resetForm()
+      showDialog.value = true
+    }
+
+    const cancelDialog = () => {
+      console.log('❌ Cancelando diálogo')
+      showDialog.value = false
+      // Solo resetear si estábamos creando (no editando)
+      if (!editingArea.value) {
+        resetForm()
+      }
+    }
+
     // Funciones para el selector de mapa optimizado
     
     const onSearchInput = async () => {
@@ -535,10 +587,10 @@ export default {
           selectedLocation.value.lng,
           newRadius,
           {
-            color: '#3b82f6',
-            fillColor: '#3b82f6',
-            fillOpacity: 0.3,
-            weight: 2
+               color: '#3b82f6',
+               fillColor: '#3b82f6',
+               fillOpacity: 0.3,
+               weight: 2
           }
         )
       }
@@ -553,10 +605,10 @@ export default {
           newLocation.lng,
           mapRadius.value,
           {
-            color: '#3b82f6',
-            fillColor: '#3b82f6',
-            fillOpacity: 0.3,
-            weight: 2
+             color: '#3b82f6',
+             fillColor: '#3b82f6',
+             fillOpacity: 0.3,
+             weight: 2
           }
         )
       }
@@ -571,10 +623,15 @@ export default {
       await nextTick()
       
       try {
+        // CRÍTICO: Siempre refrescar el mapa para evitar problemas de cache
+        console.log('🔄 Refrescando mapa para evitar problemas de estado...')
+        
         // Inicializar mapa optimizado
         if (editingArea.value && editingArea.value.savedCoordinates) {
-          console.log('📍 Editando área - usando coordenadas guardadas')
-          await initMap({
+          console.log('📍 Editando área - usando coordenadas guardadas:', editingArea.value.savedCoordinates)
+          
+          // Refrescar mapa con coordenadas específicas
+          await refreshMap({
             lat: editingArea.value.savedCoordinates.lat,
             lng: editingArea.value.savedCoordinates.lng
           })
@@ -593,9 +650,13 @@ export default {
           if (areaForm.value.radius) {
             mapRadius.value = areaForm.value.radius
           }
+          
+          console.log('📍 Mapa centrado en:', editingArea.value.savedCoordinates)
         } else {
           console.log('📱 Nueva área - obteniendo ubicación del usuario')
-          await initMap()
+          
+          // Refrescar mapa para nueva área
+          await refreshMap()
           
           // Intentar obtener ubicación actual con radio
           try {
@@ -622,12 +683,30 @@ export default {
     
     const confirmMapSelection = () => {
       if (selectedLocation.value) {
+        // Actualizar coordenadas en el formulario
         areaForm.value.latitude = selectedLocation.value.lat
         areaForm.value.longitude = selectedLocation.value.lng
         areaForm.value.radius = mapRadius.value
-        showMapSelector.value = false
         
         console.log('✅ Ubicación confirmada:', selectedLocation.value)
+        console.log('📋 Formulario actualizado:', {
+          latitude: areaForm.value.latitude,
+          longitude: areaForm.value.longitude,
+          radius: areaForm.value.radius
+        })
+        
+        // Si estamos editando, actualizar también las coordenadas de referencia
+        if (editingArea.value) {
+          editingArea.value.savedCoordinates = {
+            lat: selectedLocation.value.lat,
+            lng: selectedLocation.value.lng
+          }
+          console.log('🔄 Coordenadas de referencia actualizadas para edición:', editingArea.value.savedCoordinates)
+        }
+        
+        showMapSelector.value = false
+      } else {
+        console.warn('⚠️ No hay ubicación seleccionada')
       }
     }
     
@@ -635,6 +714,15 @@ export default {
       // Limpiar la selección actual
       clearMap()
       showMapSelector.value = false
+      
+      // Si estamos creando una nueva área, limpiar también las coordenadas del formulario
+      if (!editingArea.value) {
+        areaForm.value.latitude = ''
+        areaForm.value.longitude = ''
+        areaForm.value.radius = 100
+        mapRadius.value = 100
+      }
+      
       console.log('❌ Selección de mapa cancelada')
     }
     
@@ -647,17 +735,47 @@ export default {
         console.error('❌ Validación del formulario falló')
         return
       }
+
+      // VALIDACIÓN CRÍTICA: Verificar que se haya seleccionado una ubicación
+      if (!areaForm.value.latitude || !areaForm.value.longitude) {
+        console.error('❌ No se ha seleccionado ubicación en el mapa')
+        alert('⚠️ Debes seleccionar una ubicación en el mapa antes de guardar el área.')
+        return
+      }
+
+      // Verificar que el radio sea válido
+      if (!areaForm.value.radius || areaForm.value.radius < 10) {
+        console.error('❌ Radio inválido')
+        alert('⚠️ El radio debe ser de al menos 10 metros.')
+        return
+      }
       
       saving.value = true
       try {
         if (editingArea.value) {
           console.log('✏️ Actualizando área existente...')
+          console.log('📤 Datos enviados para actualización:', areaForm.value)
+          
           // Actualizar área existente
           const updatedArea = await areaService.update(editingArea.value.id, areaForm.value)
           const index = areas.value.findIndex(area => area.id === editingArea.value.id)
           if (index !== -1) {
             areas.value[index] = { ...updatedArea, employee_count: updatedArea.employees?.length || 0 }
+            
+            // Reordenar lista si se cambió el nombre (para mantener orden alfabético)
+            areas.value = sortAreasAlphabetically([...areas.value])
+            console.log('📋 Lista reordenada después de actualización:', areas.value.map(area => area.name))
           }
+          
+          // CRÍTICO: Actualizar las coordenadas guardadas con los nuevos valores
+          if (editingArea.value.savedCoordinates && areaForm.value.latitude && areaForm.value.longitude) {
+            editingArea.value.savedCoordinates = {
+              lat: parseFloat(areaForm.value.latitude),
+              lng: parseFloat(areaForm.value.longitude)
+            }
+            console.log('🔄 Coordenadas guardadas actualizadas:', editingArea.value.savedCoordinates)
+          }
+          
           console.log('✅ Área actualizada:', updatedArea)
         } else {
           console.log('🆕 Creando nueva área...')
@@ -667,23 +785,49 @@ export default {
           const newArea = await areaService.create(areaForm.value)
           console.log('✅ Respuesta del servicio:', newArea)
           
+          // Agregar nueva área a la lista
           areas.value.push({ ...newArea, employee_count: 0 })
-          console.log('✅ Área creada:', newArea)
+          
+          // Reordenar la lista alfabéticamente después de agregar
+          areas.value = sortAreasAlphabetically([...areas.value])
+          
+          console.log('✅ Área creada y lista reordenada alfabéticamente')
+          console.log('📋 Nuevo orden:', areas.value.map(area => area.name))
         }
         
+        // CRÍTICO: Guardar ID del área editada antes de resetear
+        const editedAreaId = editingArea.value?.id
+        
         showDialog.value = false
-        editingArea.value = null
-        areaForm.value = {
-          name: '',
-          description: '',
-          latitude: '',
-          longitude: '',
-          radius: 100,
-          notes: ''
-        }
         
         // Recargar áreas para asegurar datos actualizados
         await loadAreas()
+        
+        // Si acabamos de editar un área, verificar que los datos se guardaron correctamente
+        if (editedAreaId) {
+          try {
+            console.log('🔄 Verificando datos guardados del área editada ID:', editedAreaId)
+            const freshAreaData = await areaService.getById(editedAreaId)
+            console.log('📊 Datos frescos del área después de guardar:', freshAreaData)
+            
+            // Verificar que las coordenadas se guardaron correctamente
+            if (freshAreaData.latitude && freshAreaData.longitude) {
+              console.log('✅ Coordenadas verificadas en BD:', {
+                latitude: freshAreaData.latitude,
+                longitude: freshAreaData.longitude,
+                radius: freshAreaData.radius
+              })
+            } else {
+              console.warn('⚠️ Las coordenadas no se guardaron correctamente en la BD')
+            }
+          } catch (error) {
+            console.error('❌ Error verificando datos guardados:', error)
+          }
+        }
+        
+        // Resetear formulario DESPUÉS de verificar
+        resetForm()
+        
         console.log('🎉 Proceso completado exitosamente')
       } catch (error) {
         console.error('❌ Error guardando área:', error)
@@ -701,51 +845,57 @@ export default {
       }
     }
     
-                  onMounted(() => {
-      loadAreas()
+         onMounted(() => {
+       loadAreas()
       // El mapService se inicializa automáticamente
       console.log('🚀 Componente Areas cargado - Mapa optimizado listo')
      })
     
-        return {
+    return {
       search,
       loading,
       saving,
       deleting,
       showDialog,
       showDeleteDialog,
-      showMapDialog,
+
       showMapSelector,
       valid,
       form,
       editingArea,
       areaToDelete,
-      selectedArea,
+
       areas,
       areaForm,
       headers,
       // Variables del mapa optimizado
-      mapRadius,
-      selectedLocation,
+       mapRadius,
+       selectedLocation,
       isMapReady,
       mapLoading,
-      userLocation,
-      isLocating,
-      searchPlace,
-      googleMapsAvailable,
+       userLocation,
+       isLocating,
+       searchPlace,
+       googleMapsAvailable,
       // Funciones principales
       editArea,
       deleteArea,
       activateArea,
-      showMap,
+
       confirmDelete,
       saveArea,
+      openNewAreaDialog,
+      cancelDialog,
+      resetForm,
+      sortAreasAlphabetically,
+      reorderAreasList,
       // Funciones del mapa optimizado
       showMapSelectorModal,
       confirmMapSelection,
       cancelMapSelection,
       onSearchInput,
       clearMap,
+      refreshMap,
       // Funciones de formateo
       formatCoordinate
     }

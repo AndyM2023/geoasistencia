@@ -12,6 +12,8 @@ class User(AbstractUser):
     
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
     phone = models.CharField(max_length=15, blank=True, null=True)
+    cedula = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='ID Card Number')
+    position = models.CharField(max_length=100, blank=True, null=True, verbose_name='Position')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -50,7 +52,7 @@ class Area(models.Model):
         default='active',
         verbose_name='Estado'
     )
-    notes = models.TextField(blank=True, verbose_name='Notas Adicionales')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

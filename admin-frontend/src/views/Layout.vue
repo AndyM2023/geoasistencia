@@ -16,8 +16,9 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useDisplay } from 'vuetify'
 import AppBar from '../components/AppBar.vue'
 import SideNav from '../components/SideNav.vue'
 
@@ -29,8 +30,24 @@ export default {
   },
   setup() {
     const authStore = useAuthStore()
-    const drawer = ref(true)
+    const { lgAndUp, mdAndDown } = useDisplay()
+    
+    // Configurar el drawer basado en el tamaño de pantalla
+    // En móviles/tablets inicia cerrado, en desktop abierto
+    const drawer = ref(lgAndUp.value)
     const isAuthenticated = computed(() => authStore.isAuthenticated)
+    
+    // Actualizar drawer cuando cambie el tamaño de pantalla
+    onMounted(() => {
+      drawer.value = lgAndUp.value
+    })
+    
+    // Cerrar drawer automáticamente cuando se cambia a móvil
+    watch(mdAndDown, (isMobile) => {
+      if (isMobile) {
+        drawer.value = false
+      }
+    })
     
     const menuItems = ref([
       {
