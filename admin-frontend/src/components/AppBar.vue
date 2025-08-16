@@ -22,7 +22,7 @@
         <v-icon
           size="32"
           color="blue-400"
-          class="mr-3"
+          class="logo-icon"
         >
           mdi-fingerprint
         </v-icon>

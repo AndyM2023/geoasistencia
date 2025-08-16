@@ -497,6 +497,11 @@ export default {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  min-height: 100%;
 }
 
 .left-panel::before {
@@ -515,6 +520,11 @@ export default {
   z-index: 2;
   text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
   letter-spacing: 2px;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%;
 }
 
 .logo-glow {
@@ -563,7 +573,7 @@ export default {
     border-radius: 16px;
     max-width: 600px;
     width: 100%;
-    margin: 4px 0;
+    margin: 20px 0 4px 0;
   }
 
 /* Personalización de Vuetify para modo oscuro */
@@ -686,6 +696,17 @@ export default {
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .logo-text {
+    font-size: 2rem !important;
+    letter-spacing: 1px !important;
+  }
+  
+  .left-panel {
+    padding: 2rem !important;
+  }
+}
+
 @media (max-width: 960px) {
   .register-container {
     height: auto;
@@ -695,6 +716,9 @@ export default {
   .left-panel {
     min-height: 120px;
     height: auto;
+    padding: 1.5rem !important;
+    flex-direction: column;
+    text-align: center;
   }
   
   .right-panel {
@@ -706,16 +730,63 @@ export default {
   
   .logo-text {
     font-size: 1.5rem !important;
+    letter-spacing: 1px !important;
+    line-height: 1.2 !important;
   }
   
   .register-card {
-    margin: 8px;
+    margin: 30px 0 4px 0;
   }
   
   .register-card :deep(.v-card-text) {
     padding: 12px !important;
   }
 }
+
+@media (max-width: 768px) {
+  .logo-text {
+    font-size: 1.25rem !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1.1 !important;
+  }
+  
+  .left-panel {
+    padding: 1rem !important;
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .logo-text {
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+    line-height: 1 !important;
+  }
+  
+  .left-panel {
+    padding: 0.75rem !important;
+    min-height: 80px;
+  }
+  
+  .register-card {
+    margin: 20px 0 4px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-text {
+    font-size: 0.875rem !important;
+    letter-spacing: 0.25px !important;
+    line-height: 1 !important;
+  }
+  
+  .left-panel {
+    padding: 0.5rem !important;
+    min-height: 60px;
+  }
+}
+
+
 
 /* Asegurar que el AppBar sea visible */
 :deep(.v-app-bar) {
