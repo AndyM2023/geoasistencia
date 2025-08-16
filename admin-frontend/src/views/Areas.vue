@@ -176,63 +176,69 @@
           <span class="text-h5">🗺️ Seleccionar Ubicación en el Mapa</span>
         </v-card-title>
         
-        <v-card-text>
+        <v-card-text class="pa-0">
           <div class="map-container">
-            <!-- Campo de búsqueda -->
-            <div class="map-search mb-4">
-              <v-text-field
-                id="map-search"
-                v-model="searchPlace"
-                label="Buscar lugar (ej: Universidad Estatal de Milagro)"
-                prepend-icon="mdi-magnify"
-                variant="outlined"
-                color="blue-400"
-                clearable
-                @input="onSearchInput"
-              ></v-text-field>
-            </div>
-            
-            <!-- Controles del mapa -->
-            <div class="map-controls mb-4">
-              <v-row>
-                <v-col cols="12" sm="6">
-                  <v-slider
-                    v-model="mapRadius"
-                    :min="10"
-                    :max="1000"
-                    :step="10"
-                    label="Radio del Área (metros)"
-                    color="blue-400"
-                    thumb-label="always"
-                    prepend-icon="mdi-radius"
-                  ></v-slider>
-                </v-col>
-                <v-col cols="12" sm="6">
-                  <div class="d-flex align-center gap-4">
-                    <v-chip color="blue-400" variant="tonal">
-                      Radio: {{ mapRadius }}m
-                    </v-chip>
-                    <v-chip v-if="isLocating" color="orange-400" variant="tonal">
-                      <v-icon left>mdi-crosshairs-gps</v-icon>
-                      Obteniendo ubicación...
-                    </v-chip>
-                    <v-chip v-else-if="userLocation" color="green-400" variant="tonal">
-                      <v-icon left>mdi-crosshairs-gps</v-icon>
-                      Ubicación actual
-                    </v-chip>
-                    <v-chip v-if="selectedLocation" color="blue-400" variant="tonal">
-                      Ubicación seleccionada
-                    </v-chip>
-                  </div>
-                </v-col>
-              </v-row>
+            <!-- Campo de búsqueda y controles del mapa -->
+            <div class="map-search mb-2">
+               <v-row class="mb-0">
+                 <v-col cols="12" sm="8" class="pb-0">
+                   <v-text-field
+                     id="map-search"
+                     v-model="searchPlace"
+                     label="Buscar lugar (ej: Universidad Estatal de Milagro)"
+                     prepend-icon="mdi-magnify"
+                     variant="outlined"
+                     color="blue-400"
+                     clearable
+                     @input="onSearchInput"
+                     hide-details
+                     density="compact"
+                   ></v-text-field>
+                 </v-col>
+                 <v-col cols="12" sm="4" class="pb-0">
+                   <div class="radius-control">
+                     <label class="radius-label">Radio del Área (metros)</label>
+                     <v-slider
+                       v-model="mapRadius"
+                       :min="10"
+                       :max="500"
+                       :step="10"
+                       color="orange-500"
+                       thumb-color="orange-500"
+                       track-color="orange-300"
+                       thumb-label="always"
+                       prepend-icon="mdi-radius"
+                       class="radius-slider"
+                       hide-details
+                     ></v-slider>
+                   </div>
+                 </v-col>
+               </v-row>
+              
+              <!-- Información del radio y estado - SUPER PEGADO -->
+              <div class="d-flex align-center gap-4 mt-0 pt-0">
+                <v-chip color="orange-500" variant="tonal" size="small">
+                  Radio: {{ mapRadius }}m
+                </v-chip>
+                <v-chip v-if="isLocating" color="orange-400" variant="tonal" size="small">
+                  <v-icon left>mdi-crosshairs-gps</v-icon>
+                  Obteniendo ubicación...
+                </v-chip>
+                <v-chip v-else-if="userLocation" color="green-400" variant="tonal" size="small">
+                  <v-icon left>mdi-crosshairs-gps</v-icon>
+                  Ubicación actual
+                </v-chip>
+                <v-chip v-if="selectedLocation" color="blue-400" variant="tonal" size="small">
+                  Ubicación seleccionada
+                </v-chip>
+              </div>
             </div>
             
             <!-- Contenedor del mapa -->
             <div id="map-selector" class="map-wrapper"></div>
             
                          <!-- Instrucciones -->
-             <div class="map-instructions mt-4">
+             <div class="map-instructions mt-2">
                <v-alert type="info" variant="tonal" density="compact">
                  <template v-slot:prepend>
                    <v-icon>mdi-information</v-icon>
@@ -339,7 +345,7 @@ export default {
 
     
          // Variables para el selector de mapa
-     const mapRadius = ref(100)
+     const mapRadius = ref(200)
      const userLocation = ref(null)
      const isLocating = ref(false)
      const searchPlace = ref('')
@@ -352,7 +358,7 @@ export default {
       description: '',
       latitude: '',
       longitude: '',
-      radius: 100,
+      radius: 200,
       status: 'active'  // CRÍTICO: Incluir status por defecto
     })
     
@@ -525,7 +531,7 @@ export default {
         description: '',
         latitude: '',
         longitude: '',
-        radius: 100,
+        radius: 200,
         status: 'active'  // CRÍTICO: Incluir status por defecto
       }
       
@@ -533,7 +539,7 @@ export default {
       editingArea.value = null
       
       // Resetear mapa
-      mapRadius.value = 100
+      mapRadius.value = 200
       clearMap()
       
       // Resetear validación del formulario
@@ -719,8 +725,8 @@ export default {
       if (!editingArea.value) {
         areaForm.value.latitude = ''
         areaForm.value.longitude = ''
-        areaForm.value.radius = 100
-        mapRadius.value = 100
+        areaForm.value.radius = 200
+        mapRadius.value = 200
       }
       
       console.log('❌ Selección de mapa cancelada')
@@ -902,3 +908,117 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.map-container {
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.map-search {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 8px;
+  padding: 6px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.map-wrapper {
+  height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  margin-top: 8px;
+}
+
+.map-instructions {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+/* Estilos para el deslizante más visible */
+.radius-control {
+  padding: 0;
+}
+
+.radius-label {
+  display: block;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.radius-slider {
+  margin-top: 0;
+  width: 100%;
+}
+
+.radius-slider :deep(.v-slider) {
+  width: 100%;
+  min-width: 200px;
+}
+
+.radius-slider :deep(.v-slider__track) {
+  width: 100% !important;
+  min-width: 200px !important;
+}
+
+.radius-slider :deep(.v-slider__thumb) {
+  background-color: #f97316 !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.6) !important;
+  transform: scale(1.2) !important;
+}
+
+.radius-slider :deep(.v-slider__track) {
+  background-color: #fed7aa !important;
+  height: 6px !important;
+}
+
+.radius-slider :deep(.v-slider__track-fill) {
+  background-color: #f97316 !important;
+  height: 6px !important;
+}
+
+.radius-slider :deep(.v-slider__thumb-label) {
+  background-color: #f97316 !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.radius-slider :deep(.v-slider__thumb-label::before) {
+  border-top-color: #f97316 !important;
+}
+
+/* Mejorar la visibilidad de los chips */
+.v-chip {
+  font-weight: 500 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  margin: 0 !important;
+  padding: 4px 8px !important;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .map-search .v-row {
+    flex-direction: column;
+  }
+  
+  .map-search .v-col {
+    width: 100% !important;
+    margin-bottom: 16px;
+  }
+  
+  .radius-slider :deep(.v-slider__thumb) {
+    transform: scale(1.5) !important;
+  }
+}
+</style>
