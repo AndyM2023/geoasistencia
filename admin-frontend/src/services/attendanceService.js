@@ -1,5 +1,8 @@
 import api from './api';
 
+// ✅ CONFIGURACIÓN: Umbral de confianza para verificación facial
+const CONFIDENCE_THRESHOLD = 0.90; // 90% - Solo entradas con 90% o superior de confianza
+
 export const attendanceService = {
     // Variable para almacenar el token de autenticación
     authToken: null,
@@ -34,9 +37,14 @@ export const attendanceService = {
                 throw new Error(`Rostro no reconocido: ${faceVerification.message}`);
             }
             
-            console.log('✅ Rostro verificado, marcando asistencia...');
+            // ✅ VALIDACIÓN DE UMBRAL DE CONFIANZA: Solo permitir 90% o superior
+            if (faceVerification.confidence < CONFIDENCE_THRESHOLD) {
+                throw new Error(`Confianza insuficiente: ${(faceVerification.confidence * 100).toFixed(1)}%. Se requiere mínimo ${(CONFIDENCE_THRESHOLD * 100)}% para registrar asistencia.`);
+            }
             
-            // Si el rostro es verificado, marcar asistencia
+            console.log(`✅ Rostro verificado con confianza ${(faceVerification.confidence * 100).toFixed(1)}%, marcando asistencia...`);
+            
+            // Si el rostro es verificado y cumple el umbral, marcar asistencia
             const attendance = await this.markAttendance(employeeId, areaId, latitude, longitude, true);
             
             return {
@@ -61,7 +69,19 @@ export const attendanceService = {
                 headers: this.getAuthHeaders()
             });
             
-            return response.data;
+            // ✅ LOGGING MEJORADO: Mostrar información de confianza y umbral
+            const result = response.data;
+            if (result.verified && result.confidence !== undefined) {
+                const confidencePercent = (result.confidence * 100).toFixed(1);
+                const thresholdPercent = (CONFIDENCE_THRESHOLD * 100).toFixed(0);
+                console.log(`🎯 Verificación facial: ${confidencePercent}% de confianza (Umbral requerido: ${thresholdPercent}%)`);
+                
+                if (result.confidence < CONFIDENCE_THRESHOLD) {
+                    console.warn(`⚠️ ADVERTENCIA: Confianza ${confidencePercent}% está por debajo del umbral requerido de ${thresholdPercent}%`);
+                }
+            }
+            
+            return result;
         } catch (error) {
             console.error('Error verificando rostro:', error);
             throw error;

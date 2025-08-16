@@ -45,6 +45,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True, required=False)
     last_name = serializers.CharField(write_only=True, required=False)
     email = serializers.EmailField(write_only=True, required=False)
+    cedula = serializers.CharField(write_only=True, required=False)
     
     area_name = serializers.CharField(source='area.name', read_only=True)
     full_name = serializers.ReadOnlyField()
@@ -53,23 +54,34 @@ class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = [
-            'id', 'user', 'user_id', 'employee_id', 'position', 'area', 'area_name',
+            'id', 'user', 'user_id', 'employee_id', 'cedula', 'position', 'area', 'area_name',
             'hire_date', 'photo', 'full_name', 'email_display', 'created_at', 'updated_at',
             'first_name', 'last_name', 'email'  # Campos para crear usuario
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name']
     
     def create(self, validated_data):
-        """Crear empleado y usuario asociado"""
+        """Crear empleado y usuario asociado con usuario y contraseña automáticos"""
         # Extraer datos del usuario
         first_name = validated_data.pop('first_name', '')
         last_name = validated_data.pop('last_name', '')
         email = validated_data.pop('email', '')
+        cedula = validated_data.pop('cedula', '')
         
         # Si no se proporciona user_id, crear un nuevo usuario
         if 'user' not in validated_data:
-            # Generar username único basado en email
-            username = email.split('@')[0] if email else f"user_{User.objects.count() + 1}"
+            # Generar username automático: primera letra del nombre + apellido completo
+            if first_name and last_name:
+                # Tomar primera letra del primer nombre y apellido completo
+                first_name_clean = first_name.strip().split()[0] if first_name.strip() else ''
+                last_name_clean = last_name.strip().replace(' ', '') if last_name.strip() else ''
+                
+                if first_name_clean and last_name_clean:
+                    username = f"{first_name_clean[0].lower()}{last_name_clean.lower()}"
+                else:
+                    username = f"user_{User.objects.count() + 1}"
+            else:
+                username = f"user_{User.objects.count() + 1}"
             
             # Asegurar username único
             counter = 1
@@ -78,15 +90,26 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 username = f"{original_username}{counter}"
                 counter += 1
             
+            # Generar contraseña automática: usar cédula o generar una por defecto
+            password = cedula if cedula else f"pass{User.objects.count() + 1}"
+            
             # Crear usuario
             user = User.objects.create_user(
                 username=username,
                 email=email,
                 first_name=first_name,
                 last_name=last_name,
-                role='employee'
+                password=password,
+                role='employee',
+                cedula=cedula
             )
             validated_data['user'] = user
+            
+            print(f"✅ Usuario creado automáticamente:")
+            print(f"   - Username: {username}")
+            print(f"   - Contraseña: {password}")
+            print(f"   - Nombre: {first_name} {last_name}")
+            print(f"   - Cédula: {cedula}")
         
         # Asegurar que hire_date esté presente
         if 'hire_date' not in validated_data:

@@ -549,7 +549,7 @@ class FaceRecognitionService:
                 'is_trained': False,
                 'photos_count': 0,
                 'last_training': None,
-                'confidence_threshold': 0.70,
+                'confidence_threshold': 0.90,
                 'folder_exists': False,
                 'system_has_person': False,
                 'is_synchronized': True  # Si no existe en ningún lado, está sincronizado
