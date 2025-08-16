@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'role', 'phone', 'is_active', 'created_at']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'full_name', 'role', 'is_active', 'created_at']
         read_only_fields = ['id', 'created_at']
     
     def get_full_name(self, obj):
@@ -57,7 +57,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'hire_date', 'photo', 'full_name', 'email_display', 'created_at', 'updated_at',
             'first_name', 'last_name', 'email'  # Campos para crear usuario
         ]
-        read_only_fields = ['id', 'employee_id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name']
     
     def create(self, validated_data):
         """Crear empleado y usuario asociado"""

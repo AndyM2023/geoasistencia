@@ -328,13 +328,24 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         print(f"🔍 REGISTER_FACE - Datos recibidos:")
         print(f"   - Employee ID: {employee.id}")
         print(f"   - Request data keys: {list(request.data.keys())}")
-        print(f"   - photos_base64 type: {type(request.data.get('photos_base64'))}")
-        print(f"   - photos_base64 length: {len(request.data.get('photos_base64', []))}")
+        print(f"   - Request data completo: {request.data}")
         
+        # Verificar diferentes posibles nombres de campo
         photos_base64 = request.data.get('photos_base64', [])
+        if not photos_base64:
+            photos_base64 = request.data.get('photos', [])
+        
+        print(f"   - photos_base64 type: {type(photos_base64)}")
+        print(f"   - photos_base64 length: {len(photos_base64) if photos_base64 else 0}")
+        
+        if photos_base64:
+            print(f"   - Primera foto sample: {str(photos_base64[0])[:100]}...")
         
         if not photos_base64:
             print("❌ No se recibieron fotos")
+            print("❌ Campos disponibles en request.data:")
+            for key, value in request.data.items():
+                print(f"   - {key}: {type(value)} - {len(value) if hasattr(value, '__len__') else 'N/A'}")
             return Response(
                 {'error': 'Se requieren fotos para el registro'}, 
                 status=status.HTTP_400_BAD_REQUEST
@@ -342,10 +353,43 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         
         print(f"✅ Fotos recibidas: {len(photos_base64)}")
         
+        # 🔍 DEBUG: Verificar estado del servicio facial ANTES de llamarlo
+        print(f"\n🔍 DEBUG: VERIFICANDO SERVICIO FACIAL ANTES DE LLAMARLO")
+        try:
+            from core.services.face_service_singleton import face_service_singleton
+            service = face_service_singleton.get_service()
+            print(f"   - Service instance: {service}")
+            print(f"   - Service type: {type(service)}")
+            print(f"   - facial_system: {service.facial_system}")
+            print(f"   - facial_system type: {type(service.facial_system)}")
+            print(f"   - facial_system is None: {service.facial_system is None}")
+            print(f"   - facial_system bool evaluation: {bool(service.facial_system)}")
+            
+            if service.facial_system:
+                print(f"   - facial_system methods: {[m for m in dir(service.facial_system) if not m.startswith('_')]}")
+                print(f"   - facial_system base_dir: {getattr(service.facial_system, 'base_dir', 'N/A')}")
+                print(f"   - facial_system face_dir: {getattr(service.facial_system, 'face_dir', 'N/A')}")
+            else:
+                print("   ❌ facial_system es None o False")
+                
+        except Exception as e:
+            print(f"   ❌ Error verificando servicio facial: {e}")
+            import traceback
+            traceback.print_exc()
+        
         try:
             print(f"🚀 Llamando a face_service.register_face...")
             print(f"   - Employee: {employee.full_name}")
             print(f"   - Photos count: {len(photos_base64)}")
+            print(f"   - Tipo de photos_base64: {type(photos_base64)}")
+            print(f"   - Primera foto tipo: {type(photos_base64[0]) if photos_base64 else 'N/A'}")
+            
+            # Verificar estructura de datos
+            if photos_base64 and len(photos_base64) > 0:
+                first_photo = photos_base64[0]
+                print(f"   - Primera foto keys: {list(first_photo.keys()) if isinstance(first_photo, dict) else 'No es dict'}")
+                if isinstance(first_photo, dict) and 'photo' in first_photo:
+                    print(f"   - Primera foto photo length: {len(first_photo['photo'])}")
             
             result = face_service_singleton.register_face(employee, photos_base64)
             
@@ -353,8 +397,10 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             print(f"   - Success: {result.get('success')}")
             print(f"   - Message: {result.get('message')}")
             print(f"   - Photos count: {result.get('photos_count')}")
+            print(f"   - Result completo: {result}")
             
-            if result['success']:
+            if result.get('success'):
+                print("✅ Registro facial exitoso, enviando respuesta 201")
                 return Response({
                     'success': True,
                     'message': result['message'],
@@ -362,9 +408,12 @@ class EmployeeViewSet(viewsets.ModelViewSet):
                     'employee_id': employee.id
                 }, status=status.HTTP_201_CREATED)
             else:
+                print(f"❌ Registro facial falló, enviando respuesta 400")
+                error_message = result.get('error') or result.get('message') or 'Error desconocido'
+                print(f"   - Error message: {error_message}")
                 return Response({
                     'success': False,
-                    'message': result.get('error', 'Error desconocido')
+                    'message': error_message
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:

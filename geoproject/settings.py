@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'django_extensions',  # ✅ AUTO-RELOAD para desarrollo
 ]
 
 MIDDLEWARE = [
@@ -189,3 +190,33 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# ✅ CONFIGURACIÓN DE AUTO-RELOAD PARA DESARROLLO
+if DEBUG:
+    # Configuración de django-extensions para auto-reload
+    DJANGO_EXTENSIONS_AUTO_RELOAD = True
+    
+    # Configuración adicional para desarrollo
+    # INSTALLED_APPS += [
+    #     'debug_toolbar',  # Solo en desarrollo - TEMPORALMENTE DESHABILITADO
+    # ]
+    
+    # MIDDLEWARE += [
+    #     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    # ]
+    
+    # Configuración de debug toolbar
+    # INTERNAL_IPS = [
+    #     '127.0.0.1',
+    #     'localhost',
+    # ]
+    
+    # Configuración de auto-reload mejorado
+    import os
+    os.environ['DJANGO_EXTENSIONS_AUTO_RELOAD'] = 'True'
+    
+    print("🚀 AUTO-RELOAD HABILITADO para desarrollo")
+    print("   - Los cambios en archivos .py se recargarán automáticamente")
+    print("   - No necesitas reiniciar Django manualmente")
+    print("   - Solo reinicia si cambias settings.py o urls.py")
+    print("   - Debug toolbar temporalmente deshabilitado")
