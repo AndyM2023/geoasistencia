@@ -21,7 +21,7 @@
             <h2 class="text-h4 font-weight-bold text-white mb-2">Iniciar Sesión</h2>
             <p class="text-body-1 text-grey-lighten-1 mb-8">
               ¿Nuevo en Geoasistencia? 
-              <v-btn variant="text" color="primary" class="text-none px-1">Registrarse</v-btn>
+              <v-btn variant="text" color="primary" class="text-none px-1" @click="goToRegister">Registrarse</v-btn>
 
 
             </p>
@@ -200,6 +200,10 @@ export default {
       }
     }
 
+    const goToRegister = () => {
+      router.push('/register')
+    }
+
     return {
       form,
       showPassword,
@@ -208,7 +212,8 @@ export default {
       success,
       rules,
       togglePassword,
-      handleLogin
+      handleLogin,
+      goToRegister
     }
   },
 

@@ -42,18 +42,7 @@
     <template v-slot:append>
       <div class="pa-4 border-t border-blue-500/20">
         <div class="text-center">
-          <v-chip
-            color="green-500"
-            size="small"
-            variant="tonal"
-            class="mb-2"
-          >
-            <v-icon left size="16">mdi-circle</v-icon>
-            Sistema Activo
-          </v-chip>
-          <p class="text-caption text-grey-400 mb-0">
-            v1.0.0
-          </p>
+          
         </div>
       </div>
     </template>

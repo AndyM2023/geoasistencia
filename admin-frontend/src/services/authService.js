@@ -75,5 +75,47 @@ export const authService = {
       console.error('Error validando token:', error)
       return { valid: false, user: null }
     }
+  },
+
+  async register(userData) {
+    try {
+      console.log('📝 Auth Service - Iniciando registro:', userData)
+      
+      const response = await api.post('/auth/register/', userData)
+      
+      console.log('✅ Auth Service - Registro exitoso:', response.data)
+      return { success: true, data: response.data }
+    } catch (error) {
+      console.error('❌ Auth Service - Error en registro:', error)
+      
+      let errorMessage = 'Error durante el registro'
+      
+      if (error.response?.data) {
+        // Manejar errores específicos del backend
+        const { data } = error.response
+        if (typeof data === 'string') {
+          errorMessage = data
+        } else if (data.detail) {
+          errorMessage = data.detail
+        } else if (data.error) {
+          errorMessage = data.error
+        } else if (data.non_field_errors) {
+          errorMessage = data.non_field_errors.join(', ')
+        } else {
+          // Manejar errores de validación por campo
+          const fieldErrors = []
+          Object.keys(data).forEach(field => {
+            if (Array.isArray(data[field])) {
+              fieldErrors.push(`${field}: ${data[field].join(', ')}`)
+            }
+          })
+          if (fieldErrors.length > 0) {
+            errorMessage = fieldErrors.join('\n')
+          }
+        }
+      }
+      
+      return { success: false, error: errorMessage }
+    }
   }
 }

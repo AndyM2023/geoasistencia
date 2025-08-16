@@ -75,6 +75,20 @@
           EMPLEADO
           <v-icon right>mdi-arrow-left</v-icon>
         </v-btn>
+        
+        <!-- En página de registro (/register): Botón INICIAR SESIÓN -->
+        <v-btn
+          v-if="isRegisterPage"
+          variant="text"
+          class="text-white"
+          @click="goToLogin"
+        >
+          <v-avatar size="32" class="mr-2">
+            <v-icon>mdi-login</v-icon>
+          </v-avatar>
+          INICIAR SESIÓN
+          <v-icon right>mdi-arrow-right</v-icon>
+        </v-btn>
       </template>
       
       <!-- Menú desplegable para rutas autenticadas (/app/*) -->
@@ -88,7 +102,7 @@
             <v-avatar size="32" class="mr-2">
               <v-icon>mdi-account</v-icon>
             </v-avatar>
-            ADMIN
+            {{ displayUserName }}
             <v-icon right>mdi-chevron-down</v-icon>
           </v-btn>
         </template>
@@ -128,10 +142,35 @@ export default {
     // Computed properties para determinar qué mostrar
     const isRecognitionPage = computed(() => route.path === '/')
     const isLoginPage = computed(() => route.path === '/login')
+    const isRegisterPage = computed(() => route.path === '/register')
     const isAppRoute = computed(() => route.path.startsWith('/app'))
     
     // Mostrar botón de menú solo en rutas /app/*
     const showMenuButton = computed(() => isAppRoute.value)
+    
+    // Computed para mostrar el nombre del usuario
+    const displayUserName = computed(() => {
+      if (authStore.user) {
+        // Si el usuario tiene first_name y last_name, mostrar el nombre completo
+        if (authStore.user.first_name && authStore.user.last_name) {
+          return `${authStore.user.first_name} ${authStore.user.last_name}`
+        }
+        // Si tiene first_name solamente
+        if (authStore.user.first_name) {
+          return authStore.user.first_name
+        }
+        // Si tiene username
+        if (authStore.user.username) {
+          return authStore.user.username
+        }
+        // Si tiene el campo usuario (para compatibilidad)
+        if (authStore.user.usuario) {
+          return authStore.user.usuario
+        }
+      }
+      // Fallback por defecto
+      return 'ADMIN'
+    })
 
     const toggleDrawer = () => {
       console.log('toggleDrawer clicked, current drawer:', props.drawer)
@@ -158,7 +197,9 @@ export default {
       goToRecognition,
       isRecognitionPage,
       isLoginPage,
-      showMenuButton
+      isRegisterPage,
+      showMenuButton,
+      displayUserName
     }
   }
 }
