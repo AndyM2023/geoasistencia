@@ -239,110 +239,154 @@
     </v-dialog>
 
     <!-- Dialog del Selector de Mapa -->
-    <v-dialog v-model="showMapSelector" max-width="900px" persistent>
+    <v-dialog v-model="showMapSelector" max-width="1200px" persistent>
       <v-card class="bg-dark-surface border border-blue-500/20">
         <v-card-title class="text-white">
           <span class="text-h5">🗺️ Seleccionar Ubicación en el Mapa</span>
         </v-card-title>
         
-        <v-card-text class="pa-0">
-          <div class="map-container">
-            <!-- Campo de búsqueda y controles del mapa -->
-            <div class="map-search mb-2">
-               <v-row class="mb-0">
-                 <v-col cols="12" sm="8" class="pb-0">
-                   <v-text-field
-                     id="map-search"
-                     v-model="searchPlace"
-                     label="Buscar lugar (ej: Universidad Estatal de Milagro)"
-                     prepend-icon="mdi-magnify"
-                     variant="outlined"
-                     color="blue-400"
-                     clearable
-                     @input="onSearchInput"
-                     hide-details
-                     density="compact"
-                   ></v-text-field>
-                 </v-col>
-                 <v-col cols="12" sm="4" class="pb-0">
-                   <div class="radius-control">
-                     <label class="radius-label">Radio del Área (metros)</label>
+        <v-card-text class="pa-4">
+          <v-row>
+            <!-- Primera columna: Solo el mapa -->
+            <v-col cols="12" md="8" class="pa-0">
+              <div class="map-container">
+                <!-- Contenedor del mapa -->
+                <div id="map-selector" class="map-wrapper-full"></div>
+              </div>
+            </v-col>
+            
+            <!-- Segunda columna: Controles y búsqueda -->
+            <v-col cols="12" md="4" class="pa-0 pl-md-4">
+              <div class="map-controls">
+                                                  <!-- Campo de búsqueda -->
+                 <div class="mb-0">
+                   <div class="d-flex gap-2">
+                     <v-text-field
+                       id="map-search"
+                       v-model="searchPlace"
+                       label="Buscar lugar (ej: Universidad Estatal de Milagro)"
+                       variant="outlined"
+                       color="blue-400"
+                       clearable
+                       @keyup.enter="onSearchInput"
+                       hide-details
+                       density="compact"
+                       class="flex-grow-1"
+                     ></v-text-field>
+                     
+                     <!-- Botón de búsqueda compacto -->
+                     <v-btn 
+                       color="blue-400" 
+                       variant="tonal" 
+                       @click="onSearchInput"
+                       icon="mdi-magnify"
+                       size="large"
+                       class="search-btn"
+                     ></v-btn>
+                   </div>
+                 </div>
+                 
+                                  <!-- Control del radio -->
+                 <div class="mb-2">
+                   <div class="d-flex align-center gap-3 mb-2">
+                     <label class="radius-label text-white mb-0">Radio del Área (metros)</label>
+                     
+                     <!-- Valor del radio al lado del label -->
+                     <v-chip color="info" variant="tonal" size="small" class="radius-chip">
+                       {{ mapRadius }}m
+                     </v-chip>
+                   </div>
+                   
+                   <div class="d-flex align-center gap-3">
                      <v-slider
                        v-model="mapRadius"
                        :min="10"
                        :max="500"
                        :step="10"
-                       color="orange-500"
-                       thumb-color="orange-500"
-                       track-color="orange-300"
+                       color="info"
+                       thumb-color="info"
+                       track-color="info-lighten-3"
                        thumb-label="always"
                        prepend-icon="mdi-radius"
-                       class="radius-slider"
+                       class="radius-slider-compact custom-slider"
                        hide-details
                      ></v-slider>
+                     
+                     <!-- Chip de ubicación seleccionada al lado del deslizador -->
+                     <v-chip v-if="selectedLocation" color="blue-400" variant="tonal" size="small" class="location-chip">
+                       <v-icon left>mdi-map-marker</v-icon>
+                       Ubicación seleccionada
+                     </v-chip>
                    </div>
-                 </v-col>
-               </v-row>
-              
-              <!-- Información del radio y estado - SUPER PEGADO -->
-              <div class="d-flex align-center gap-4 mt-0 pt-0">
-                <v-chip color="orange-500" variant="tonal" size="small">
-                  Radio: {{ mapRadius }}m
-                </v-chip>
-                <v-chip v-if="isLocating" color="orange-400" variant="tonal" size="small">
-                  <v-icon left>mdi-crosshairs-gps</v-icon>
-                  Obteniendo ubicación...
-                </v-chip>
-                <v-chip v-else-if="userLocation" color="green-400" variant="tonal" size="small">
-                  <v-icon left>mdi-crosshairs-gps</v-icon>
-                  Ubicación actual
-                </v-chip>
-                <v-chip v-if="selectedLocation" color="blue-400" variant="tonal" size="small">
-                  Ubicación seleccionada
-                </v-chip>
+                 </div>
+                 
+                 <!-- Chips de estado -->
+                 <div class="mb-2">
+                   <div class="d-flex flex-column gap-2">
+                     <v-chip v-if="isLocating" color="orange-400" variant="tonal" size="small">
+                       <v-icon left>mdi-crosshairs-gps</v-icon>
+                       Obteniendo ubicación...
+                     </v-chip>
+                     <v-chip v-if="userLocation" color="green-400" variant="tonal" size="small">
+                       <v-icon left>mdi-crosshairs-gps</v-icon>
+                       Ubicación actual
+                     </v-chip>
+                   </div>
+                 </div>
+                
+                <!-- Instrucciones -->
+                <div class="mb-4">
+                  <v-alert type="info" variant="tonal" density="compact">
+                    <template v-slot:prepend>
+                      <v-icon>mdi-information</v-icon>
+                    </template>
+                    <strong>Instrucciones:</strong> 
+                    <br>• Escribe el nombre del lugar y presiona ENTER
+                    <br>• Haz clic en el mapa para marcar la ubicación
+                    <br>• Ajusta el radio con el control deslizante
+                    <br>• Las coordenadas se llenarán automáticamente
+                  </v-alert>
+                </div>
+                
+                <!-- Mensaje sobre mapa -->
+                <div v-if="!googleMapsAvailable" class="mb-4">
+                  <v-alert type="warning" variant="tonal" density="compact">
+                    <template v-slot:prepend>
+                      <v-icon>mdi-alert</v-icon>
+                    </template>
+                    <strong>⚠️ Mapa no está disponible</strong>
+                    <br>Verifica tu conexión a internet para cargar OpenStreetMap
+                  </v-alert>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="mt-4 action-buttons">
+                  <v-row class="flex-grow-1">
+                    <v-col cols="6">
+                      <v-btn 
+                        color="grey-400" 
+                        variant="tonal" 
+                        @click="cancelMapSelection"
+                      >
+                        Cancelar
+                      </v-btn>
+                    </v-col>
+                    <v-col cols="6">
+                      <v-btn 
+                        color="blue-400" 
+                        @click="confirmMapSelection" 
+                        :disabled="!selectedLocation"
+                        class="neon-border"
+                      >
+                        Confirmar Ubicación
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                </div>
               </div>
-            </div>
-            
-            <!-- Contenedor del mapa -->
-            <div id="map-selector" class="map-wrapper"></div>
-            
-                         <!-- Instrucciones -->
-             <div class="map-instructions mt-2">
-               <v-alert type="info" variant="tonal" density="compact">
-                 <template v-slot:prepend>
-                   <v-icon>mdi-information</v-icon>
-                 </template>
-                 <strong>Instrucciones:</strong> 
-                 <br>• Escribe el nombre del lugar y presiona ENTER (ej: "Universidad Estatal de Milagro")
-                 <br>• Haz clic en el mapa para marcar la ubicación exacta del área
-                 <br>• Ajusta el radio con el control deslizante
-                 <br>• Las coordenadas se llenarán automáticamente
-               </v-alert>
-               
-                               <!-- Mensaje sobre mapa -->
-                <v-alert v-if="!googleMapsAvailable" type="warning" variant="tonal" density="compact" class="mt-2">
-                  <template v-slot:prepend>
-                    <v-icon>mdi-alert</v-icon>
-                  </template>
-                  <strong>⚠️ Mapa no está disponible</strong>
-                  <br>Verifica tu conexión a internet para cargar OpenStreetMap
-                </v-alert>
-             </div>
-          </div>
+            </v-col>
+          </v-row>
         </v-card-text>
-        
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey-400" variant="text" @click="cancelMapSelection">Cancelar</v-btn>
-          <v-btn 
-            color="blue-400" 
-            @click="confirmMapSelection" 
-            :disabled="!selectedLocation"
-            class="neon-border"
-          >
-            Confirmar Ubicación
-          </v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
 
@@ -442,7 +486,7 @@ export default {
 
     
          // Variables para el selector de mapa
-     const mapRadius = ref(200)
+     const mapRadius = ref(10)
      const userLocation = ref(null)
      const isLocating = ref(false)
      const searchPlace = ref('')
@@ -692,7 +736,7 @@ export default {
       editingArea.value = null
       
       // Resetear mapa
-      mapRadius.value = 200
+      mapRadius.value = 10
       clearMap()
       
       // Resetear validación del formulario
@@ -878,8 +922,8 @@ export default {
       if (!editingArea.value) {
         areaForm.value.latitude = ''
         areaForm.value.longitude = ''
-        areaForm.value.radius = 200
-        mapRadius.value = 200
+        areaForm.value.radius = 10
+        mapRadius.value = 10
       }
       
       console.log('❌ Selección de mapa cancelada')
