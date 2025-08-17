@@ -97,18 +97,12 @@ class FaceRecognitionService:
         """
         Registra o actualiza múltiples fotos de un empleado usando el sistema facial real
         ✅ OPTIMIZADO PARA VELOCIDAD: 15 fotos + procesamiento en lotes
-        
-        Args:
-            employee: Instancia del modelo Employee
-            photos_data: Lista de imágenes en base64 (recomendado: 15 fotos para velocidad)
-           
-        Returns:
-            dict: Resultado del registro/actualización
         """
         print(f"🔍 FACE_SERVICE.register_or_update_employee_face INICIADO")
         print(f"   - Employee: {employee.full_name}")
         print(f"   - Photos data type: {type(photos_data)}")
         print(f"   - Photos data length: {len(photos_data) if photos_data else 0}")
+        print(f"   - ⚠️ PROCESAMIENTO ÚNICO: Este método se ejecuta SOLO UNA VEZ")
         
         # 🔍 DEBUG: Verificar estado del servicio facial ANTES de procesar
         print(f"\n🔍 DEBUG: VERIFICANDO ESTADO DEL SERVICIO FACIAL EN FACE_SERVICE")
@@ -200,9 +194,6 @@ class FaceRecognitionService:
             print(f"🚀 PROCESAMIENTO SECUENCIAL ULTRA-OPTIMIZADO - {total_photos} fotos con Facenet-512")
             print(f"⚡ VELOCIDAD MÁXIMA: Sin paralelo (más seguro para Django)")
             print(f"⏱️ Tiempo estimado: {total_photos * 0.8:.1f} segundos (OPTIMIZADO)")
-            
-            # ✅ PROCESAMIENTO SECUENCIAL SIMPLE (MÁS SEGURO)
-            print(f"🔄 Iniciando procesamiento secuencial optimizado...")
             
             # ✅ PROCESAMIENTO SECUENCIAL SIMPLE (MÁS SEGURO)
             print(f"🔄 Iniciando procesamiento secuencial optimizado...")
@@ -321,6 +312,7 @@ class FaceRecognitionService:
             }
             
             print(f"🔍 FACE_SERVICE: Retornando resultado: {result}")
+            print(f"✅ PROCESAMIENTO COMPLETADO: {saved_photos} fotos procesadas UNA SOLA VEZ")
             return result
             
         except Exception as e:

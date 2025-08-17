@@ -164,15 +164,17 @@ console.log('🔍 FaceRegistration - Props recibidas:', {
 
 const emit = defineEmits(['registro-completo', 'registro-error', 'close']);
 
-const videoElement = ref(null);
-const stream = ref(null);
-const fotosCapturadas = ref(0);
-const mensaje = ref(null);
-const isUploading = ref(false);
-const isCapturing = ref(false);
-const isProcessing = ref(false);
-const captureInterval = ref(null);
-const capturedPhotos = ref([]);
+// Estado del componente
+const isCapturing = ref(false)
+const isProcessing = ref(false)
+const isUploading = ref(false)
+const fotosCapturadas = ref(0)
+const capturedPhotos = ref([])
+const mensaje = ref({ tipo: 'info', texto: 'Preparando cámara...' })
+const videoElement = ref(null)
+const stream = ref(null)
+const captureInterval = ref(null)
+const photosProcessed = ref(false) // ✅ NUEVA BANDERA: Evita procesamiento duplicado
 
 const progress = computed(() => (fotosCapturadas.value / props.targetCount) * 100);
 
@@ -414,6 +416,7 @@ const captureFace = async () => {
       
       // Si completamos el objetivo, procesar
       if (fotosCapturadas.value >= props.targetCount) {
+        console.log('🎯 Objetivo alcanzado, procesando fotos UNA SOLA VEZ');
         await processPhotos();
       }
     } else {
@@ -449,11 +452,20 @@ const captureManual = async () => {
 };
 
 const processPhotos = async () => {
+  // ✅ PREVENIR PROCESAMIENTO DUPLICADO
+  if (photosProcessed.value) {
+    console.log('⚠️ Fotos ya procesadas, evitando duplicación');
+    return;
+  }
+  
   try {
     // Validar que el employeeId sea válido
     if (!props.employeeId || props.employeeId === 'new' || isNaN(props.employeeId)) {
       throw new Error('ID de empleado inválido. Debes guardar el empleado antes de registrar su rostro.');
     }
+    
+    // ✅ MARCAR COMO PROCESADO ANTES DE CONTINUAR
+    photosProcessed.value = true;
     
     isUploading.value = true;
     mensaje.value = {
@@ -463,6 +475,7 @@ const processPhotos = async () => {
     
     console.log('🚀 Procesando fotos:', capturedPhotos.value.length);
     console.log('👤 Employee ID:', props.employeeId);
+    console.log('✅ PROCESAMIENTO ÚNICO: Evitando duplicación');
     
     // Enviar al backend Django
     const result = await faceService.registerFace(
@@ -487,6 +500,9 @@ const processPhotos = async () => {
     
   } catch (error) {
     console.error('Error procesando fotos:', error);
+    // ✅ REVERTIR BANDERA EN CASO DE ERROR
+    photosProcessed.value = false;
+    
     mensaje.value = {
       tipo: 'error',
       texto: 'Error procesando fotos: ' + error.message
@@ -512,14 +528,28 @@ const stopCapture = async () => {
   
   isCapturing.value = false;
   
-  // Si hay fotos capturadas, procesarlas
-  if (capturedPhotos.value.length > 0) {
-    await processPhotos();
-  }
+  // ❌ ELIMINADO: No procesar fotos aquí para evitar duplicación
+  // Las fotos se procesan automáticamente cuando se completa la captura
+  console.log('✅ Captura detenida - Sin procesamiento duplicado');
 };
 
 const closeDialog = () => {
-  stopCapture();
+  console.log('🚪 Cerrando diálogo sin procesamiento duplicado');
+  
+  // ✅ LIMPIAR RECURSOS SIN PROCESAR FOTOS
+  if (captureInterval.value) {
+    clearInterval(captureInterval.value);
+    captureInterval.value = null;
+  }
+  
+  if (stream.value) {
+    stream.value.getTracks().forEach(track => track.stop());
+    stream.value = null;
+  }
+  
+  isCapturing.value = false;
+  
+  // ✅ NO LLAMAR A stopCapture() para evitar duplicación
   emit('close');
 };
 
@@ -531,8 +561,22 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  console.log('🧹 Limpiando FaceRegistration');
-  stopCapture();
+  console.log('🧹 Limpiando FaceRegistration sin procesamiento duplicado');
+  
+  // ✅ LIMPIAR RECURSOS SIN PROCESAR FOTOS
+  if (captureInterval.value) {
+    clearInterval(captureInterval.value);
+    captureInterval.value = null;
+  }
+  
+  if (stream.value) {
+    stream.value.getTracks().forEach(track => track.stop());
+    stream.value = null;
+  }
+  
+  isCapturing.value = false;
+  
+  // ✅ NO LLAMAR A stopCapture() para evitar duplicación
 });
 </script>
 

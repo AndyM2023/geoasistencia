@@ -4,9 +4,21 @@
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Áreas</h1>
-          <v-btn color="blue-400" prepend-icon="mdi-plus" @click="openNewAreaDialog" class="neon-border">
-            Nueva Área
-          </v-btn>
+          <div class="d-flex gap-2">
+            <!-- ✅ BOTÓN DE CONTROL DE POLLING -->
+            <v-btn 
+              :color="pollingEnabled ? 'green-400' : 'orange-400'" 
+              :icon="pollingEnabled ? 'mdi-pause' : 'mdi-play'"
+              @click="togglePolling" 
+              :title="pollingEnabled ? 'Pausar actualización automática' : 'Reanudar actualización automática'"
+              variant="tonal"
+              size="small"
+            ></v-btn>
+            
+            <v-btn color="blue-400" prepend-icon="mdi-plus" @click="openNewAreaDialog" class="neon-border">
+              Nueva Área
+            </v-btn>
+          </div>
         </div>
       </v-col>
     </v-row>
@@ -14,17 +26,38 @@
     <!-- Tabla de Áreas -->
     <v-card class="bg-dark-surface border border-blue-500/20">
       <v-card-title class="text-white">
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Buscar área"
-          single-line
-          hide-details
-          variant="outlined"
-          density="compact"
-          color="blue-400"
-          class="text-white"
-        ></v-text-field>
+        <div class="d-flex align-center gap-3">
+          <v-text-field
+            v-model="search"
+            append-icon="mdi-magnify"
+            label="Buscar área"
+            single-line
+            hide-details
+            variant="outlined"
+            density="compact"
+            color="blue-400"
+            class="text-white"
+          ></v-text-field>
+          
+          <!-- ✅ INDICADOR DE POLLING -->
+          <div class="d-flex align-center gap-2">
+            <v-chip 
+              :color="pollingEnabled ? 'green-500' : 'orange-500'" 
+              variant="tonal" 
+              size="small"
+              class="polling-indicator"
+            >
+              <v-icon left size="small">
+                {{ pollingEnabled ? 'mdi-sync' : 'mdi-sync-off' }}
+              </v-icon>
+              {{ pollingEnabled ? 'Auto-actualizando' : 'Pausado' }}
+            </v-chip>
+            
+            <span class="text-caption text-grey-300">
+              ({{ POLLING_INTERVAL_MS / 1000 }}s)
+            </span>
+          </div>
+        </div>
       </v-card-title>
 
              <v-data-table
@@ -38,9 +71,31 @@
          :no-data-text="loading ? 'Cargando áreas...' : 'No hay áreas registradas'"
          :no-results-text="'No se encontraron áreas que coincidan con la búsqueda'"
        >
+        <template v-slot:item.radius="{ item }">
+          {{ item.radius }}m
+        </template>
+        
         <template v-slot:item.actions="{ item }">
           <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editArea(item)" title="Editar área"></v-btn>
-          <v-btn icon="mdi-delete" size="small" color="red-400" @click="deleteArea(item)" title="Eliminar área"></v-btn>
+          
+          <!-- Botón dinámico según el estado del área -->
+          <v-btn 
+            v-if="item.status === 'active'"
+            icon="mdi-account-off" 
+            size="small" 
+            color="red-400" 
+            @click="deleteArea(item)"
+            title="Desactivar área"
+          ></v-btn>
+          
+          <v-btn 
+            v-else
+            icon="mdi-account-check" 
+            size="small" 
+            color="green-400" 
+            @click="activateArea(item)"
+            title="Reactivar área"
+          ></v-btn>
         </template>
         
         <template v-slot:item.latitude="{ item }">
@@ -51,17 +106,31 @@
           <span :title="item.longitude">{{ formatCoordinate(item.longitude) }}</span>
         </template>
         
-        <template v-slot:item.radius="{ item }">
-          {{ item.radius }}m
+        <template v-slot:item.description="{ item }">
+          {{ item.description }}
         </template>
         
         <template v-slot:item.employee_count="{ item }">
-          <div class="d-flex justify-center">
-            <v-chip :color="item.employee_count > 0 ? 'green-500' : 'grey-500'" size="small" variant="tonal">
-              {{ item.employee_count }}
-            </v-chip>
-          </div>
+          <v-chip 
+            :color="item.employee_count > 0 ? 'green-500' : 'grey-500'" 
+            size="small" 
+            variant="tonal"
+          >
+            {{ item.employee_count || 0 }}
+          </v-chip>
         </template>
+        
+        <template v-slot:item.status="{ item }">
+          <v-chip 
+            :color="item.status === 'active' ? 'green-500' : 'red-500'" 
+            size="small" 
+            variant="tonal"
+          >
+            {{ item.status === 'active' ? 'Activa' : 'Inactiva' }}
+          </v-chip>
+        </template>
+        
+
       </v-data-table>
     </v-card>
 
@@ -296,6 +365,25 @@
       </v-card>
     </v-dialog>
 
+    <!-- Snackbar para mensajes -->
+    <v-snackbar
+      v-model="mensaje.show"
+      :color="mensaje.type"
+      :timeout="4000"
+      class="custom-snackbar"
+    >
+      {{ mensaje.text }}
+      
+      <template v-slot:actions>
+        <v-btn
+          color="white"
+          variant="text"
+          @click="mensaje.show = false"
+        >
+          Cerrar
+        </v-btn>
+      </template>
+    </v-snackbar>
 
   </div>
 </template>
@@ -333,6 +421,15 @@ export default {
       const coordStr = coordinate.toString()
       return coordStr.length > 10 ? coordStr.substring(0, 10) + '...' : coordStr
     }
+    
+    const showMessage = (text, type = 'success') => {
+      mensaje.value = {
+        show: true,
+        text,
+        type
+      }
+    }
+    
     const showDialog = ref(false)
     const showDeleteDialog = ref(false)
 
@@ -353,6 +450,18 @@ export default {
     
     const areas = ref([])
     
+    // ✅ POLLING AUTOMÁTICO para mantener la lista actualizada
+    const pollingInterval = ref(null)
+    const pollingEnabled = ref(true)
+    const POLLING_INTERVAL_MS = 30000 // 30 segundos
+    
+    // Estado para mensajes
+    const mensaje = ref({
+      show: false,
+      text: '',
+      type: 'success'
+    })
+    
     const areaForm = ref({
       name: '',
       description: '',
@@ -365,49 +474,89 @@ export default {
     const headers = [
       { title: 'Nombre', key: 'name', sortable: true },
       { title: 'Descripción', key: 'description', sortable: true },
+      { title: 'Empleados', key: 'employee_count', sortable: true },
       { title: 'Latitud', key: 'latitude', sortable: true, width: '120px' },
       { title: 'Longitud', key: 'longitude', sortable: true, width: '120px' },
       { title: 'Radio', key: 'radius', sortable: true },
-      { title: 'Empleados', key: 'employee_count', sortable: true },
       { title: 'Acciones', key: 'actions', sortable: false }
     ]
     
              const loadAreas = async () => {
-      loading.value = true
-      try {
-        const areasData = await areaService.getAll()
-        // El backend devuelve {count, next, previous, results}
-        // Necesitamos acceder a results que es el array de áreas
-        const areasArray = areasData.results || areasData
-        const areasWithCounts = areasArray.map(area => ({
-          ...area,
-          employee_count: area.employees?.length || 0
-        }))
-        
-        // Ordenar alfabéticamente por nombre
-        areas.value = sortAreasAlphabetically(areasWithCounts)
-        
-        console.log('✅ Áreas cargadas y ordenadas alfabéticamente:', areas.value.length, 'áreas')
-        console.log('📋 Orden actual:', areas.value.map(area => area.name))
-      } catch (error) {
-        console.error('Error cargando áreas:', error)
-        // Mostrar mensaje de error al usuario
-        areas.value = []
-        if (error.response?.status === 401) {
-          alert('Error de autenticación. Por favor, inicia sesión nuevamente.')
-        } else if (error.response?.status === 403) {
-          alert('No tienes permisos para ver las áreas.')
-        } else if (error.response?.status >= 500) {
-          alert('Error del servidor. Por favor, intenta más tarde.')
-        } else {
-          alert('Error cargando áreas: ' + (error.response?.data?.message || error.message))
-        }
-      } finally {
-        loading.value = false
-      }
-    }
-    
-                   const editArea = async (area) => {
+       loading.value = true
+       try {
+         const areasData = await areaService.getAll()
+         // El backend devuelve {count, next, previous, results}
+         // Necesitamos acceder a results que es el array de áreas
+         const areasArray = areasData.results || areasData
+         
+         // ✅ FILTRAR SOLO ÁREAS ACTIVAS para la lista principal
+         const activeAreas = areasArray.filter(area => area.status === 'active')
+         
+         const areasWithCounts = activeAreas.map(area => ({
+           ...area,
+           employee_count: area.employee_count || 0
+         }))
+         
+         // Ordenar alfabéticamente por nombre
+         areas.value = sortAreasAlphabetically(areasWithCounts)
+         
+         console.log('✅ Áreas activas cargadas y ordenadas alfabéticamente:', areas.value.length, 'áreas')
+         console.log('📋 Orden actual:', areas.value.map(area => area.name))
+       } catch (error) {
+         console.error('Error cargando áreas:', error)
+         // Mostrar mensaje de error al usuario
+         areas.value = []
+         if (error.response?.status === 401) {
+           alert('Error de autenticación. Por favor, inicia sesión nuevamente.')
+         } else if (error.response?.status === 403) {
+           alert('No tienes permisos para ver las áreas.')
+         } else if (error.response?.status >= 500) {
+           alert('Error del servidor. Por favor, intenta más tarde.')
+         } else {
+           alert('Error cargando áreas: ' + (error.response?.data?.message || error.message))
+         }
+       } finally {
+         loading.value = false
+       }
+     }
+     
+     // ✅ FUNCIONES DE POLLING AUTOMÁTICO
+     const startPolling = () => {
+       if (pollingInterval.value) {
+         clearInterval(pollingInterval.value)
+       }
+       
+       pollingInterval.value = setInterval(async () => {
+         if (pollingEnabled.value && !loading.value) {
+           console.log('🔄 Polling automático: Recargando áreas...')
+           await loadAreas()
+         }
+       }, POLLING_INTERVAL_MS)
+       
+       console.log('✅ Polling automático iniciado cada', POLLING_INTERVAL_MS / 1000, 'segundos')
+     }
+     
+     const stopPolling = () => {
+       if (pollingInterval.value) {
+         clearInterval(pollingInterval.value)
+         pollingInterval.value = null
+         console.log('⏹️ Polling automático detenido')
+       }
+     }
+     
+     const togglePolling = () => {
+       if (pollingEnabled.value) {
+         stopPolling()
+         pollingEnabled.value = false
+         console.log('⏸️ Polling automático pausado')
+       } else {
+         pollingEnabled.value = true
+         startPolling()
+         console.log('▶️ Polling automático reanudado')
+       }
+     }
+     
+     const editArea = async (area) => {
         try {
           console.log('✏️ Iniciando edición de área:', area.name)
           
@@ -454,16 +603,16 @@ export default {
     }
     
     const activateArea = async (area) => {
-      try {
-        await areaService.activate(area.id)
-        // Recargar áreas para actualizar el estado
-        await loadAreas()
-        alert(`Área ${area.name} reactivada correctamente`)
-      } catch (error) {
-        console.error('Error reactivando área:', error)
-        alert('Error reactivando área: ' + (error.response?.data?.message || error.message))
-      }
-    }
+       try {
+         await areaService.activate(area.id)
+         // Recargar áreas para actualizar el estado
+         await loadAreas()
+         showMessage('Área reactivada correctamente')
+       } catch (error) {
+         console.error('Error reactivando área:', error)
+         showMessage('Error reactivando área: ' + (error.response?.data?.message || error.message), 'error')
+       }
+     }
     
 
     
@@ -484,7 +633,11 @@ export default {
          showDeleteDialog.value = false
          areaToDelete.value = null
          
+         showMessage('Área desactivada correctamente')
          console.log('Área eliminada exitosamente')
+         
+         // Recargar la lista para mostrar el cambio de estado
+         await loadAreas()
        } catch (error) {
          console.error('Error eliminando área:', error)
          // Mostrar mensaje de error al usuario
@@ -800,7 +953,7 @@ export default {
           const updatedArea = await areaService.update(editingArea.value.id, areaForm.value)
           const index = areas.value.findIndex(area => area.id === editingArea.value.id)
           if (index !== -1) {
-            areas.value[index] = { ...updatedArea, employee_count: updatedArea.employees?.length || 0 }
+            areas.value[index] = { ...updatedArea }
             
             // Reordenar lista si se cambió el nombre (para mantener orden alfabético)
             areas.value = sortAreasAlphabetically([...areas.value])
@@ -826,7 +979,7 @@ export default {
           console.log('✅ Respuesta del servicio:', newArea)
           
           // Agregar nueva área a la lista
-          areas.value.push({ ...newArea, employee_count: 0 })
+          areas.value.push({ ...newArea })
           
           // Reordenar la lista alfabéticamente después de agregar
           areas.value = sortAreasAlphabetically([...areas.value])
@@ -887,11 +1040,19 @@ export default {
     
          onMounted(() => {
        loadAreas()
-      // El mapService se inicializa automáticamente
-      console.log('🚀 Componente Areas cargado - Mapa optimizado listo')
+       // ✅ INICIAR POLLING AUTOMÁTICO
+       startPolling()
+       // El mapService se inicializa automáticamente
+       console.log('🚀 Componente Areas cargado - Mapa optimizado listo')
      })
-    
-    return {
+     
+     // ✅ LIMPIAR POLLING AL DESMONTAR EL COMPONENTE
+     onUnmounted(() => {
+       stopPolling()
+       console.log('🧹 Componente Areas desmontado - Polling detenido')
+     })
+     
+     return {
       search,
       loading,
       saving,
@@ -908,6 +1069,7 @@ export default {
       areas,
       areaForm,
       headers,
+      mensaje,
       // Variables del mapa optimizado
        mapRadius,
        selectedLocation,
@@ -937,7 +1099,10 @@ export default {
       clearMap,
       refreshMap,
       // Funciones de formateo
-      formatCoordinate
+      formatCoordinate,
+      showMessage,
+      pollingEnabled, // Exponer la variable de polling para el botón
+      togglePolling // Exponer la función de toggle para el botón
     }
   }
 }
@@ -1055,4 +1220,37 @@ export default {
     transform: scale(1.5) !important;
   }
 }
+ 
+ /* ✅ ESTILOS PARA EL INDICADOR DE POLLING */
+ .polling-indicator {
+   animation: pulse 2s infinite;
+   font-weight: 500 !important;
+ }
+ 
+ .polling-indicator:deep(.v-icon) {
+   animation: spin 2s linear infinite;
+ }
+ 
+ @keyframes pulse {
+   0%, 100% { opacity: 1; }
+   50% { opacity: 0.7; }
+ }
+ 
+ @keyframes spin {
+   from { transform: rotate(0deg); }
+   to { transform: rotate(360deg); }
+ }
+ 
+ /* Responsive para el header con polling */
+ @media (max-width: 768px) {
+   .areas-header .d-flex {
+     flex-direction: column;
+     gap: 16px;
+   }
+   
+   .v-card-title .d-flex {
+     flex-direction: column;
+     gap: 16px;
+   }
+ }
 </style>

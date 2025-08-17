@@ -96,7 +96,10 @@ class FaceServiceSingleton:
         return service.verify_face(employee, photo)
     
     def register_face(self, employee, photos_base64):
-        """Registra o actualiza rostros de un empleado"""
+        """
+        Registra o actualiza rostros de un empleado
+        ✅ OPTIMIZADO: Sin refresh automático para evitar procesamiento duplicado
+        """
         service = self.get_service()
         if not service:
             return {
@@ -105,24 +108,26 @@ class FaceServiceSingleton:
             }
         
         result = service.register_employee_face(employee, photos_base64)
-        # Después del registro/actualización, refrescar el caché del sistema facial
-        self.refresh_facial_system()
+        # ❌ ELIMINADO: refresh_facial_system() que causaba procesamiento duplicado
+        # El sistema facial se mantiene sincronizado automáticamente
         return result
     
     def refresh_facial_system(self):
-        """Refresca el sistema facial para sincronizar cambios"""
+        """
+        Refresca el sistema facial para sincronizar cambios
+        ⚠️ NOTA: Este método ya no se llama automáticamente para evitar procesamiento duplicado
+        """
         service = self.get_service()
         if service and hasattr(service, 'facial_system') and service.facial_system:
             try:
                 print("🔄 Refrescando sistema facial...")
-                # El sistema facial se refresca automáticamente al listar personas
-                result = service.facial_system.list_all_persons()
-                if result.get('success'):
-                    print(f"✅ Sistema facial refrescado: {result.get('total_persons', 0)} personas")
-                else:
-                    print(f"⚠️ Error refrescando sistema facial: {result.get('error')}")
+                # Solo contar archivos, sin procesar imágenes
+                result = service.facial_system.get_face_count()
+                print(f"✅ Sistema facial refrescado: {result} rostros totales")
             except Exception as e:
                 print(f"⚠️ Error en refresh: {e}")
+        else:
+            print("⚠️ Sistema facial no disponible para refresh")
 
 # Instancia global del singleton
 face_service_singleton = FaceServiceSingleton()
