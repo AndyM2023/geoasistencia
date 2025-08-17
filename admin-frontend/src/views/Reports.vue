@@ -121,15 +121,17 @@
         </v-row>
         
         <v-row class="mt-0">
-          <v-col cols="12" class="text-center">
+          <v-col cols="12" class="text-center pa-0">
             
-            <v-btn color="primary" @click="generateReport" :loading="generating" :disabled="!canGenerateReport">
+            <v-btn color="primary" @click="generateReport" :loading="generating" :disabled="!canGenerateReport" class="ma-1">
               Generar Reporte
             </v-btn>
-            <v-btn color="secondary" @click="exportReport" :disabled="!reportData.length" class="ml-2">
+            
+            <v-btn color="secondary" @click="exportReport" :disabled="!reportData.length" class="ma-1" data-export-btn>
               Exportar Excel
             </v-btn>
-            <v-btn color="outline" @click="clearFilters" class="ml-2">
+            
+            <v-btn color="outline" @click="clearFilters" class="ma-1">
               Limpiar Filtros
             </v-btn>
           </v-col>
@@ -144,46 +146,46 @@
     </v-card>
 
     <!-- Estadísticas -->
-    <v-row class="mb-6">
-      <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-primary">{{ stats.totalDays }}</div>
-            <div class="text-subtitle-2">Total de Días</div>
+    <v-row class="my-2">
+      <v-col cols="12" sm="6" md="3" class="pa-1">
+        <v-card class="pa-2">
+          <v-card-text class="pa-2">
+            <div class="text-h6 font-weight-bold mb-1 text-primary">Total de Días</div>
+            <div class="text-h4 font-weight-bold text-primary">{{ stats.totalDays }}</div>
           </v-card-text>
         </v-card>
       </v-col>
       
-      <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-success">{{ stats.attendanceRate }}%</div>
-            <div class="text-subtitle-2">Tasa de Asistencia</div>
+      <v-col cols="12" sm="6" md="3" class="pa-1">
+        <v-card class="pa-2">
+          <v-card-text class="pa-2">
+            <div class="text-h6 font-weight-bold mb-1 text-success">Tasa de Asistencia</div>
+            <div class="text-h4 font-weight-bold text-success">{{ stats.attendanceRate }}%</div>
           </v-card-text>
         </v-card>
       </v-col>
       
-      <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-warning">{{ stats.lateCount }}</div>
-            <div class="text-subtitle-2">Llegadas Tardes</div>
+      <v-col cols="12" sm="6" md="3" class="pa-1">
+        <v-card class="pa-2">
+          <v-card-text class="pa-2">
+            <div class="text-h6 font-weight-bold mb-1 text-warning">Llegadas Tardes</div>
+            <div class="text-h4 font-weight-bold text-warning">{{ stats.lateCount }}</div>
           </v-card-text>
         </v-card>
       </v-col>
       
-      <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-error">{{ stats.absentCount }}</div>
-            <div class="text-subtitle-2">Ausencias</div>
+      <v-col cols="12" sm="6" md="3" class="pa-1">
+        <v-card class="pa-2">
+          <v-card-text class="pa-2">
+            <div class="text-h6 font-weight-bold mb-1 text-error">Ausencias</div>
+            <div class="text-h4 font-weight-bold text-error">{{ stats.absentCount }}</div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
 
     <!-- Tabla de Reporte -->
-    <v-card v-if="reportData.length > 0">
+    <v-card v-if="reportData.length > 0" class="mt-2">
       <v-card-title>
         <div class="d-flex align-center">
           <span>Reporte de Asistencia</span>
@@ -221,23 +223,7 @@
             Key: {{ tableKey }}
           </v-chip>
         </div>
-        <v-spacer></v-spacer>
-        <div class="d-flex align-center">
-          <v-text-field
-            v-model="search"
-            append-icon="mdi-magnify"
-            label="Buscar"
-            placeholder="Buscar por nombre, área, estado..."
-            single-line
-            hide-details
-            variant="outlined"
-            density="compact"
-            style="max-width: 300px"
-            clearable
-            :hint="search.trim() ? '' : 'Escribe para filtrar los resultados'"
-            persistent-hint
-          ></v-text-field>
-        </div>
+
       </v-card-title>
 
       <v-data-table
@@ -318,6 +304,7 @@ import { attendanceService } from '../services/attendanceService'
 import { employeeService } from '../services/employeeService'
 import areaService from '../services/areaService'
 import { useAuthStore } from '../stores/auth'
+import * as XLSX from 'xlsx'
 
 export default {
   name: 'Reports',
@@ -370,8 +357,7 @@ export default {
       { title: 'Entrada', key: 'check_in', sortable: true },
       { title: 'Salida', key: 'check_out', sortable: true },
       { title: 'Estado', key: 'status', sortable: true },
-      { title: 'Horas Trabajadas', key: 'hours_worked', sortable: true },
-      { title: 'Notas', key: 'notes', sortable: false }
+      { title: 'Horas Trabajadas', key: 'hours_worked', sortable: true }
     ]
     
     const filteredReportData = computed(() => {
@@ -717,13 +703,123 @@ export default {
       }
     }
     
-    const exportReport = () => {
-      // TODO: Implementar exportación a Excel
-      console.log('Exportando reporte...')
+    const exportReport = async () => {
+      try {
+        if (!reportData.value.length) {
+          alert('No hay datos para exportar');
+          return;
+        }
+
+        // Mostrar indicador de carga
+        const exportBtn = document.querySelector('[data-export-btn]');
+        if (exportBtn) {
+          exportBtn.disabled = true;
+          exportBtn.innerHTML = '<v-progress-circular indeterminate size="20"></v-progress-circular> Exportando...';
+        }
+
+        // Preparar los datos para Excel
+        const excelData = reportData.value.map(item => ({
+          'Fecha': formatDate(item.date),
+          'Empleado': item.employee_name || '',
+          'Área': item.area_name || '',
+          'Entrada': item.check_in ? formatTime(item.check_in) : '--',
+          'Salida': item.check_out ? formatTime(item.check_out) : '--',
+          'Estado': getStatusText(item.status),
+          'Horas Trabajadas': item.hours_worked ? `${item.hours_worked}h` : '--',
+          'Verificación Facial': item.face_verified ? 'Sí' : 'No',
+          'Latitud': item.latitude || '--',
+          'Longitud': item.longitude || '--'
+        }));
+
+        // Crear el nombre del archivo con fecha y hora
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+        const fileName = `Reporte_Asistencia_${timestamp}.xlsx`;
+
+        // Crear el workbook y worksheet
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        // Ajustar el ancho de las columnas
+        const columnWidths = [
+          { wch: 12 }, // Fecha
+          { wch: 25 }, // Empleado
+          { wch: 20 }, // Área
+          { wch: 10 }, // Entrada
+          { wch: 10 }, // Salida
+          { wch: 12 }, // Estado
+          { wch: 15 }, // Horas Trabajadas
+          { wch: 15 }, // Verificación Facial
+          { wch: 12 }, // Latitud
+          { wch: 12 }  // Longitud
+        ];
+        worksheet['!cols'] = columnWidths;
+
+        // Agregar el worksheet al workbook
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte de Asistencia');
+
+        // Generar y descargar el archivo
+        XLSX.writeFile(workbook, fileName);
+
+        console.log('✅ Reporte exportado exitosamente:', fileName);
+        
+        // Mostrar mensaje de éxito
+        alert(`Reporte exportado exitosamente como: ${fileName}`);
+
+      } catch (error) {
+        console.error('❌ Error exportando reporte:', error);
+        alert('Error al exportar el reporte. Por favor, inténtalo de nuevo.');
+      } finally {
+        // Restaurar el botón
+        const exportBtn = document.querySelector('[data-export-btn]');
+        if (exportBtn) {
+          exportBtn.disabled = false;
+          exportBtn.innerHTML = 'Exportar Excel';
+        }
+      }
     }
     
     const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('es-ES')
+      // SOLUCIÓN AL PROBLEMA DE ZONA HORARIA
+      // El problema: JavaScript interpreta '2025-08-13' como UTC
+      // Luego al aplicar zona horaria local, cambia el día
+      
+      if (!dateString) return '';
+      
+      try {
+        // Opción 1: Formateo manual para evitar problemas de zona horaria
+        if (typeof dateString === 'string' && dateString.includes('-')) {
+          const [year, month, day] = dateString.split('-');
+          return `${day}/${month}/${year}`;
+        }
+        
+        // Opción 2: Si es un objeto Date, formatear manualmente
+        if (dateString instanceof Date) {
+          const day = String(dateString.getDate()).padStart(2, '0');
+          const month = String(dateString.getMonth() + 1).padStart(2, '0');
+          const year = dateString.getFullYear();
+          return `${day}/${month}/${year}`;
+        }
+        
+        // Opción 3: Fallback al método original pero con opciones específicas
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+          console.warn('⚠️ Fecha inválida:', dateString);
+          return dateString;
+        }
+        
+        // Usar opciones específicas para evitar problemas de zona horaria
+        return date.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'America/Guayaquil' // Forzar zona horaria de Ecuador
+        });
+        
+      } catch (error) {
+        console.error('❌ Error formateando fecha:', error, dateString);
+        return dateString;
+      }
     }
     
     const formatTime = (timeString) => {
