@@ -31,13 +31,13 @@ class Area(models.Model):
     description = models.TextField(blank=True, verbose_name='Descripción')
     latitude = models.DecimalField(
         max_digits=20, 
-        decimal_places=15, 
+        decimal_places=18, 
         verbose_name='Latitud',
         validators=[MinValueValidator(-90), MaxValueValidator(90)]
     )
     longitude = models.DecimalField(
         max_digits=20, 
-        decimal_places=15, 
+        decimal_places=18, 
         verbose_name='Longitud',
         validators=[MinValueValidator(-180), MaxValueValidator(180)]
     )
@@ -82,6 +82,35 @@ class Area(models.Model):
     def is_active(self):
         """Verificar si el área está activa"""
         return self.status == 'active'
+    
+    def clean(self):
+        """Validación personalizada del modelo"""
+        from django.core.exceptions import ValidationError
+        
+        # Validar coordenadas
+        if self.latitude is not None:
+            if not (-90 <= float(self.latitude) <= 90):
+                raise ValidationError({
+                    'latitude': 'La latitud debe estar entre -90 y 90 grados'
+                })
+        
+        if self.longitude is not None:
+            if not (-180 <= float(self.longitude) <= 180):
+                raise ValidationError({
+                    'longitude': 'La longitud debe estar entre -180 y 180 grados'
+                })
+        
+        # Validar radio
+        if self.radius is not None:
+            if not (10 <= int(self.radius) <= 10000):
+                raise ValidationError({
+                    'radius': 'El radio debe estar entre 10 y 10000 metros'
+                })
+    
+    def save(self, *args, **kwargs):
+        """Guardar con validación personalizada"""
+        self.clean()
+        super().save(*args, **kwargs)
 
 class Employee(models.Model):
     """Empleado del sistema"""

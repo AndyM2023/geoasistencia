@@ -743,10 +743,44 @@ export default {
         return
       }
 
+      // Validar que las coordenadas sean números válidos
+      const lat = parseFloat(areaForm.value.latitude)
+      const lng = parseFloat(areaForm.value.longitude)
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        console.error('❌ Coordenadas no son números válidos:', {
+          latitude: areaForm.value.latitude,
+          longitude: areaForm.value.longitude
+        })
+        alert('⚠️ Las coordenadas deben ser números válidos.')
+        return
+      }
+      
+      // Validar rangos de coordenadas
+      if (lat < -90 || lat > 90) {
+        console.error('❌ Latitud fuera de rango:', lat)
+        alert('⚠️ La latitud debe estar entre -90 y 90 grados.')
+        return
+      }
+      
+      if (lng < -180 || lng > 180) {
+        console.error('❌ Longitud fuera de rango:', lng)
+        alert('⚠️ La longitud debe estar entre -180 y 180 grados.')
+        return
+      }
+
       // Verificar que el radio sea válido
       if (!areaForm.value.radius || areaForm.value.radius < 10) {
         console.error('❌ Radio inválido')
         alert('⚠️ El radio debe ser de al menos 10 metros.')
+        return
+      }
+      
+      // Validar que el radio sea un número
+      const radius = parseInt(areaForm.value.radius)
+      if (isNaN(radius) || radius < 10 || radius > 10000) {
+        console.error('❌ Radio fuera de rango:', radius)
+        alert('⚠️ El radio debe estar entre 10 y 10000 metros.')
         return
       }
       

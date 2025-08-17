@@ -149,6 +149,22 @@
                   {{ success }}
                 </v-alert>
 
+                <!-- Estado de ubicación -->
+                <v-alert
+                  v-if="locationStatus"
+                  type="info"
+                  variant="tonal"
+                  class="mb-4"
+                  :icon="gettingLocation ? 'mdi-loading mdi-spin' : 'mdi-map-marker'"
+                >
+                  <div class="d-flex align-center">
+                    <span v-if="gettingLocation" class="mr-2">
+                      <v-progress-circular indeterminate size="16" color="info"></v-progress-circular>
+                    </span>
+                    {{ locationStatus }}
+                  </div>
+                </v-alert>
+
                 <!-- Instrucciones -->
                 <v-card
                   variant="tonal"
@@ -162,10 +178,38 @@
                     <div class="text-body-2 text-grey-lighten-1">
                       <p class="mb-1">• Asegúrate de estar bien iluminado</p>
                       <p class="mb-1">• Mira directamente a la cámara</p>
-                      <p class="mb-0">• Mantén una distancia de 30-50 cm</p>
+                      <p class="mb-1">• Mantén una distancia de 30-50 cm</p>
+                      <p class="mb-0">• Permite el acceso a tu ubicación GPS</p>
                     </div>
                   </v-card-text>
                 </v-card>
+
+                <!-- Botones de ubicación -->
+                <div class="d-flex gap-2 mb-4">
+                  <v-btn
+                    @click="checkLocationPermission"
+                    color="warning"
+                    variant="outlined"
+                    size="small"
+                    :loading="gettingLocation"
+                    :disabled="gettingLocation"
+                  >
+                    <v-icon left>mdi-shield-check</v-icon>
+                    Verificar Permisos
+                  </v-btn>
+                  
+                  <v-btn
+                    @click="testLocation"
+                    color="info"
+                    variant="outlined"
+                    size="small"
+                    :loading="gettingLocation"
+                    :disabled="gettingLocation"
+                  >
+                    <v-icon left>mdi-map-marker</v-icon>
+                    Probar GPS
+                  </v-btn>
+                </div>
               </v-col>
             </v-row>
           </v-card-text>
@@ -200,6 +244,8 @@ export default {
     const loading = ref(false)
     const error = ref('')
     const success = ref('')
+    const locationStatus = ref('') // Estado de la ubicación
+    const gettingLocation = ref(false) // Estado de obtención de ubicación
     
     // Variables de la cámara
     const isCameraActive = ref(false)
@@ -221,6 +267,8 @@ export default {
       loading.value = true
       error.value = ''
       success.value = ''
+      locationStatus.value = ''
+      gettingLocation.value = false
 
       try {
         // Validar campos
@@ -253,12 +301,30 @@ export default {
         console.log('🔍 Employee ID:', employeeData.employee_id)
         console.log('🔍 Area ID:', employeeData.area_id)
 
+        // Obtener ubicación actual del usuario
+        console.log('📍 Obteniendo ubicación del usuario...')
+        gettingLocation.value = true
+        locationStatus.value = '📍 Obteniendo tu ubicación GPS...'
+        
+        let location
+        try {
+          location = await getCurrentLocation()
+          console.log('✅ Ubicación obtenida:', location)
+          gettingLocation.value = false
+        } catch (locationError) {
+          console.error('❌ Error obteniendo ubicación:', locationError)
+          gettingLocation.value = false
+          locationStatus.value = ''
+          error.value = locationError.message
+          return
+        }
+
         // Verificar rostro y marcar asistencia
         const result = await verifyFaceAndMarkAttendance(
           employeeData.employee_id,
           photoBase64,
           employeeData.area_id,
-          getCurrentLocation()
+          location
         )
 
         if (result.success) {
@@ -282,10 +348,14 @@ export default {
           // Mostrar mensaje específico según el tipo de acción
           if (attendanceData.action_type === 'entrada') {
             console.log('✅ Procesando ENTRADA')
-            success.value = `✅ ENTRADA registrada exitosamente para ${attendanceData.employee_name}`
+            const distanceInfo = result.location_info?.distance_meters ? 
+              ` (a ${result.location_info.distance_meters}m del centro del área)` : ''
+            success.value = `✅ ENTRADA registrada exitosamente para ${attendanceData.employee_name}${distanceInfo}`
           } else if (attendanceData.action_type === 'salida') {
             console.log('⏰ Procesando SALIDA')
-            success.value = `⏰ SALIDA registrada exitosamente para ${attendanceData.employee_name}`
+            const distanceInfo = result.location_info?.distance_meters ? 
+              ` (a ${result.location_info.distance_meters}m del centro del área)` : ''
+            success.value = `⏰ SALIDA registrada exitosamente para ${attendanceData.employee_name}${distanceInfo}`
           } else if (attendanceData.action_type === 'completo') {
             console.log('ℹ️ Procesando COMPLETO')
             success.value = `ℹ️ ${attendanceData.employee_name} ya tiene entrada y salida registradas para hoy`
@@ -333,6 +403,26 @@ export default {
             setTimeout(() => {
               success.value = ''
             }, 5000)
+          } else if (backendResponse.error_type === 'location_out_of_range') {
+            // Error de ubicación fuera del área
+            error.value = `📍 ${backendResponse.message}`
+            console.log('📍 Error de ubicación:', {
+              distance: backendResponse.distance_meters,
+              areaRadius: backendResponse.area_radius,
+              areaName: backendResponse.area_name
+            })
+          } else if (backendResponse.error_type === 'location_not_available') {
+            // Error de ubicación no disponible
+            error.value = `📍 ${backendResponse.message}`
+          } else if (backendResponse.error_type === 'wrong_area_assignment') {
+            // Error de área incorrecta
+            error.value = `🏢 ${backendResponse.message}`
+          } else if (backendResponse.error_type === 'area_inactive') {
+            // Error de área inactiva
+            error.value = `🏢 ${backendResponse.message}`
+          } else if (backendResponse.error_type === 'invalid_coordinates') {
+            // Error de coordenadas inválidas
+            error.value = `📍 ${backendResponse.message}`
           } else if (backendResponse.message) {
             // Otros mensajes personalizados del backend
             error.value = backendResponse.message
@@ -479,14 +569,188 @@ export default {
       }
     }
 
-    // Función para obtener ubicación actual
-    const getCurrentLocation = () => {
-      // Por ahora retornamos ubicación simulada
-      // En producción usarías navigator.geolocation
-      return {
-        latitude: -12.0464,  // Lima, Perú (ejemplo)
-        longitude: -77.0428
+    // Función para verificar permisos de ubicación
+    const checkLocationPermission = async () => {
+      try {
+        gettingLocation.value = true
+        error.value = ''
+        locationStatus.value = '🔐 Verificando permisos de ubicación...'
+        
+        if (navigator.permissions && navigator.permissions.query) {
+          const permissionStatus = await navigator.permissions.query({ name: 'geolocation' })
+          console.log('🔐 Estado del permiso de ubicación:', permissionStatus.state)
+          
+          let result
+          switch (permissionStatus.state) {
+            case 'granted':
+              result = { status: 'granted', message: '✅ Permiso de ubicación otorgado' }
+              break
+            case 'denied':
+              result = { status: 'denied', message: '❌ Permiso de ubicación denegado' }
+              break
+            case 'prompt':
+              result = { status: 'prompt', message: '⏳ Permiso de ubicación pendiente' }
+              break
+            default:
+              result = { status: 'unknown', message: '❓ Estado de permiso desconocido' }
+          }
+          
+          // Mostrar resultado en la interfaz
+          if (result.status === 'denied') {
+            error.value = '❌ Permiso de ubicación denegado. Ve a Configuración del navegador > Privacidad y seguridad > Ubicación y permite el acceso.'
+            locationStatus.value = ''
+          } else {
+            locationStatus.value = result.message
+            // Limpiar después de 3 segundos
+            setTimeout(() => {
+              locationStatus.value = ''
+            }, 3000)
+          }
+          
+          return result
+        } else {
+          const result = { status: 'unsupported', message: '⚠️ Navegador no soporta verificación de permisos' }
+          locationStatus.value = result.message
+          setTimeout(() => {
+            locationStatus.value = ''
+          }, 3000)
+          return result
+        }
+      } catch (error) {
+        console.error('Error verificando permisos:', error)
+        const result = { status: 'error', message: '❌ Error verificando permisos' }
+        error.value = result.message
+        locationStatus.value = ''
+        return result
+      } finally {
+        gettingLocation.value = false
       }
+    }
+
+    // Función para probar la ubicación GPS
+    const testLocation = async () => {
+      try {
+        gettingLocation.value = true
+        error.value = ''
+        
+        // Primero verificar permisos
+        const permissionInfo = await checkLocationPermission()
+        console.log('🔐 Información de permisos:', permissionInfo)
+        
+        if (permissionInfo.status === 'denied') {
+          error.value = '❌ Permiso de ubicación denegado. Ve a Configuración del navegador > Privacidad y seguridad > Ubicación y permite el acceso.'
+          gettingLocation.value = false
+          return
+        }
+        
+        locationStatus.value = '📍 Probando ubicación GPS...'
+        
+        const location = await getCurrentLocation()
+        console.log('✅ Ubicación de prueba obtenida:', location)
+        
+        // Mostrar información detallada
+        locationStatus.value = `📍 Prueba exitosa: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} (Precisión: ${Math.round(location.accuracy)}m)`
+        
+        // Limpiar después de 5 segundos
+        setTimeout(() => {
+          locationStatus.value = ''
+        }, 5000)
+        
+      } catch (locationError) {
+        console.error('❌ Error en prueba de ubicación:', locationError)
+        error.value = locationError.message
+        locationStatus.value = ''
+      } finally {
+        gettingLocation.value = false
+      }
+    }
+
+    // Función para obtener ubicación actual del navegador
+    const getCurrentLocation = () => {
+      return new Promise((resolve, reject) => {
+        // Verificar si el navegador soporta geolocalización
+        if (!navigator.geolocation) {
+          reject(new Error('Tu navegador no soporta geolocalización. Usa un navegador más moderno.'))
+          return
+        }
+
+        // Verificar permisos de ubicación primero
+        if (navigator.permissions && navigator.permissions.query) {
+          navigator.permissions.query({ name: 'geolocation' }).then((permissionStatus) => {
+            console.log('🔐 Estado del permiso de ubicación:', permissionStatus.state)
+            
+            if (permissionStatus.state === 'denied') {
+              reject(new Error('Acceso a ubicación denegado. Permite el acceso a la ubicación en tu navegador para marcar asistencia.'))
+              return
+            }
+            
+            // Si el permiso está otorgado o es prompt, continuar
+            requestLocation()
+          }).catch(() => {
+            // Si no se puede verificar permisos, continuar directamente
+            requestLocation()
+          })
+        } else {
+          // Navegadores que no soportan permissions API
+          requestLocation()
+        }
+
+        function requestLocation() {
+          // Opciones para obtener ubicación precisa
+          const options = {
+            enableHighAccuracy: true,  // Máxima precisión
+            timeout: 15000,           // 15 segundos de timeout
+            maximumAge: 0             // No usar ubicación en caché
+          }
+
+          console.log('📍 Solicitando ubicación GPS...')
+          
+          // Obtener ubicación actual
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('✅ Ubicación obtenida exitosamente:')
+              console.log(`   - Latitud: ${position.coords.latitude}`)
+              console.log(`   - Longitud: ${position.coords.longitude}`)
+              console.log(`   - Precisión: ${position.coords.accuracy} metros`)
+              console.log(`   - Timestamp: ${new Date(position.timestamp).toLocaleString()}`)
+              
+              // Mostrar estado exitoso con coordenadas
+              locationStatus.value = `📍 Ubicación obtenida: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)} (Precisión: ${Math.round(position.coords.accuracy)}m)`
+              
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp
+              })
+            },
+            (error) => {
+              console.error('❌ Error obteniendo ubicación:', error)
+              console.log('   - Error code:', error.code)
+              console.log('   - Error message:', error.message)
+              
+              // Mensajes de error personalizados según el tipo
+              let errorMessage = 'Error obteniendo ubicación'
+              switch (error.code) {
+                case error.PERMISSION_DENIED:
+                  errorMessage = 'Acceso a ubicación denegado. Permite el acceso a la ubicación en tu navegador para marcar asistencia.'
+                  break
+                case error.POSITION_UNAVAILABLE:
+                  errorMessage = 'Ubicación no disponible. Verifica que tu GPS esté activado.'
+                  break
+                case error.TIMEOUT:
+                  errorMessage = 'Tiempo de espera agotado. Intenta nuevamente en un área con mejor señal GPS.'
+                  break
+                default:
+                  errorMessage = `Error de ubicación: ${error.message}`
+              }
+              
+              reject(new Error(errorMessage))
+            },
+            options
+          )
+        }
+      })
     }
 
     // Hooks de lifecycle
@@ -517,6 +781,8 @@ export default {
       loading,
       error,
       success,
+      locationStatus,
+      gettingLocation,
       rules,
       
       // Variables de la cámara
@@ -535,7 +801,9 @@ export default {
       capturePhotoFromCamera,
       getEmployeeCredentials,
       verifyFaceAndMarkAttendance,
-      getCurrentLocation
+      getCurrentLocation,
+      testLocation,
+      checkLocationPermission
     }
   }
 }

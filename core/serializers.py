@@ -31,6 +31,60 @@ class AreaSerializer(serializers.ModelSerializer):
         if 'status' not in validated_data:
             validated_data['status'] = 'active'
         return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """Actualizar área con validación personalizada"""
+        print(f"🔍 AreaSerializer.update() - Datos recibidos:")
+        print(f"   - Instance ID: {instance.id}")
+        print(f"   - Validated data: {validated_data}")
+        
+        # Validar coordenadas antes de actualizar
+        if 'latitude' in validated_data:
+            lat = validated_data['latitude']
+            if not (-90 <= float(lat) <= 90):
+                raise serializers.ValidationError({
+                    'latitude': 'La latitud debe estar entre -90 y 90 grados'
+                })
+            print(f"✅ Latitud válida: {lat}")
+        
+        if 'longitude' in validated_data:
+            lng = validated_data['longitude']
+            if not (-180 <= float(lng) <= 180):
+                raise serializers.ValidationError({
+                    'longitude': 'La longitud debe estar entre -180 y 180 grados'
+                })
+            print(f"✅ Longitud válida: {lng}")
+        
+        if 'radius' in validated_data:
+            radius = validated_data['radius']
+            if not (10 <= int(radius) <= 10000):
+                raise serializers.ValidationError({
+                    'radius': 'El radio debe estar entre 10 y 10000 metros'
+                })
+            print(f"✅ Radio válido: {radius}")
+        
+        # Actualizar la instancia
+        return super().update(instance, validated_data)
+    
+    def validate(self, data):
+        """Validación personalizada para el serializer"""
+        print(f"🔍 AreaSerializer.validate() - Validando datos:")
+        print(f"   - Datos recibidos: {data}")
+        
+        # Validar que el nombre no esté vacío
+        if 'name' in data and not data['name'].strip():
+            raise serializers.ValidationError({
+                'name': 'El nombre del área no puede estar vacío'
+            })
+        
+        # Validar que el status sea válido
+        if 'status' in data and data['status'] not in ['active', 'inactive']:
+            raise serializers.ValidationError({
+                'status': 'El status debe ser "active" o "inactive"'
+            })
+        
+        print(f"✅ Validación exitosa")
+        return data
 
 class EmployeeSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Employee"""
