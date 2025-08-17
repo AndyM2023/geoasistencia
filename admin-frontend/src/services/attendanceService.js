@@ -214,10 +214,26 @@ export const attendanceService = {
                 params.append('status', filters.status);
             }
             if (filters.dateFrom) {
-                params.append('date_from', filters.dateFrom);
+                // Asegurar que la fecha esté en formato ISO (YYYY-MM-DD)
+                let dateFrom = filters.dateFrom;
+                if (dateFrom instanceof Date) {
+                    dateFrom = dateFrom.toISOString().split('T')[0];
+                } else if (typeof dateFrom === 'string' && dateFrom.includes('T')) {
+                    dateFrom = dateFrom.split('T')[0];
+                }
+                params.append('date_from', dateFrom);
+                console.log('📅 Fecha desde enviada al backend:', dateFrom);
             }
             if (filters.dateTo) {
-                params.append('date_to', filters.dateTo);
+                // Asegurar que la fecha esté en formato ISO (YYYY-MM-DD)
+                let dateTo = filters.dateTo;
+                if (dateTo instanceof Date) {
+                    dateTo = dateTo.toISOString().split('T')[0];
+                } else if (typeof dateTo === 'string' && dateTo.includes('T')) {
+                    dateTo = dateTo.split('T')[0];
+                }
+                params.append('date_to', dateTo);
+                console.log('📅 Fecha hasta enviada al backend:', dateTo);
             }
             
             if (params.toString()) {

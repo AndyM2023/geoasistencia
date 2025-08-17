@@ -10,21 +10,25 @@
     <v-card class="mb-6">
       <v-card-title class="d-flex align-center justify-space-between">
         <span>Filtros</span>
-        <v-select
-          v-model="filters.status"
-          label="Estado"
-          :items="[
-            { title: 'Todos', value: 'all' },
-            { title: 'Presente', value: 'present' },
-            { title: 'Ausente', value: 'absent' },
-            { title: 'Tarde', value: 'late' }
-          ]"
-          item-title="title"
-          item-value="value"
-          variant="outlined"
-          density="compact"
-          style="min-width: 150px; max-width: 200px;"
-        ></v-select>
+        <div class="d-flex align-center">
+          <v-select
+            v-model="filters.status"
+            label="Estado"
+            :items="[
+              { title: 'Todos', value: 'all' },
+              { title: 'Presente', value: 'present' },
+              { title: 'Ausente', value: 'absent' },
+              { title: 'Tarde', value: 'late' }
+            ]"
+            item-title="title"
+            item-value="value"
+            variant="outlined"
+            density="compact"
+            style="min-width: 150px; max-width: 200px;"
+          ></v-select>
+          
+
+        </div>
       </v-card-title>
       <v-card-text>
         <v-row>
@@ -71,7 +75,7 @@
             <v-menu v-model="showDatePickerFrom" :close-on-content-click="false">
               <template v-slot:activator="{ props }">
                 <v-text-field
-                  v-model="filters.dateFrom"
+                  v-model="formattedDateFrom"
                   label="Desde"
                   readonly
                   v-bind="props"
@@ -86,6 +90,7 @@
                 v-model="filters.dateFrom"
                 @update:model-value="showDatePickerFrom = false"
                 :max="filters.dateTo"
+                :format="'DD/MM/YYYY'"
               ></v-date-picker>
             </v-menu>
           </v-col>
@@ -94,7 +99,7 @@
             <v-menu v-model="showDatePickerTo" :close-on-content-click="false">
               <template v-slot:activator="{ props }">
                 <v-text-field
-                  v-model="filters.dateTo"
+                  v-model="formattedDateTo"
                   label="Hasta"
                   readonly
                   v-bind="props"
@@ -109,6 +114,7 @@
                 v-model="filters.dateTo"
                 @update:model-value="showDatePickerTo = false"
                 :min="filters.dateFrom"
+                :format="'DD/MM/YYYY'"
               ></v-date-picker>
             </v-menu>
           </v-col>
@@ -116,20 +122,6 @@
         
         <v-row class="mt-0">
           <v-col cols="12" class="text-center">
-            <!-- Botón de prueba temporal -->
-            <v-btn color="info" @click="testAuth" class="mr-2" size="small">
-              🔍 Test Auth
-            </v-btn>
-            
-            <!-- Botón de prueba para conexión directa -->
-            <v-btn color="warning" @click="testBackendConnection" class="mr-2" size="small">
-              🌐 Test Backend
-            </v-btn>
-            
-            <!-- Botón de prueba para el servicio de asistencia -->
-            <v-btn color="success" @click="testAttendanceService" class="mr-2" size="small">
-              📊 Test Service
-            </v-btn>
             
             <v-btn color="primary" @click="generateReport" :loading="generating" :disabled="!canGenerateReport">
               Generar Reporte
@@ -193,24 +185,65 @@
     <!-- Tabla de Reporte -->
     <v-card v-if="reportData.length > 0">
       <v-card-title>
-        <span>Reporte de Asistencia</span>
+        <div class="d-flex align-center">
+          <span>Reporte de Asistencia</span>
+          <v-chip 
+            v-if="search.trim()" 
+            :color="filteredReportData.length > 0 ? 'success' : 'warning'"
+            size="small" 
+            class="ml-3"
+          >
+            <v-icon size="small" class="mr-1">
+              {{ filteredReportData.length > 0 ? 'mdi-check' : 'mdi-alert' }}
+            </v-icon>
+            {{ filteredReportData.length }} de {{ reportData.length }} resultados
+          </v-chip>
+          
+          <!-- Indicador de búsqueda activa -->
+          <v-chip 
+            v-if="search.trim()" 
+            color="info" 
+            size="small" 
+            class="ml-2"
+          >
+            <v-icon size="small" class="mr-1">mdi-magnify</v-icon>
+            Búsqueda activa
+          </v-chip>
+          
+          <!-- Debug info -->
+          <v-chip 
+            v-if="search.trim()" 
+            color="warning" 
+            size="small" 
+            class="ml-2"
+          >
+            <v-icon size="small" class="mr-1">mdi-information</v-icon>
+            Key: {{ tableKey }}
+          </v-chip>
+        </div>
         <v-spacer></v-spacer>
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Buscar"
-          single-line
-          hide-details
-          variant="outlined"
-          density="compact"
-          style="max-width: 300px"
-        ></v-text-field>
+        <div class="d-flex align-center">
+          <v-text-field
+            v-model="search"
+            append-icon="mdi-magnify"
+            label="Buscar"
+            placeholder="Buscar por nombre, área, estado..."
+            single-line
+            hide-details
+            variant="outlined"
+            density="compact"
+            style="max-width: 300px"
+            clearable
+            :hint="search.trim() ? '' : 'Escribe para filtrar los resultados'"
+            persistent-hint
+          ></v-text-field>
+        </div>
       </v-card-title>
 
       <v-data-table
+        :key="`table-${tableKey}-${search.trim()}-${filteredReportData.length}`"
         :headers="headers"
-        :items="reportData"
-        :search="search"
+        :items="filteredReportData"
         :loading="loading"
         class="elevation-1"
       >
@@ -254,6 +287,23 @@
       <div class="text-h6 mt-4">No hay datos para mostrar</div>
       <div class="text-body-2 text-grey">Selecciona los filtros y genera un reporte</div>
     </v-card>
+
+    <!-- Mensaje cuando no hay resultados de búsqueda -->
+    <v-card v-if="reportData.length > 0 && filteredReportData.length === 0 && search.trim()" class="text-center pa-8">
+      <v-icon size="64" color="warning">mdi-magnify</v-icon>
+      <div class="text-h6 mt-4">No se encontraron resultados</div>
+      <div class="text-body-2 text-grey">
+        No hay resultados para "{{ search }}". 
+        <v-btn 
+          text 
+          color="primary" 
+          @click="search = ''"
+          class="ml-2"
+        >
+          Limpiar búsqueda
+        </v-btn>
+      </div>
+    </v-card>
   </div>
 </template>
 
@@ -292,6 +342,7 @@ export default {
     const generating = ref(false)
     const showDatePickerFrom = ref(false)
     const showDatePickerTo = ref(false)
+    const tableKey = ref(0) // Para forzar re-renderizado de la tabla
     
     const filters = ref({
       employee: null,
@@ -323,6 +374,81 @@ export default {
       { title: 'Notas', key: 'notes', sortable: false }
     ]
     
+    const filteredReportData = computed(() => {
+      console.log('🔄 === COMPUTED filteredReportData EJECUTADO ===');
+      console.log('🔍 search.value:', search.value);
+      console.log('🔍 search.value?.trim():', search.value?.trim());
+      console.log('🔍 search.value?.trim() === "":', search.value?.trim() === "");
+      console.log('📊 reportData.value.length:', reportData.value.length);
+      
+      // Validación más estricta de la búsqueda
+      if (!search.value || search.value.trim() === "") {
+        console.log('✅ Sin búsqueda activa, retornando todos los datos');
+        return reportData.value;
+      }
+      
+      console.log('🔍 BÚSQUEDA ACTIVA - Valor:', search.value);
+      console.log('📊 Datos disponibles:', reportData.value.length);
+      
+      const searchTerm = search.value.toLowerCase().trim();
+      console.log('🔍 Buscando término:', `"${searchTerm}"`, 'en', reportData.value.length, 'registros');
+      
+      const filtered = reportData.value.filter(item => {
+        console.log('🔍 Analizando item:', {
+          employee_name: item.employee_name,
+          area_name: item.area_name,
+          status: item.status
+        });
+        
+        // Buscar en nombre del empleado (búsqueda más flexible)
+        if (item.employee_name) {
+          const employeeName = item.employee_name.toLowerCase();
+          if (employeeName.includes(searchTerm) || 
+              employeeName.split(' ').some(word => word.includes(searchTerm))) {
+            console.log('✅ Encontrado en nombre:', item.employee_name);
+            return true;
+          }
+        }
+        
+        // Buscar en área
+        if (item.area_name && item.area_name.toLowerCase().includes(searchTerm)) {
+          console.log('✅ Encontrado en área:', item.area_name);
+          return true;
+        }
+        
+        // Buscar en estado
+        if (item.status) {
+          const statusText = getStatusText(item.status).toLowerCase();
+          if (statusText.includes(searchTerm)) {
+            console.log('✅ Encontrado en estado:', getStatusText(item.status));
+            return true;
+          }
+        }
+        
+        // Buscar en fecha (formateada)
+        if (item.date) {
+          const formattedDate = formatDate(item.date).toLowerCase();
+          if (formattedDate.includes(searchTerm)) {
+            console.log('✅ Encontrado en fecha:', formattedDate);
+            return true;
+          }
+        }
+        
+        // Buscar en horas trabajadas
+        if (item.hours_worked && item.hours_worked.toString().includes(searchTerm)) {
+          console.log('✅ Encontrado en horas trabajadas:', item.hours_worked);
+          return true;
+        }
+        
+        console.log('❌ No encontrado en este item');
+        return false;
+      });
+      
+      console.log('🎯 Resultados filtrados:', filtered.length, 'de', reportData.value.length);
+      console.log('🔄 === FIN COMPUTED filteredReportData ===');
+      return filtered;
+    });
+
     const chartData = computed(() => {
       if (!reportData.value.length) return []
       
@@ -356,9 +482,26 @@ export default {
         
         // CARGAR DESDE API REAL
         const employeesData = await employeeService.getAll()
+        console.log('📊 Datos brutos de empleados recibidos:', employeesData)
+        
         // El backend devuelve {count, next, previous, results}
         // Necesitamos acceder a results que es el array de empleados
         employees.value = employeesData.results || employeesData
+        console.log('👥 Empleados procesados:', employees.value)
+        
+        // Verificar estructura de cada empleado
+        if (employees.value.length > 0) {
+          console.log('🔍 Estructura del primer empleado:', employees.value[0])
+          console.log('🔍 Campos disponibles:', Object.keys(employees.value[0]))
+          
+          // Verificar que el mapeo funcione correctamente
+          const mappedEmployees = employees.value.map(emp => ({
+            title: emp.user?.full_name || 'Nombre no disponible',
+            value: emp.id
+          }))
+          console.log('🎯 Empleados mapeados para el filtro:', mappedEmployees)
+        }
+        
       } catch (error) {
         console.error('Error cargando empleados:', error)
       }
@@ -386,10 +529,14 @@ export default {
       if (newEmployeeId) {
         // Buscar el empleado seleccionado
         const selectedEmployee = employees.value.find(emp => emp.id === newEmployeeId)
+        console.log('🔍 Empleado seleccionado:', selectedEmployee)
+        
         if (selectedEmployee && selectedEmployee.area) {
           // Establecer automáticamente el área del empleado
           filters.value.area = selectedEmployee.area
-          console.log(`✅ Área automáticamente establecida para ${selectedEmployee.user.full_name}: ${selectedEmployee.area}`)
+          console.log(`✅ Área automáticamente establecida para ${selectedEmployee.user?.full_name || 'Empleado'}: ${selectedEmployee.area}`)
+        } else {
+          console.log('⚠️ Empleado seleccionado pero sin área:', selectedEmployee)
         }
       } else {
         // Si se deselecciona el empleado, liberar el área
@@ -397,6 +544,23 @@ export default {
         console.log('🔄 Empleado deseleccionado, área liberada')
       }
     })
+
+    // Watcher para la búsqueda
+    watch(search, (newSearch, oldSearch) => {
+      console.log('🔍 Búsqueda cambiada:', {
+        anterior: oldSearch,
+        nueva: newSearch,
+        longitud: newSearch?.length || 0
+      });
+      
+      // Forzar recálculo de filteredReportData
+      console.log('🔄 Forzando recálculo de filteredReportData...');
+      console.log('📊 Estado actual de filteredReportData:', filteredReportData.value.length);
+      
+      // Forzar re-renderizado de la tabla
+      tableKey.value++;
+      console.log('🔄 Tabla forzada a re-renderizar con key:', tableKey.value);
+    }, { immediate: true, deep: true });
     
     const generateReport = async () => {
       // Verificar autenticación antes de proceder
@@ -447,8 +611,17 @@ export default {
           reportFilters.status = filters.value.status;
         }
         if (filters.value.dateFrom && filters.value.dateTo) {
-          reportFilters.dateFrom = filters.value.dateFrom;
-          reportFilters.dateTo = filters.value.dateTo;
+          // Convertir fechas a formato ISO (YYYY-MM-DD) para el backend
+          const fromDate = new Date(filters.value.dateFrom);
+          const toDate = new Date(filters.value.dateTo);
+          
+          reportFilters.dateFrom = fromDate.toISOString().split('T')[0];
+          reportFilters.dateTo = toDate.toISOString().split('T')[0];
+          
+          console.log('📅 Fechas convertidas para backend:', {
+            original: { from: filters.value.dateFrom, to: filters.value.dateTo },
+            converted: { from: reportFilters.dateFrom, to: reportFilters.dateTo }
+          });
         }
         
         console.log('📊 Filtros aplicados:', reportFilters);
@@ -574,9 +747,27 @@ export default {
       showDatePickerFrom.value = false
       showDatePickerTo.value = false
       search.value = ''
-      console.log('🧹 Filtros limpiados, área liberada')
+      console.log('🧹 Filtros limpiados, área liberada y búsqueda limpiada')
       // No generar reporte automáticamente al limpiar, solo limpiar los filtros
     }
+
+    const formattedDateFrom = computed(() => {
+      if (!filters.value.dateFrom) return '';
+      return new Date(filters.value.dateFrom).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    });
+
+    const formattedDateTo = computed(() => {
+      if (!filters.value.dateTo) return '';
+      return new Date(filters.value.dateTo).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    });
 
     const canGenerateReport = computed(() => {
       // Al menos debe tener un filtro activo o fechas seleccionadas
@@ -711,6 +902,12 @@ export default {
         alert('❌ Servicio de asistencia (getAll) no está funcionando. Verifica la configuración del backend.');
       }
     };
+
+
+
+
+
+
     
     return {
       search,
@@ -718,6 +915,7 @@ export default {
       generating,
       showDatePickerFrom,
       showDatePickerTo,
+      tableKey,
       filters,
       employees,
       areas,
@@ -725,6 +923,9 @@ export default {
       stats,
       headers,
       chartData,
+      filteredReportData,
+      formattedDateFrom,
+      formattedDateTo,
       generateReport,
       exportReport,
       formatDate,

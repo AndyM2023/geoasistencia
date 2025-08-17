@@ -543,28 +543,41 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Attendance.objects.select_related('employee__user', 'area').all()
         
-        # Filtros
-        employee = self.request.query_params.get('employee', None)
-        area = self.request.query_params.get('area', None)
+        # Filtros - aceptar tanto employee/area como employee_id/area_id
+        employee = self.request.query_params.get('employee_id') or self.request.query_params.get('employee')
+        area = self.request.query_params.get('area_id') or self.request.query_params.get('area')
         date_from = self.request.query_params.get('date_from', None)
         date_to = self.request.query_params.get('date_to', None)
         status = self.request.query_params.get('status', None)
         
+        print(f"🔍 FILTROS RECIBIDOS:")
+        print(f"   - employee: {employee}")
+        print(f"   - area: {area}")
+        print(f"   - date_from: {date_from}")
+        print(f"   - date_to: {date_to}")
+        print(f"   - status: {status}")
+        
         if employee:
             queryset = queryset.filter(employee_id=employee)
+            print(f"✅ Filtro por empleado aplicado: employee_id={employee}")
         
         if area:
             queryset = queryset.filter(area_id=area)
+            print(f"✅ Filtro por área aplicado: area_id={area}")
         
         if date_from:
             queryset = queryset.filter(date__gte=date_from)
+            print(f"✅ Filtro por fecha desde aplicado: {date_from}")
         
         if date_to:
             queryset = queryset.filter(date__lte=date_to)
+            print(f"✅ Filtro por fecha hasta aplicado: {date_to}")
         
         if status and status != 'all':
             queryset = queryset.filter(status=status)
+            print(f"✅ Filtro por estado aplicado: {status}")
         
+        print(f"📊 Total de registros después de filtros: {queryset.count()}")
         return queryset
     
     @action(detail=False, methods=['post'])
