@@ -117,7 +117,29 @@ class Employee(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     employee_id = models.PositiveIntegerField(unique=True, blank=True, null=True, verbose_name='ID de Empleado')
     cedula = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='Cédula de Identidad')
-    position = models.CharField(max_length=100, verbose_name='Cargo')
+    POSITION_CHOICES = [
+        ('desarrollador', 'Desarrollador'),
+        ('disenador', 'Diseñador'),
+        ('secretario', 'Secretario/a'),
+        ('gerente', 'Gerente'),
+        ('analista', 'Analista'),
+        ('ingeniero', 'Ingeniero'),
+        ('contador', 'Contador'),
+        ('recursos_humanos', 'Recursos Humanos'),
+        ('marketing', 'Marketing'),
+        ('ventas', 'Ventas'),
+        ('soporte', 'Soporte Técnico'),
+        ('administrativo', 'Administrativo'),
+        ('operativo', 'Operativo'),
+        ('otro', 'Otro'),
+    ]
+    
+    position = models.CharField(
+        max_length=50, 
+        choices=POSITION_CHOICES,
+        default='otro',
+        verbose_name='Cargo'
+    )
     area = models.ForeignKey(
         Area, 
         on_delete=models.SET_NULL, 
@@ -152,6 +174,10 @@ class Employee(models.Model):
     @property
     def email(self):
         return self.user.email
+    
+    def get_position_display(self):
+        """Obtener el nombre legible del cargo"""
+        return dict(self.POSITION_CHOICES).get(self.position, self.position)
     
     def save(self, *args, **kwargs):
         """Generar employee_id automáticamente si no existe"""

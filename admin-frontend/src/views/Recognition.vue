@@ -184,7 +184,7 @@
                   </v-card-text>
                 </v-card>
 
-                <!-- Botones de ubicación -->
+                <!-- Botón de verificación de permisos -->
                 <div class="d-flex gap-2 mb-4">
                   <v-btn
                     @click="checkLocationPermission"
@@ -196,18 +196,6 @@
                   >
                     <v-icon left>mdi-shield-check</v-icon>
                     Verificar Permisos
-                  </v-btn>
-                  
-                  <v-btn
-                    @click="testLocation"
-                    color="info"
-                    variant="outlined"
-                    size="small"
-                    :loading="gettingLocation"
-                    :disabled="gettingLocation"
-                  >
-                    <v-icon left>mdi-map-marker</v-icon>
-                    Probar GPS
                   </v-btn>
                 </div>
               </v-col>
@@ -627,43 +615,7 @@ export default {
       }
     }
 
-    // Función para probar la ubicación GPS
-    const testLocation = async () => {
-      try {
-        gettingLocation.value = true
-        error.value = ''
-        
-        // Primero verificar permisos
-        const permissionInfo = await checkLocationPermission()
-        console.log('🔐 Información de permisos:', permissionInfo)
-        
-        if (permissionInfo.status === 'denied') {
-          error.value = '❌ Permiso de ubicación denegado. Ve a Configuración del navegador > Privacidad y seguridad > Ubicación y permite el acceso.'
-          gettingLocation.value = false
-          return
-        }
-        
-        locationStatus.value = '📍 Probando ubicación GPS...'
-        
-        const location = await getCurrentLocation()
-        console.log('✅ Ubicación de prueba obtenida:', location)
-        
-        // Mostrar información detallada
-        locationStatus.value = `📍 Prueba exitosa: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} (Precisión: ${Math.round(location.accuracy)}m)`
-        
-        // Limpiar después de 5 segundos
-        setTimeout(() => {
-          locationStatus.value = ''
-        }, 5000)
-        
-      } catch (locationError) {
-        console.error('❌ Error en prueba de ubicación:', locationError)
-        error.value = locationError.message
-        locationStatus.value = ''
-      } finally {
-        gettingLocation.value = false
-      }
-    }
+
 
     // Función para obtener ubicación actual del navegador
     const getCurrentLocation = () => {
@@ -802,7 +754,6 @@ export default {
       getEmployeeCredentials,
       verifyFaceAndMarkAttendance,
       getCurrentLocation,
-      testLocation,
       checkLocationPermission
     }
   }
