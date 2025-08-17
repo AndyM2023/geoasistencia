@@ -146,39 +146,67 @@
     </v-card>
 
     <!-- Estadísticas -->
-    <v-row class="my-2">
-      <v-col cols="12" sm="6" md="3" class="pa-1">
-        <v-card class="pa-2">
-          <v-card-text class="pa-2">
-            <div class="text-h6 font-weight-bold mb-1 text-primary">Total de Días</div>
-            <div class="text-h4 font-weight-bold text-primary">{{ stats.totalDays }}</div>
+    <v-row class="mb-4 dashboard-stats-row">
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="stats-card h-100" color="primary" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-primary">Total de Días</div>
+                <div class="text-h4 font-weight-bold text-primary">{{ stats.totalDays }}</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="primary">mdi-calendar</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
       
-      <v-col cols="12" sm="6" md="3" class="pa-1">
-        <v-card class="pa-2">
-          <v-card-text class="pa-2">
-            <div class="text-h6 font-weight-bold mb-1 text-success">Tasa de Asistencia</div>
-            <div class="text-h4 font-weight-bold text-success">{{ stats.attendanceRate }}%</div>
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="stats-card h-100" color="success" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-success">Tasa de Asistencia</div>
+                <div class="text-h4 font-weight-bold text-success">{{ stats.attendanceRate }}%</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="success">mdi-chart-line</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
       
-      <v-col cols="12" sm="6" md="3" class="pa-1">
-        <v-card class="pa-2">
-          <v-card-text class="pa-2">
-            <div class="text-h6 font-weight-bold mb-1 text-warning">Llegadas Tardes</div>
-            <div class="text-h4 font-weight-bold text-warning">{{ stats.lateCount }}</div>
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="stats-card h-100" color="warning" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-warning">Llegadas Tardes</div>
+                <div class="text-h4 font-weight-bold text-warning">{{ stats.lateCount }}</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="warning">mdi-clock-alert</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
       
-      <v-col cols="12" sm="6" md="3" class="pa-1">
-        <v-card class="pa-2">
-          <v-card-text class="pa-2">
-            <div class="text-h6 font-weight-bold mb-1 text-error">Ausencias</div>
-            <div class="text-h4 font-weight-bold text-error">{{ stats.absentCount }}</div>
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="stats-card h-100" color="error" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-error">Ausencias</div>
+                <div class="text-h4 font-weight-bold text-error">{{ stats.absentCount }}</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="warning">mdi-close-circle</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -295,6 +323,41 @@
 
 <style scoped>
 /* Estilos específicos para los filtros si son necesarios */
+
+/* Estilos de las tarjetas de estadísticas (igual que en Dashboard) */
+.dashboard-stats-row {
+  margin-bottom: 1rem !important;
+}
+
+.dashboard-stats-row .v-col {
+  padding: 0.5rem;
+}
+
+.stats-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.stats-card .v-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.stats-card .v-card-text {
+  padding: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .dashboard-stats-row .v-col {
+    padding: 0.25rem;
+  }
+  
+  .stats-card .v-card-text {
+    padding: 0.75rem;
+  }
+}
 </style>
 
 <script>
