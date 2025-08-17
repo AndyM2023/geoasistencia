@@ -79,6 +79,15 @@ class AreaService {
       console.log('  - radius:', typeof areaData.radius, '=', areaData.radius)
       console.log('  - status:', typeof areaData.status, '=', areaData.status)
       
+      // DEBUGGING: Verificar valores específicos
+      console.log('🔍 VALORES ESPECÍFICOS:')
+      console.log('  - latitude es NaN?', isNaN(areaData.latitude))
+      console.log('  - longitude es NaN?', isNaN(areaData.longitude))
+      console.log('  - radius es NaN?', isNaN(areaData.radius))
+      console.log('  - latitude es string vacío?', areaData.latitude === '')
+      console.log('  - longitude es string vacío?', areaData.longitude === '')
+      console.log('  - radius es string vacío?', areaData.radius === '')
+      
       // Asegurar que los tipos de datos sean correctos
       const cleanData = {
         name: String(areaData.name || ''),
@@ -87,6 +96,15 @@ class AreaService {
         longitude: Number(areaData.longitude),
         radius: Number(areaData.radius),
         status: String(areaData.status || 'active')  // CRÍTICO: Incluir status
+      }
+      
+      // Validar que no haya strings vacíos para coordenadas
+      if (areaData.latitude === '' || areaData.longitude === '') {
+        console.error('❌ COORDENADAS VACÍAS DETECTADAS:', {
+          latitude: areaData.latitude,
+          longitude: areaData.longitude
+        })
+        throw new Error('Las coordenadas no pueden estar vacías')
       }
       
       console.log('🧹 DATOS LIMPIADOS:')

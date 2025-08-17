@@ -489,6 +489,24 @@ class AreaViewSet(viewsets.ModelViewSet):
     serializer_class = AreaSerializer
     permission_classes = [permissions.AllowAny]  # TEMPORAL: Permitir sin autenticación para pruebas
     
+    def update(self, request, *args, **kwargs):
+        """Actualizar área con logging detallado"""
+        print(f"🔍 AreaViewSet.update() - Request recibido:")
+        print(f"   - Method: {request.method}")
+        print(f"   - URL: {request.path}")
+        print(f"   - Data: {request.data}")
+        print(f"   - Content-Type: {request.content_type}")
+        
+        try:
+            response = super().update(request, *args, **kwargs)
+            print(f"✅ Área actualizada exitosamente")
+            return response
+        except Exception as e:
+            print(f"❌ Error en AreaViewSet.update(): {e}")
+            print(f"   - Tipo de error: {type(e).__name__}")
+            print(f"   - Mensaje: {str(e)}")
+            raise
+    
     def get_queryset(self):
         queryset = Area.objects.all()
         
@@ -584,6 +602,34 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         longitude = request.data.get('longitude')
         face_verified = request.data.get('face_verified', False)
         
+        # ✅ VALIDACIÓN DE COORDENADAS: Verificar que sean números válidos
+        try:
+            if latitude and longitude:
+                lat_float = float(latitude)
+                lng_float = float(longitude)
+                
+                # Validar rangos de coordenadas
+                if not (-90 <= lat_float <= 90):
+                    return Response({
+                        'success': False,
+                        'message': 'Latitud inválida. Debe estar entre -90 y 90 grados.',
+                        'error_type': 'invalid_coordinates'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                if not (-180 <= lng_float <= 180):
+                    return Response({
+                        'success': False,
+                        'message': 'Longitud inválida. Debe estar entre -180 y 180 grados.',
+                        'error_type': 'invalid_coordinates'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+        except (ValueError, TypeError):
+            return Response({
+                'success': False,
+                'message': 'Coordenadas inválidas. Deben ser números válidos.',
+                'error_type': 'invalid_coordinates'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
             # Buscar empleado por ID de base de datos, no por employee_id
             employee = Employee.objects.get(id=employee_id)
@@ -591,6 +637,83 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             
             area = Area.objects.get(id=area_id)
             print(f"✅ Área encontrada: {area.name} (ID: {area.id})")
+            
+            # ✅ VALIDACIÓN: Verificar que el área esté activa
+            if area.status != 'active':
+                print(f"❌ ÁREA INACTIVA: {area.name} - Status: {area.status}")
+                return Response({
+                    'success': False,
+                    'message': f'El área "{area.name}" no está activa actualmente.',
+                    'error_type': 'area_inactive',
+                    'area_name': area.name,
+                    'area_status': area.status
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                print(f"✅ ÁREA ACTIVA: {area.name}")
+            
+            # ✅ VALIDACIÓN: Verificar que el empleado esté asignado al área correcta
+            if employee.area and employee.area.id != area.id:
+                print(f"❌ EMPLEADO ASIGNADO A OTRA ÁREA: {employee.area.name} vs {area.name}")
+                return Response({
+                    'success': False,
+                    'message': f'No puedes marcar asistencia en el área "{area.name}". Estás asignado al área "{employee.area.name}".',
+                    'error_type': 'wrong_area_assignment',
+                    'assigned_area': employee.area.name,
+                    'requested_area': area.name
+                }, status=status.HTTP_400_BAD_REQUEST)
+            elif not employee.area:
+                print(f"❌ EMPLEADO SIN ÁREA ASIGNADA")
+                return Response({
+                    'success': False,
+                    'message': 'No tienes un área de trabajo asignada. Contacta al administrador.',
+                    'error_type': 'no_area_assigned'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                print(f"✅ EMPLEADO ASIGNADO AL ÁREA CORRECTA: {area.name}")
+            
+            # ✅ VALIDACIÓN DE UBICACIÓN: Verificar que el empleado esté en el área correcta
+            if latitude and longitude:
+                # Calcular distancia entre ubicación del empleado y centro del área
+                from math import radians, cos, sin, sqrt, atan2
+                
+                # Convertir coordenadas a radianes
+                lat1, lon1 = radians(float(latitude)), radians(float(longitude))  # Empleado
+                lat2, lon2 = radians(float(area.latitude)), radians(float(area.longitude))  # Área
+                
+                # Fórmula de Haversine para calcular distancia
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                c = 2 * atan2(sqrt(a), sqrt(1-a))
+                distance_km = 6371 * c  # Radio de la Tierra en km
+                distance_meters = distance_km * 1000  # Convertir a metros
+                
+                print(f"📍 VALIDACIÓN DE UBICACIÓN:")
+                print(f"   - Ubicación empleado: {latitude}, {longitude}")
+                print(f"   - Centro del área: {area.latitude}, {area.longitude}")
+                print(f"   - Radio del área: {area.radius} metros")
+                print(f"   - Distancia calculada: {distance_meters:.2f} metros")
+                
+                # Verificar si está dentro del radio del área
+                if distance_meters > area.radius:
+                    print(f"❌ EMPLEADO FUERA DEL ÁREA: Distancia {distance_meters:.2f}m > Radio {area.radius}m")
+                    return Response({
+                        'success': False,
+                        'message': f'No puedes marcar asistencia desde esta ubicación. Debes estar en el área "{area.name}" (máximo {area.radius}m del centro).',
+                        'error_type': 'location_out_of_range',
+                        'distance_meters': round(distance_meters, 2),
+                        'area_radius': area.radius,
+                        'area_name': area.name
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    print(f"✅ UBICACIÓN VÁLIDA: Empleado dentro del área (distancia: {distance_meters:.2f}m)")
+            else:
+                print(f"⚠️ ADVERTENCIA: No se recibieron coordenadas de ubicación")
+                return Response({
+                    'success': False,
+                    'message': 'No se pudo obtener tu ubicación. Asegúrate de permitir el acceso a la ubicación en tu navegador.',
+                    'error_type': 'location_not_available'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             # Verificar si ya tiene asistencia hoy
             today = timezone.now().date()
@@ -648,6 +771,14 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             response_data = {
                 'attendance': serializer.data,
                 'message': message,
+                'location_info': {
+                    'employee_lat': float(latitude),
+                    'employee_lng': float(longitude),
+                    'area_lat': float(area.latitude),
+                    'area_lng': float(area.longitude),
+                    'area_radius': area.radius,
+                    'distance_meters': round(distance_meters, 2) if 'distance_meters' in locals() else None
+                },
                 'action_type': action_type,
                 'check_in': attendance.check_in,
                 'check_out': attendance.check_out,

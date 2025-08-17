@@ -25,6 +25,10 @@ export const employeeService = {
   },
   
   async update(id, employeeData) {
+    console.log('🔍 employeeService.update() - Datos a enviar:')
+    console.log('   - ID:', id)
+    console.log('   - employeeData:', JSON.stringify(employeeData, null, 2))
+    
     const response = await api.put(`/employees/${id}/`, employeeData)
     return response.data
   },

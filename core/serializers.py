@@ -31,6 +31,60 @@ class AreaSerializer(serializers.ModelSerializer):
         if 'status' not in validated_data:
             validated_data['status'] = 'active'
         return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """Actualizar área con validación personalizada"""
+        print(f"🔍 AreaSerializer.update() - Datos recibidos:")
+        print(f"   - Instance ID: {instance.id}")
+        print(f"   - Validated data: {validated_data}")
+        
+        # Validar coordenadas antes de actualizar
+        if 'latitude' in validated_data:
+            lat = validated_data['latitude']
+            if not (-90 <= float(lat) <= 90):
+                raise serializers.ValidationError({
+                    'latitude': 'La latitud debe estar entre -90 y 90 grados'
+                })
+            print(f"✅ Latitud válida: {lat}")
+        
+        if 'longitude' in validated_data:
+            lng = validated_data['longitude']
+            if not (-180 <= float(lng) <= 180):
+                raise serializers.ValidationError({
+                    'longitude': 'La longitud debe estar entre -180 y 180 grados'
+                })
+            print(f"✅ Longitud válida: {lng}")
+        
+        if 'radius' in validated_data:
+            radius = validated_data['radius']
+            if not (10 <= int(radius) <= 10000):
+                raise serializers.ValidationError({
+                    'radius': 'El radio debe estar entre 10 y 10000 metros'
+                })
+            print(f"✅ Radio válido: {radius}")
+        
+        # Actualizar la instancia
+        return super().update(instance, validated_data)
+    
+    def validate(self, data):
+        """Validación personalizada para el serializer"""
+        print(f"🔍 AreaSerializer.validate() - Validando datos:")
+        print(f"   - Datos recibidos: {data}")
+        
+        # Validar que el nombre no esté vacío
+        if 'name' in data and not data['name'].strip():
+            raise serializers.ValidationError({
+                'name': 'El nombre del área no puede estar vacío'
+            })
+        
+        # Validar que el status sea válido
+        if 'status' in data and data['status'] not in ['active', 'inactive']:
+            raise serializers.ValidationError({
+                'status': 'El status debe ser "active" o "inactive"'
+            })
+        
+        print(f"✅ Validación exitosa")
+        return data
 
 class EmployeeSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Employee"""
@@ -47,6 +101,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True, required=False)
     cedula = serializers.CharField(write_only=True, required=False)
     
+    # Campo para leer la cédula del usuario
+    cedula_display = serializers.CharField(source='user.cedula', read_only=True)
+    
     area_name = serializers.CharField(source='area.name', read_only=True)
     full_name = serializers.ReadOnlyField()
     email_display = serializers.ReadOnlyField(source='email')
@@ -54,11 +111,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = [
-            'id', 'user', 'user_id', 'employee_id', 'cedula', 'position', 'area', 'area_name',
+            'id', 'user', 'user_id', 'employee_id', 'cedula', 'cedula_display', 'position', 'area', 'area_name',
             'hire_date', 'photo', 'full_name', 'email_display', 'created_at', 'updated_at',
             'first_name', 'last_name', 'email'  # Campos para crear usuario
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name', 'cedula_display']
     
     def create(self, validated_data):
         """Crear empleado y usuario asociado con usuario y contraseña automáticos"""
@@ -126,13 +183,25 @@ class EmployeeSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         """Actualizar empleado y usuario asociado"""
+        print(f"🔍 EmployeeSerializer.update() - Datos recibidos:")
+        print(f"   - Instance ID: {instance.id}")
+        print(f"   - Instance user: {instance.user.username}")
+        print(f"   - Validated data: {validated_data}")
+        
         # Extraer datos del usuario
         first_name = validated_data.pop('first_name', '')
         last_name = validated_data.pop('last_name', '')
         email = validated_data.pop('email', '')
+        cedula = validated_data.pop('cedula', '')
+        
+        print(f"   - Campos extraídos del usuario:")
+        print(f"     - first_name: '{first_name}'")
+        print(f"     - last_name: '{last_name}'")
+        print(f"     - email: '{email}'")
+        print(f"     - cedula: '{cedula}'")
         
         # Actualizar usuario si se proporcionan datos
-        if first_name or last_name or email:
+        if first_name or last_name or email or cedula:
             user = instance.user
             if first_name:
                 user.first_name = first_name
@@ -140,13 +209,19 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 user.last_name = last_name
             if email:
                 user.email = email
+            if cedula:
+                user.cedula = cedula
             user.save()
+            print(f"✅ Usuario actualizado: {user.username}")
         
         # Actualizar empleado
+        print(f"   - Campos restantes para empleado: {list(validated_data.keys())}")
         for attr, value in validated_data.items():
+            print(f"     - {attr}: {value}")
             setattr(instance, attr, value)
         
         instance.save()
+        print(f"✅ Empleado actualizado: {instance.id}")
         return instance
 
 class AttendanceSerializer(serializers.ModelSerializer):

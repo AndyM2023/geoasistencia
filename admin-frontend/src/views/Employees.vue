@@ -4,9 +4,9 @@
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Empleados</h1>
-          <v-btn color="blue-400" prepend-icon="mdi-plus" @click="showDialog = true" class="neon-border">
-            Nuevo Empleado
-          </v-btn>
+                     <v-btn color="blue-400" prepend-icon="mdi-plus" @click="openNewEmployeeDialog" class="neon-border">
+             Nuevo Empleado
+           </v-btn>
         </div>
       </v-col>
     </v-row>
@@ -113,7 +113,7 @@
               <!-- Información del empleado -->
               <v-card-text class="text-center pa-4">
                 <h3 class="text-h6 text-white mb-2">{{ employee.full_name }}</h3>
-                <p class="text-grey-400 mb-1">{{ employee.position }}</p>
+                <p class="text-grey-400 mb-1">{{ positions.find(p => p.value === employee.position)?.title || employee.position }}</p>
                 <p class="text-grey-500 text-sm">{{ employee.area_name }}</p>
                 <p class="text-blue-400 text-sm font-weight-medium">{{ employee.email_display }}</p>
               </v-card-text>
@@ -213,18 +213,26 @@
                 ></v-text-field>
               </v-col>
               
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="employeeForm.cedula"
-                  label="Cédula de Identidad"
-                  variant="outlined"
-                  color="blue-400"
-                  :rules="[v => !!v || 'La cédula es requerida']"
-                  required
-                  hint="Se usará como contraseña del usuario"
-                  persistent-hint
-                ></v-text-field>
-              </v-col>
+                                             <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="employeeForm.cedula"
+                    label="Cédula de Identidad"
+                    variant="outlined"
+                    color="blue-400"
+                    :rules="[
+                      v => !!v || 'La cédula es requerida',
+                      v => /^\d{7,10}$/.test(v) || 'La cédula debe tener entre 7 y 10 dígitos',
+                      v => !existingCedulas.includes(v) || 'Esta cédula ya está registrada'
+                    ]"
+                    :required="!editingEmployee"
+                    :disabled="editingEmployee"
+                    :hint="editingEmployee ? 'La cédula no se puede modificar' : 'Se usará como contraseña del usuario'"
+                    persistent-hint
+                    @input="validateCedula"
+                  ></v-text-field>
+                  
+                  
+                </v-col>
               
               <v-col cols="12">
                 <v-alert
@@ -251,14 +259,18 @@
               </v-col>
               
               <v-col cols="12" sm="6">
-                <v-text-field
+                <v-select
                   v-model="employeeForm.position"
+                  :items="positions"
+                  item-title="title"
+                  item-value="value"
                   label="Cargo"
                   variant="outlined"
                   color="blue-400"
                   :rules="[v => !!v || 'El cargo es requerido']"
                   required
-                ></v-text-field>
+                  placeholder="Selecciona un cargo"
+                ></v-select>
               </v-col>
               
               <v-col cols="12" sm="6">
@@ -538,33 +550,55 @@ export default {
       type: 'success'
     })
    
-    // Estados para registro facial
-    const faceRegistration = ref({
-      isCapturing: false,
-      isTraining: false,
-      status: 'pending', // pending, captured, trained, error
-      statusText: 'Sin registrar',
-      photosCount: 0,
-      confidence: 90,
-      capturedPhotos: null
-    })
+         // Estados para registro facial
+     const faceRegistration = ref({
+       isCapturing: false,
+       isTraining: false,
+       status: 'pending', // pending, captured, trained, error
+       statusText: 'Sin registrar',
+       photosCount: 0,
+       confidence: 90,
+       capturedPhotos: null
+     })
+     
+                 // Computed property para obtener cédulas existentes (excluyendo el empleado actual)
+       const existingCedulas = computed(() => {
+         if (!editingEmployee.value) {
+           // Si es un nuevo empleado, todas las cédulas existentes están prohibidas
+           return employees.value.map(emp => emp.cedula_display || emp.cedula || emp.user.cedula).filter(cedula => cedula)
+         } else {
+           // Si es edición, excluir la cédula del empleado actual
+           return employees.value
+             .filter(emp => emp.id !== editingEmployee.value.id)
+             .map(emp => emp.cedula_display || emp.cedula || emp.user.cedula)
+             .filter(cedula => cedula)
+         }
+       })
     
     const employeeForm = ref({
       first_name: '',
       last_name: '',
       email: '',
       cedula: '',
-      position: '',
+      position: 'otro', // Usar valor por defecto
       area: null
     })
     
     const positions = [
-      'Desarrollador',
-      'Diseñador',
-      'Gerente',
-      'Analista',
-      'Administrativo',
-      'Operario'
+      { title: 'Desarrollador', value: 'desarrollador' },
+      { title: 'Diseñador', value: 'disenador' },
+      { title: 'Secretario/a', value: 'secretario' },
+      { title: 'Gerente', value: 'gerente' },
+      { title: 'Analista', value: 'analista' },
+      { title: 'Ingeniero', value: 'ingeniero' },
+      { title: 'Contador', value: 'contador' },
+      { title: 'Recursos Humanos', value: 'recursos_humanos' },
+      { title: 'Marketing', value: 'marketing' },
+      { title: 'Ventas', value: 'ventas' },
+      { title: 'Soporte Técnico', value: 'soporte' },
+      { title: 'Administrativo', value: 'administrativo' },
+      { title: 'Operativo', value: 'operativo' },
+      { title: 'Otro', value: 'otro' }
     ]
     
     const headers = [
@@ -584,44 +618,81 @@ export default {
       return employees.value.filter(employee => 
         employee.full_name?.toLowerCase().includes(searchTerm) ||
         employee.email_display?.toLowerCase().includes(searchTerm) ||
-        employee.position?.toLowerCase().includes(searchTerm) ||
+        // Buscar en el título del cargo (más legible para el usuario)
+        positions.find(p => p.value === employee.position)?.title?.toLowerCase().includes(searchTerm) ||
         employee.area_name?.toLowerCase().includes(searchTerm)
       )
     })
     
-    const loadEmployees = async () => {
-      loading.value = true
-      try {
-        // CARGAR DESDE API REAL
-        const employeesData = await employeeService.getAll()
-        // El backend devuelve {count, next, previous, results}
-        // Necesitamos acceder a results que es el array de empleados
-        employees.value = employeesData.results || employeesData
-      } catch (error) {
-        console.error('Error cargando empleados:', error)
-        showMessage('Error cargando empleados', 'error')
-      } finally {
-        loading.value = false
-      }
-    }
+         const loadEmployees = async () => {
+       loading.value = true
+       try {
+         // CARGAR DESDE API REAL
+         const employeesData = await employeeService.getAll()
+         // El backend devuelve {count, next, previous, results}
+         // Necesitamos acceder a results que es el array de empleados
+         employees.value = employeesData.results || employeesData
+         
+         // 🔍 DEBUG: Verificar qué datos vienen del backend
+         console.log('🔍 loadEmployees - Datos recibidos del backend:')
+         if (employees.value.length > 0) {
+           const firstEmployee = employees.value[0]
+           console.log('   - Primer empleado position:', firstEmployee.position)
+           console.log('   - Primer empleado position type:', typeof firstEmployee.position)
+           console.log('   - Primer empleado completo:', JSON.stringify(firstEmployee, null, 2))
+         }
+       } catch (error) {
+         console.error('Error cargando empleados:', error)
+         showMessage('Error cargando empleados', 'error')
+       } finally {
+         loading.value = false
+       }
+     }
     
     const loadAreas = async () => {
       try {
         const areasData = await areaService.getAll()
         areas.value = areasData.results || areasData
+        console.log('🔍 Áreas cargadas:', JSON.stringify(areas.value, null, 2))
       } catch (error) {
         console.error('Error cargando áreas:', error)
         showMessage('Error cargando áreas', 'error')
       }
     }
     
-    const showMessage = (text, type = 'success') => {
-      mensaje.value = {
-        show: true,
-        text,
-        type
-      }
-    }
+         const showMessage = (text, type = 'success') => {
+       mensaje.value = {
+         show: true,
+         text,
+         type
+       }
+     }
+     
+     const openNewEmployeeDialog = () => {
+       // Limpiar estado de edición
+       editingEmployee.value = null
+       
+       // Resetear formulario
+       employeeForm.value = {
+         first_name: '',
+         last_name: '',
+         email: '',
+         cedula: '',
+         position: 'otro',
+         area: null
+       }
+       
+       // Resetear estado facial
+       resetFaceRegistration()
+       
+       // Resetear validación del formulario
+       if (form.value) {
+         form.value.resetValidation()
+       }
+       
+       // Abrir diálogo
+       showDialog.value = true
+     }
     
     const onDialogOpened = async () => {
       console.log('🚪 Diálogo abierto, preparando componente de cámara...')
@@ -641,21 +712,36 @@ export default {
       }, 100)
     }
     
-    const editEmployee = (employee) => {
-      editingEmployee.value = employee
-      employeeForm.value = {
-        first_name: employee.user.first_name,
-        last_name: employee.user.last_name,
-        email: employee.user.email,
-        cedula: employee.user.cedula, // Asegúrate de que el backend devuelva cedula
-        position: employee.position,
-        area: employee.area
-      }
-      showDialog.value = true
-      
-      // Verificar estado facial en segundo plano (sin bloquear)
-      checkFaceRegistrationStatus(employee.id)
-    }
+         const editEmployee = (employee) => {
+                console.log('🔍 editEmployee - Empleado recibido:', JSON.stringify(employee, null, 2))
+         console.log('🔍 editEmployee - User completo:', JSON.stringify(employee.user, null, 2))
+         console.log('🔍 editEmployee - Cédula del empleado:', employee.cedula)
+         console.log('🔍 editEmployee - Cédula del user:', employee.user.cedula)
+         console.log('🔍 editEmployee - Cédula display:', employee.cedula_display)
+         console.log('🔍 editEmployee - Tipo de cédula empleado:', typeof employee.cedula)
+       
+       editingEmployee.value = employee
+                employeeForm.value = {
+           first_name: employee.user.first_name,
+           last_name: employee.user.last_name,
+           email: employee.user.email,
+           cedula: employee.cedula_display || employee.cedula || employee.user.cedula || '', // Usar cedula_display del backend
+           position: employee.position || 'otro', // Usar valor por defecto si no hay cargo
+           area: employee.area
+         }
+       
+       console.log('🔍 editEmployee - Formulario preparado:', JSON.stringify(employeeForm.value, null, 2))
+       console.log('🔍 editEmployee - Área del empleado:', employee.area)
+       console.log('🔍 editEmployee - Área en formulario:', employeeForm.value.area)
+       console.log('🔍 editEmployee - Position del empleado:', employee.position)
+       console.log('🔍 editEmployee - Position en formulario:', employeeForm.value.position)
+       console.log('🔍 editEmployee - Cédula en formulario:', employeeForm.value.cedula)
+       
+       showDialog.value = true
+       
+       // Verificar estado facial en segundo plano (sin bloquear)
+       checkFaceRegistrationStatus(employee.id)
+     }
     
     const deleteEmployee = (employee) => {
       employeeToDelete.value = employee
@@ -691,29 +777,39 @@ export default {
       }
     }
     
-    const saveEmployee = async () => {
-      if (!form.value?.validate()) return
-      
-      saving.value = true
-      try {
-        let savedEmployee
-        
-        if (editingEmployee.value) {
-          // Actualizar empleado existente
-          savedEmployee = await employeeService.update(editingEmployee.value.id, employeeForm.value)
-          showMessage('Empleado actualizado correctamente')
-        } else {
-          // Crear nuevo empleado
-          savedEmployee = await employeeService.create(employeeForm.value)
-          showMessage('Empleado creado correctamente')
-          
-          // Si se creó exitosamente, mostrar registro facial
-          if (savedEmployee && savedEmployee.id) {
-            editingEmployee.value = savedEmployee
-            showFaceRegistration.value = true
-            return // No cerrar el diálogo aún
-          }
-        }
+         const saveEmployee = async () => {
+       if (!form.value?.validate()) return
+       
+       saving.value = true
+       try {
+         let savedEmployee
+         
+         // 🔍 DEBUG: Mostrar datos que se van a enviar
+         console.log('📤 Datos del formulario a enviar:', JSON.stringify(employeeForm.value, null, 2))
+         console.log('👤 Empleado editando:', JSON.stringify(editingEmployee.value, null, 2))
+         
+         if (editingEmployee.value) {
+           // Actualizar empleado existente
+           console.log('🔄 Actualizando empleado ID:', editingEmployee.value.id)
+           console.log('📋 Datos de actualización:', JSON.stringify(employeeForm.value, null, 2))
+           
+           savedEmployee = await employeeService.update(editingEmployee.value.id, employeeForm.value)
+           showMessage('Empleado actualizado correctamente')
+         } else {
+           // Crear nuevo empleado
+           console.log('➕ Creando nuevo empleado')
+           console.log('📋 Datos de creación:', employeeForm.value)
+           
+           savedEmployee = await employeeService.create(employeeForm.value)
+           showMessage('Empleado creado correctamente')
+           
+           // Si se creó exitosamente, mostrar registro facial
+           if (savedEmployee && savedEmployee.id) {
+             editingEmployee.value = savedEmployee
+             showFaceRegistration.value = true
+             return // No cerrar el diálogo aún
+           }
+         }
         
         await loadEmployees() // Recargar lista
         showDialog.value = false
@@ -732,7 +828,7 @@ export default {
           last_name: '',
           email: '',
           cedula: '',
-          position: '',
+          position: 'otro', // Usar valor por defecto
           area: null
         }
         resetFaceRegistration() // Resetear estado facial
@@ -910,51 +1006,77 @@ export default {
       }
     }
 
-    // ✅ VALIDACIÓN: Función para validar campos de nombre y apellido
-    const validateNameField = (event) => {
-      const value = event.target.value;
-      const fieldName = event.target.name;
-      
-      // Remover números y caracteres especiales no permitidos
-      let cleanValue = value.replace(/[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, '');
-      
-      // Remover espacios múltiples y espacios al inicio/final
-      cleanValue = cleanValue.replace(/\s+/g, ' ').trim();
-      
-      // Si el valor original contenía caracteres no permitidos, actualizar el campo
-      if (value !== cleanValue) {
-        // Actualizar el campo correspondiente
-        if (fieldName === 'first_name') {
-          employeeForm.value.first_name = cleanValue;
-        } else if (fieldName === 'last_name') {
-          employeeForm.value.last_name = cleanValue;
-        }
-        
-        // Mostrar mensaje informativo
-        showMessage('Solo se permiten letras y espacios en nombres y apellidos', 'warning');
-        
-        // Forzar la validación del formulario
-        if (form.value) {
-          form.value.validate();
-        }
-      }
-      
-      // Validar que no quede solo espacios o esté vacío después de la limpieza
-      if (cleanValue === '' || cleanValue.trim() === '') {
-        if (fieldName === 'first_name') {
-          employeeForm.value.first_name = '';
-        } else if (fieldName === 'last_name') {
-          employeeForm.value.last_name = '';
-        }
-        
-        showMessage('El campo no puede estar vacío', 'error');
-      }
-      
-      // Validar que el nombre/apellido tenga al menos 2 caracteres
-      if (cleanValue.length > 0 && cleanValue.length < 2) {
-        showMessage('El nombre y apellido deben tener al menos 2 caracteres', 'warning');
-      }
-    }
+         // ✅ VALIDACIÓN: Función para validar campos de nombre y apellido
+     const validateNameField = (event) => {
+       const value = event.target.value;
+       const fieldName = event.target.name;
+       
+       // Remover números y caracteres especiales no permitidos
+       let cleanValue = value.replace(/[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, '');
+       
+       // Remover espacios múltiples y espacios al inicio/final
+       cleanValue = cleanValue.replace(/\s+/g, ' ').trim();
+       
+       // Si el valor original contenía caracteres no permitidos, actualizar el campo
+       if (value !== cleanValue) {
+         // Actualizar el campo correspondiente
+         if (fieldName === 'first_name') {
+           employeeForm.value.first_name = cleanValue;
+         } else if (fieldName === 'last_name') {
+           employeeForm.value.last_name = cleanValue;
+         }
+         
+         // Mostrar mensaje informativo
+         showMessage('Solo se permiten letras y espacios en nombres y apellidos', 'warning');
+         
+         // Forzar la validación del formulario
+         if (form.value) {
+           form.value.validate();
+         }
+       }
+       
+       // Validar que no quede solo espacios o esté vacío después de la limpieza
+       if (cleanValue === '' || cleanValue.trim() === '') {
+         if (fieldName === 'first_name') {
+           employeeForm.value.first_name = '';
+         } else if (fieldName === 'last_name') {
+           employeeForm.value.last_name = '';
+         }
+         
+         showMessage('El campo no puede estar vacío', 'error');
+         return;
+       }
+       
+       // Validar que el nombre/apellido tenga al menos 2 caracteres
+       if (cleanValue.length > 0 && cleanValue.length < 2) {
+         showMessage('El nombre y apellido deben tener al menos 2 caracteres', 'warning');
+       }
+     }
+     
+     // ✅ VALIDACIÓN: Función para validar cédula
+     const validateCedula = (event) => {
+       const value = event.target.value;
+       
+       // Solo permitir números
+       let cleanValue = value.replace(/\D/g, '');
+       
+       // Si el valor original contenía caracteres no numéricos, actualizar el campo
+       if (value !== cleanValue) {
+         employeeForm.value.cedula = cleanValue;
+         showMessage('La cédula solo puede contener números', 'warning');
+       }
+       
+       // Limitar a 10 dígitos máximo
+       if (cleanValue.length > 10) {
+         employeeForm.value.cedula = cleanValue.substring(0, 10);
+         showMessage('La cédula no puede tener más de 10 dígitos', 'warning');
+       }
+       
+       // Forzar la validación del formulario
+       if (form.value) {
+         form.value.validate();
+       }
+     }
     
     onMounted(() => {
       loadEmployees()
@@ -993,17 +1115,19 @@ export default {
       editingEmployee,
       employeeToDelete,
       employees,
-      areas,
-      employeeForm,
-      positions,
+             areas,
+       employeeForm,
+       positions,
+       existingCedulas,
       headers,
       mensaje,
       viewMode,
       filteredEmployees,
       loadEmployees,
-      loadAreas,
-      onDialogOpened,
-      editEmployee,
+             loadAreas,
+       onDialogOpened,
+       openNewEmployeeDialog,
+       editEmployee,
       deleteEmployee,
       confirmDelete,
       activateEmployee,
@@ -1018,8 +1142,9 @@ export default {
       trainFaceModel,
       resetFaceRegistration,
       checkFaceRegistrationStatus,
-      // Funciones de validación
-      validateNameField
+             // Funciones de validación
+       validateNameField,
+       validateCedula
     }
   }
 }
