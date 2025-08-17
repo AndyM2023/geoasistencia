@@ -35,6 +35,10 @@ export const employeeService = {
   
   async delete(id) {
     const response = await api.delete(`/employees/${id}/`)
+    // HTTP_204_NO_CONTENT no tiene data, retornar mensaje de éxito
+    if (response.status === 204) {
+      return { message: 'Empleado desactivado correctamente' }
+    }
     return response.data
   },
   
