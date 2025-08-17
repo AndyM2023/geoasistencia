@@ -214,10 +214,34 @@ export const attendanceService = {
                 params.append('status', filters.status);
             }
             if (filters.dateFrom) {
-                params.append('date_from', filters.dateFrom);
+                // Asegurar que la fecha esté en formato YYYY-MM-DD usando zona horaria local
+                let dateFrom = filters.dateFrom;
+                if (dateFrom instanceof Date) {
+                    // Usar zona horaria local para evitar problemas de UTC
+                    const year = dateFrom.getFullYear();
+                    const month = String(dateFrom.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateFrom.getDate()).padStart(2, '0');
+                    dateFrom = `${year}-${month}-${day}`;
+                } else if (typeof dateFrom === 'string' && dateFrom.includes('T')) {
+                    dateFrom = dateFrom.split('T')[0];
+                }
+                params.append('date_from', dateFrom);
+                console.log('📅 Fecha desde enviada al backend:', dateFrom);
             }
             if (filters.dateTo) {
-                params.append('date_to', filters.dateTo);
+                // Asegurar que la fecha esté en formato YYYY-MM-DD usando zona horaria local
+                let dateTo = filters.dateTo;
+                if (dateTo instanceof Date) {
+                    // Usar zona horaria local para evitar problemas de UTC
+                    const year = dateTo.getFullYear();
+                    const month = String(dateTo.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateTo.getDate()).padStart(2, '0');
+                    dateTo = `${year}-${month}-${day}`;
+                } else if (typeof dateTo === 'string' && dateTo.includes('T')) {
+                    dateTo = dateTo.split('T')[0];
+                }
+                params.append('date_to', dateTo);
+                console.log('📅 Fecha hasta enviada al backend:', dateTo);
             }
             
             if (params.toString()) {

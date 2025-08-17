@@ -10,21 +10,25 @@
     <v-card class="mb-6">
       <v-card-title class="d-flex align-center justify-space-between">
         <span>Filtros</span>
-        <v-select
-          v-model="filters.status"
-          label="Estado"
-          :items="[
-            { title: 'Todos', value: 'all' },
-            { title: 'Presente', value: 'present' },
-            { title: 'Ausente', value: 'absent' },
-            { title: 'Tarde', value: 'late' }
-          ]"
-          item-title="title"
-          item-value="value"
-          variant="outlined"
-          density="compact"
-          style="min-width: 150px; max-width: 200px;"
-        ></v-select>
+        <div class="d-flex align-center">
+          <v-select
+            v-model="filters.status"
+            label="Estado"
+            :items="[
+              { title: 'Todos', value: 'all' },
+              { title: 'Presente', value: 'present' },
+              { title: 'Ausente', value: 'absent' },
+              { title: 'Tarde', value: 'late' }
+            ]"
+            item-title="title"
+            item-value="value"
+            variant="outlined"
+            density="compact"
+            style="min-width: 150px; max-width: 200px;"
+          ></v-select>
+          
+
+        </div>
       </v-card-title>
       <v-card-text>
         <v-row>
@@ -71,7 +75,7 @@
             <v-menu v-model="showDatePickerFrom" :close-on-content-click="false">
               <template v-slot:activator="{ props }">
                 <v-text-field
-                  v-model="filters.dateFrom"
+                  v-model="formattedDateFrom"
                   label="Desde"
                   readonly
                   v-bind="props"
@@ -86,6 +90,7 @@
                 v-model="filters.dateFrom"
                 @update:model-value="showDatePickerFrom = false"
                 :max="filters.dateTo"
+                :format="'DD/MM/YYYY'"
               ></v-date-picker>
             </v-menu>
           </v-col>
@@ -94,7 +99,7 @@
             <v-menu v-model="showDatePickerTo" :close-on-content-click="false">
               <template v-slot:activator="{ props }">
                 <v-text-field
-                  v-model="filters.dateTo"
+                  v-model="formattedDateTo"
                   label="Hasta"
                   readonly
                   v-bind="props"
@@ -109,35 +114,24 @@
                 v-model="filters.dateTo"
                 @update:model-value="showDatePickerTo = false"
                 :min="filters.dateFrom"
+                :format="'DD/MM/YYYY'"
               ></v-date-picker>
             </v-menu>
           </v-col>
         </v-row>
         
         <v-row class="mt-0">
-          <v-col cols="12" class="text-center">
-            <!-- Botón de prueba temporal -->
-            <v-btn color="info" @click="testAuth" class="mr-2" size="small">
-              🔍 Test Auth
-            </v-btn>
+          <v-col cols="12" class="text-center pa-0">
             
-            <!-- Botón de prueba para conexión directa -->
-            <v-btn color="warning" @click="testBackendConnection" class="mr-2" size="small">
-              🌐 Test Backend
-            </v-btn>
-            
-            <!-- Botón de prueba para el servicio de asistencia -->
-            <v-btn color="success" @click="testAttendanceService" class="mr-2" size="small">
-              📊 Test Service
-            </v-btn>
-            
-            <v-btn color="primary" @click="generateReport" :loading="generating" :disabled="!canGenerateReport">
+            <v-btn color="primary" @click="generateReport" :loading="generating" :disabled="!canGenerateReport" class="ma-1">
               Generar Reporte
             </v-btn>
-            <v-btn color="secondary" @click="exportReport" :disabled="!reportData.length" class="ml-2">
+            
+            <v-btn color="secondary" @click="exportReport" :disabled="!reportData.length" class="ma-1" data-export-btn>
               Exportar Excel
             </v-btn>
-            <v-btn color="outline" @click="clearFilters" class="ml-2">
+            
+            <v-btn color="outline" @click="clearFilters" class="ma-1">
               Limpiar Filtros
             </v-btn>
           </v-col>
@@ -152,65 +146,118 @@
     </v-card>
 
     <!-- Estadísticas -->
-    <v-row class="mb-6">
+    <v-row class="mb-4 dashboard-stats-row">
       <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-primary">{{ stats.totalDays }}</div>
-            <div class="text-subtitle-2">Total de Días</div>
+        <v-card class="stats-card h-100" color="primary" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-primary">Total de Días</div>
+                <div class="text-h4 font-weight-bold text-primary">{{ stats.totalDays }}</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="primary">mdi-calendar</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
       
       <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-success">{{ stats.attendanceRate }}%</div>
-            <div class="text-subtitle-2">Tasa de Asistencia</div>
+        <v-card class="stats-card h-100" color="success" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-success">Tasa de Asistencia</div>
+                <div class="text-h4 font-weight-bold text-success">{{ stats.attendanceRate }}%</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="success">mdi-chart-line</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
       
       <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-warning">{{ stats.lateCount }}</div>
-            <div class="text-subtitle-2">Llegadas Tardes</div>
+        <v-card class="stats-card h-100" color="warning" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-warning">Llegadas Tardes</div>
+                <div class="text-h4 font-weight-bold text-warning">{{ stats.lateCount }}</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="warning">mdi-clock-alert</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
       
       <v-col cols="12" sm="6" md="3">
-        <v-card>
-          <v-card-text>
-            <div class="text-h6 text-error">{{ stats.absentCount }}</div>
-            <div class="text-subtitle-2">Ausencias</div>
+        <v-card class="stats-card h-100" color="error" variant="tonal">
+          <v-card-text class="pa-1">
+            <div class="d-flex align-center mb-1">
+              <div class="flex-grow-1">
+                <div class="text-h6 font-weight-bold mb-1 text-error">Ausencias</div>
+                <div class="text-h4 font-weight-bold text-error">{{ stats.absentCount }}</div>
+              </div>
+              <div class="ml-1">
+                <v-icon size="28" color="warning">mdi-close-circle</v-icon>
+              </div>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
 
     <!-- Tabla de Reporte -->
-    <v-card v-if="reportData.length > 0">
+    <v-card v-if="reportData.length > 0" class="mt-2">
       <v-card-title>
-        <span>Reporte de Asistencia</span>
-        <v-spacer></v-spacer>
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Buscar"
-          single-line
-          hide-details
-          variant="outlined"
-          density="compact"
-          style="max-width: 300px"
-        ></v-text-field>
+        <div class="d-flex align-center">
+          <span>Reporte de Asistencia</span>
+          <v-chip 
+            v-if="search.trim()" 
+            :color="filteredReportData.length > 0 ? 'success' : 'warning'"
+            size="small" 
+            class="ml-3"
+          >
+            <v-icon size="small" class="mr-1">
+              {{ filteredReportData.length > 0 ? 'mdi-check' : 'mdi-alert' }}
+            </v-icon>
+            {{ filteredReportData.length }} de {{ reportData.length }} resultados
+          </v-chip>
+          
+          <!-- Indicador de búsqueda activa -->
+          <v-chip 
+            v-if="search.trim()" 
+            color="info" 
+            size="small" 
+            class="ml-2"
+          >
+            <v-icon size="small" class="mr-1">mdi-magnify</v-icon>
+            Búsqueda activa
+          </v-chip>
+          
+          <!-- Debug info -->
+          <v-chip 
+            v-if="search.trim()" 
+            color="warning" 
+            size="small" 
+            class="ml-2"
+          >
+            <v-icon size="small" class="mr-1">mdi-information</v-icon>
+            Key: {{ tableKey }}
+          </v-chip>
+        </div>
+
       </v-card-title>
 
       <v-data-table
+        :key="`table-${tableKey}-${search.trim()}-${filteredReportData.length}`"
         :headers="headers"
-        :items="reportData"
-        :search="search"
+        :items="filteredReportData"
         :loading="loading"
         class="elevation-1"
       >
@@ -254,11 +301,63 @@
       <div class="text-h6 mt-4">No hay datos para mostrar</div>
       <div class="text-body-2 text-grey">Selecciona los filtros y genera un reporte</div>
     </v-card>
+
+    <!-- Mensaje cuando no hay resultados de búsqueda -->
+    <v-card v-if="reportData.length > 0 && filteredReportData.length === 0 && search.trim()" class="text-center pa-8">
+      <v-icon size="64" color="warning">mdi-magnify</v-icon>
+      <div class="text-h6 mt-4">No se encontraron resultados</div>
+      <div class="text-body-2 text-grey">
+        No hay resultados para "{{ search }}". 
+        <v-btn 
+          text 
+          color="primary" 
+          @click="search = ''"
+          class="ml-2"
+        >
+          Limpiar búsqueda
+        </v-btn>
+      </div>
+    </v-card>
   </div>
 </template>
 
 <style scoped>
 /* Estilos específicos para los filtros si son necesarios */
+
+/* Estilos de las tarjetas de estadísticas (igual que en Dashboard) */
+.dashboard-stats-row {
+  margin-bottom: 1rem !important;
+}
+
+.dashboard-stats-row .v-col {
+  padding: 0.5rem;
+}
+
+.stats-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.stats-card .v-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.stats-card .v-card-text {
+  padding: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .dashboard-stats-row .v-col {
+    padding: 0.25rem;
+  }
+  
+  .stats-card .v-card-text {
+    padding: 0.75rem;
+  }
+}
 </style>
 
 <script>
@@ -268,6 +367,7 @@ import { attendanceService } from '../services/attendanceService'
 import { employeeService } from '../services/employeeService'
 import areaService from '../services/areaService'
 import { useAuthStore } from '../stores/auth'
+import * as XLSX from 'xlsx'
 
 export default {
   name: 'Reports',
@@ -292,6 +392,7 @@ export default {
     const generating = ref(false)
     const showDatePickerFrom = ref(false)
     const showDatePickerTo = ref(false)
+    const tableKey = ref(0) // Para forzar re-renderizado de la tabla
     
     const filters = ref({
       employee: null,
@@ -319,10 +420,84 @@ export default {
       { title: 'Entrada', key: 'check_in', sortable: true },
       { title: 'Salida', key: 'check_out', sortable: true },
       { title: 'Estado', key: 'status', sortable: true },
-      { title: 'Horas Trabajadas', key: 'hours_worked', sortable: true },
-      { title: 'Notas', key: 'notes', sortable: false }
+      { title: 'Horas Trabajadas', key: 'hours_worked', sortable: true }
     ]
     
+    const filteredReportData = computed(() => {
+      console.log('🔄 === COMPUTED filteredReportData EJECUTADO ===');
+      console.log('🔍 search.value:', search.value);
+      console.log('🔍 search.value?.trim():', search.value?.trim());
+      console.log('🔍 search.value?.trim() === "":', search.value?.trim() === "");
+      console.log('📊 reportData.value.length:', reportData.value.length);
+      
+      // Validación más estricta de la búsqueda
+      if (!search.value || search.value.trim() === "") {
+        console.log('✅ Sin búsqueda activa, retornando todos los datos');
+        return reportData.value;
+      }
+      
+      console.log('🔍 BÚSQUEDA ACTIVA - Valor:', search.value);
+      console.log('📊 Datos disponibles:', reportData.value.length);
+      
+      const searchTerm = search.value.toLowerCase().trim();
+      console.log('🔍 Buscando término:', `"${searchTerm}"`, 'en', reportData.value.length, 'registros');
+      
+      const filtered = reportData.value.filter(item => {
+        console.log('🔍 Analizando item:', {
+          employee_name: item.employee_name,
+          area_name: item.area_name,
+          status: item.status
+        });
+        
+        // Buscar en nombre del empleado (búsqueda más flexible)
+        if (item.employee_name) {
+          const employeeName = item.employee_name.toLowerCase();
+          if (employeeName.includes(searchTerm) || 
+              employeeName.split(' ').some(word => word.includes(searchTerm))) {
+            console.log('✅ Encontrado en nombre:', item.employee_name);
+            return true;
+          }
+        }
+        
+        // Buscar en área
+        if (item.area_name && item.area_name.toLowerCase().includes(searchTerm)) {
+          console.log('✅ Encontrado en área:', item.area_name);
+          return true;
+        }
+        
+        // Buscar en estado
+        if (item.status) {
+          const statusText = getStatusText(item.status).toLowerCase();
+          if (statusText.includes(searchTerm)) {
+            console.log('✅ Encontrado en estado:', getStatusText(item.status));
+            return true;
+          }
+        }
+        
+        // Buscar en fecha (formateada)
+        if (item.date) {
+          const formattedDate = formatDate(item.date).toLowerCase();
+          if (formattedDate.includes(searchTerm)) {
+            console.log('✅ Encontrado en fecha:', formattedDate);
+            return true;
+          }
+        }
+        
+        // Buscar en horas trabajadas
+        if (item.hours_worked && item.hours_worked.toString().includes(searchTerm)) {
+          console.log('✅ Encontrado en horas trabajadas:', item.hours_worked);
+          return true;
+        }
+        
+        console.log('❌ No encontrado en este item');
+        return false;
+      });
+      
+      console.log('🎯 Resultados filtrados:', filtered.length, 'de', reportData.value.length);
+      console.log('🔄 === FIN COMPUTED filteredReportData ===');
+      return filtered;
+    });
+
     const chartData = computed(() => {
       if (!reportData.value.length) return []
       
@@ -356,9 +531,26 @@ export default {
         
         // CARGAR DESDE API REAL
         const employeesData = await employeeService.getAll()
+        console.log('📊 Datos brutos de empleados recibidos:', employeesData)
+        
         // El backend devuelve {count, next, previous, results}
         // Necesitamos acceder a results que es el array de empleados
         employees.value = employeesData.results || employeesData
+        console.log('👥 Empleados procesados:', employees.value)
+        
+        // Verificar estructura de cada empleado
+        if (employees.value.length > 0) {
+          console.log('🔍 Estructura del primer empleado:', employees.value[0])
+          console.log('🔍 Campos disponibles:', Object.keys(employees.value[0]))
+          
+          // Verificar que el mapeo funcione correctamente
+          const mappedEmployees = employees.value.map(emp => ({
+            title: emp.user?.full_name || 'Nombre no disponible',
+            value: emp.id
+          }))
+          console.log('🎯 Empleados mapeados para el filtro:', mappedEmployees)
+        }
+        
       } catch (error) {
         console.error('Error cargando empleados:', error)
       }
@@ -386,10 +578,14 @@ export default {
       if (newEmployeeId) {
         // Buscar el empleado seleccionado
         const selectedEmployee = employees.value.find(emp => emp.id === newEmployeeId)
+        console.log('🔍 Empleado seleccionado:', selectedEmployee)
+        
         if (selectedEmployee && selectedEmployee.area) {
           // Establecer automáticamente el área del empleado
           filters.value.area = selectedEmployee.area
-          console.log(`✅ Área automáticamente establecida para ${selectedEmployee.user.full_name}: ${selectedEmployee.area}`)
+          console.log(`✅ Área automáticamente establecida para ${selectedEmployee.user?.full_name || 'Empleado'}: ${selectedEmployee.area}`)
+        } else {
+          console.log('⚠️ Empleado seleccionado pero sin área:', selectedEmployee)
         }
       } else {
         // Si se deselecciona el empleado, liberar el área
@@ -397,6 +593,23 @@ export default {
         console.log('🔄 Empleado deseleccionado, área liberada')
       }
     })
+
+    // Watcher para la búsqueda
+    watch(search, (newSearch, oldSearch) => {
+      console.log('🔍 Búsqueda cambiada:', {
+        anterior: oldSearch,
+        nueva: newSearch,
+        longitud: newSearch?.length || 0
+      });
+      
+      // Forzar recálculo de filteredReportData
+      console.log('🔄 Forzando recálculo de filteredReportData...');
+      console.log('📊 Estado actual de filteredReportData:', filteredReportData.value.length);
+      
+      // Forzar re-renderizado de la tabla
+      tableKey.value++;
+      console.log('🔄 Tabla forzada a re-renderizar con key:', tableKey.value);
+    }, { immediate: true, deep: true });
     
     const generateReport = async () => {
       // Verificar autenticación antes de proceder
@@ -447,8 +660,29 @@ export default {
           reportFilters.status = filters.value.status;
         }
         if (filters.value.dateFrom && filters.value.dateTo) {
-          reportFilters.dateFrom = filters.value.dateFrom;
-          reportFilters.dateTo = filters.value.dateTo;
+          // Convertir fechas a formato YYYY-MM-DD usando zona horaria local
+          const fromDate = new Date(filters.value.dateFrom);
+          const toDate = new Date(filters.value.dateTo);
+          
+          // Usar toLocaleDateString para evitar problemas de zona horaria
+          const formatDateToISO = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          };
+          
+          reportFilters.dateFrom = formatDateToISO(fromDate);
+          reportFilters.dateTo = formatDateToISO(toDate);
+          
+          console.log('📅 Fechas convertidas para backend:', {
+            original: { from: filters.value.dateFrom, to: filters.value.dateTo },
+            converted: { from: reportFilters.dateFrom, to: reportFilters.dateTo },
+            fromDate: fromDate,
+            toDate: toDate,
+            fromDateLocal: fromDate.toLocaleDateString('es-EC'),
+            toDateLocal: toDate.toLocaleDateString('es-EC')
+          });
         }
         
         console.log('📊 Filtros aplicados:', reportFilters);
@@ -532,13 +766,123 @@ export default {
       }
     }
     
-    const exportReport = () => {
-      // TODO: Implementar exportación a Excel
-      console.log('Exportando reporte...')
+    const exportReport = async () => {
+      try {
+        if (!reportData.value.length) {
+          alert('No hay datos para exportar');
+          return;
+        }
+
+        // Mostrar indicador de carga
+        const exportBtn = document.querySelector('[data-export-btn]');
+        if (exportBtn) {
+          exportBtn.disabled = true;
+          exportBtn.innerHTML = '<v-progress-circular indeterminate size="20"></v-progress-circular> Exportando...';
+        }
+
+        // Preparar los datos para Excel
+        const excelData = reportData.value.map(item => ({
+          'Fecha': formatDate(item.date),
+          'Empleado': item.employee_name || '',
+          'Área': item.area_name || '',
+          'Entrada': item.check_in ? formatTime(item.check_in) : '--',
+          'Salida': item.check_out ? formatTime(item.check_out) : '--',
+          'Estado': getStatusText(item.status),
+          'Horas Trabajadas': item.hours_worked ? `${item.hours_worked}h` : '--',
+          'Verificación Facial': item.face_verified ? 'Sí' : 'No',
+          'Latitud': item.latitude || '--',
+          'Longitud': item.longitude || '--'
+        }));
+
+        // Crear el nombre del archivo con fecha y hora
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+        const fileName = `Reporte_Asistencia_${timestamp}.xlsx`;
+
+        // Crear el workbook y worksheet
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        // Ajustar el ancho de las columnas
+        const columnWidths = [
+          { wch: 12 }, // Fecha
+          { wch: 25 }, // Empleado
+          { wch: 20 }, // Área
+          { wch: 10 }, // Entrada
+          { wch: 10 }, // Salida
+          { wch: 12 }, // Estado
+          { wch: 15 }, // Horas Trabajadas
+          { wch: 15 }, // Verificación Facial
+          { wch: 12 }, // Latitud
+          { wch: 12 }  // Longitud
+        ];
+        worksheet['!cols'] = columnWidths;
+
+        // Agregar el worksheet al workbook
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte de Asistencia');
+
+        // Generar y descargar el archivo
+        XLSX.writeFile(workbook, fileName);
+
+        console.log('✅ Reporte exportado exitosamente:', fileName);
+        
+        // Mostrar mensaje de éxito
+        alert(`Reporte exportado exitosamente como: ${fileName}`);
+
+      } catch (error) {
+        console.error('❌ Error exportando reporte:', error);
+        alert('Error al exportar el reporte. Por favor, inténtalo de nuevo.');
+      } finally {
+        // Restaurar el botón
+        const exportBtn = document.querySelector('[data-export-btn]');
+        if (exportBtn) {
+          exportBtn.disabled = false;
+          exportBtn.innerHTML = 'Exportar Excel';
+        }
+      }
     }
     
     const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('es-ES')
+      // SOLUCIÓN AL PROBLEMA DE ZONA HORARIA
+      // El problema: JavaScript interpreta '2025-08-13' como UTC
+      // Luego al aplicar zona horaria local, cambia el día
+      
+      if (!dateString) return '';
+      
+      try {
+        // Opción 1: Formateo manual para evitar problemas de zona horaria
+        if (typeof dateString === 'string' && dateString.includes('-')) {
+          const [year, month, day] = dateString.split('-');
+          return `${day}/${month}/${year}`;
+        }
+        
+        // Opción 2: Si es un objeto Date, formatear manualmente
+        if (dateString instanceof Date) {
+          const day = String(dateString.getDate()).padStart(2, '0');
+          const month = String(dateString.getMonth() + 1).padStart(2, '0');
+          const year = dateString.getFullYear();
+          return `${day}/${month}/${year}`;
+        }
+        
+        // Opción 3: Fallback al método original pero con opciones específicas
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+          console.warn('⚠️ Fecha inválida:', dateString);
+          return dateString;
+        }
+        
+        // Usar opciones específicas para evitar problemas de zona horaria
+        return date.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'America/Guayaquil' // Forzar zona horaria de Ecuador
+        });
+        
+      } catch (error) {
+        console.error('❌ Error formateando fecha:', error, dateString);
+        return dateString;
+      }
     }
     
     const formatTime = (timeString) => {
@@ -574,9 +918,27 @@ export default {
       showDatePickerFrom.value = false
       showDatePickerTo.value = false
       search.value = ''
-      console.log('🧹 Filtros limpiados, área liberada')
+      console.log('🧹 Filtros limpiados, área liberada y búsqueda limpiada')
       // No generar reporte automáticamente al limpiar, solo limpiar los filtros
     }
+
+    const formattedDateFrom = computed(() => {
+      if (!filters.value.dateFrom) return '';
+      return new Date(filters.value.dateFrom).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    });
+
+    const formattedDateTo = computed(() => {
+      if (!filters.value.dateTo) return '';
+      return new Date(filters.value.dateTo).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    });
 
     const canGenerateReport = computed(() => {
       // Al menos debe tener un filtro activo o fechas seleccionadas
@@ -711,6 +1073,12 @@ export default {
         alert('❌ Servicio de asistencia (getAll) no está funcionando. Verifica la configuración del backend.');
       }
     };
+
+
+
+
+
+
     
     return {
       search,
@@ -718,6 +1086,7 @@ export default {
       generating,
       showDatePickerFrom,
       showDatePickerTo,
+      tableKey,
       filters,
       employees,
       areas,
@@ -725,6 +1094,9 @@ export default {
       stats,
       headers,
       chartData,
+      filteredReportData,
+      formattedDateFrom,
+      formattedDateTo,
       generateReport,
       exportReport,
       formatDate,

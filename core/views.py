@@ -561,27 +561,70 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Attendance.objects.select_related('employee__user', 'area').all()
         
-        # Filtros
-        employee = self.request.query_params.get('employee', None)
-        area = self.request.query_params.get('area', None)
+        # Filtros - aceptar tanto employee/area como employee_id/area_id
+        employee = self.request.query_params.get('employee_id') or self.request.query_params.get('employee')
+        area = self.request.query_params.get('area_id') or self.request.query_params.get('area')
         date_from = self.request.query_params.get('date_from', None)
         date_to = self.request.query_params.get('date_to', None)
         status = self.request.query_params.get('status', None)
         
+        print(f"🔍 FILTROS RECIBIDOS:")
+        print(f"   - employee: {employee}")
+        print(f"   - area: {area}")
+        print(f"   - date_from: {date_from}")
+        print(f"   - date_to: {date_to}")
+        print(f"   - status: {status}")
+        
         if employee:
             queryset = queryset.filter(employee_id=employee)
+            print(f"✅ Filtro por empleado aplicado: employee_id={employee}")
         
         if area:
             queryset = queryset.filter(area_id=area)
+            print(f"✅ Filtro por área aplicado: area_id={area}")
         
         if date_from:
             queryset = queryset.filter(date__gte=date_from)
+            print(f"✅ Filtro por fecha desde aplicado: {date_from}")
         
         if date_to:
-            queryset = queryset.filter(date__lte=date_to)
+            # Para incluir el día completo, usar date__lt del día siguiente
+            from datetime import datetime, timedelta
+            try:
+                # Convertir la fecha a datetime y agregar 1 día
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                next_day = date_to_obj + timedelta(days=1)
+                
+                print(f"🔍 DEBUG FECHA HASTA:")
+                print(f"   - Fecha original: {date_to}")
+                print(f"   - Fecha convertida: {date_to_obj}")
+                print(f"   - Día siguiente: {next_day}")
+                print(f"   - Filtro aplicado: date__lt={next_day}")
+                
+                queryset = queryset.filter(date__lt=next_day)
+                print(f"✅ Filtro por fecha hasta aplicado: {date_to} (incluye día completo hasta {next_day})")
+                
+                # Verificar registros después del filtro
+                print(f"📊 Registros después del filtro fecha hasta: {queryset.count()}")
+                
+            except ValueError as e:
+                # Si hay error en el formato, usar el filtro original
+                print(f"⚠️ Error en formato de fecha: {e}")
+                queryset = queryset.filter(date__lte=date_to)
+                print(f"✅ Filtro por fecha hasta aplicado (fallback): {date_to}")
         
         if status and status != 'all':
             queryset = queryset.filter(status=status)
+            print(f"✅ Filtro por estado aplicado: {status}")
+        
+        print(f"📊 Total de registros después de filtros: {queryset.count()}")
+        
+        # DEBUG: Mostrar fechas disponibles en los registros filtrados
+        if queryset.count() > 0:
+            print(f"🔍 FECHAS DISPONIBLES EN RESULTADOS:")
+            dates_in_results = queryset.values_list('date', flat=True).distinct().order_by('date')
+            for date_obj in dates_in_results:
+                print(f"   - {date_obj}")
         
         return queryset
     
