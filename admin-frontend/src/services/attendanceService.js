@@ -214,10 +214,14 @@ export const attendanceService = {
                 params.append('status', filters.status);
             }
             if (filters.dateFrom) {
-                // Asegurar que la fecha esté en formato ISO (YYYY-MM-DD)
+                // Asegurar que la fecha esté en formato YYYY-MM-DD usando zona horaria local
                 let dateFrom = filters.dateFrom;
                 if (dateFrom instanceof Date) {
-                    dateFrom = dateFrom.toISOString().split('T')[0];
+                    // Usar zona horaria local para evitar problemas de UTC
+                    const year = dateFrom.getFullYear();
+                    const month = String(dateFrom.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateFrom.getDate()).padStart(2, '0');
+                    dateFrom = `${year}-${month}-${day}`;
                 } else if (typeof dateFrom === 'string' && dateFrom.includes('T')) {
                     dateFrom = dateFrom.split('T')[0];
                 }
@@ -225,10 +229,14 @@ export const attendanceService = {
                 console.log('📅 Fecha desde enviada al backend:', dateFrom);
             }
             if (filters.dateTo) {
-                // Asegurar que la fecha esté en formato ISO (YYYY-MM-DD)
+                // Asegurar que la fecha esté en formato YYYY-MM-DD usando zona horaria local
                 let dateTo = filters.dateTo;
                 if (dateTo instanceof Date) {
-                    dateTo = dateTo.toISOString().split('T')[0];
+                    // Usar zona horaria local para evitar problemas de UTC
+                    const year = dateTo.getFullYear();
+                    const month = String(dateTo.getMonth() + 1).padStart(2, '0');
+                    const day = String(dateTo.getDate()).padStart(2, '0');
+                    dateTo = `${year}-${month}-${day}`;
                 } else if (typeof dateTo === 'string' && dateTo.includes('T')) {
                     dateTo = dateTo.split('T')[0];
                 }

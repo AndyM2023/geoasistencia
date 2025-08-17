@@ -611,16 +611,28 @@ export default {
           reportFilters.status = filters.value.status;
         }
         if (filters.value.dateFrom && filters.value.dateTo) {
-          // Convertir fechas a formato ISO (YYYY-MM-DD) para el backend
+          // Convertir fechas a formato YYYY-MM-DD usando zona horaria local
           const fromDate = new Date(filters.value.dateFrom);
           const toDate = new Date(filters.value.dateTo);
           
-          reportFilters.dateFrom = fromDate.toISOString().split('T')[0];
-          reportFilters.dateTo = toDate.toISOString().split('T')[0];
+          // Usar toLocaleDateString para evitar problemas de zona horaria
+          const formatDateToISO = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          };
+          
+          reportFilters.dateFrom = formatDateToISO(fromDate);
+          reportFilters.dateTo = formatDateToISO(toDate);
           
           console.log('📅 Fechas convertidas para backend:', {
             original: { from: filters.value.dateFrom, to: filters.value.dateTo },
-            converted: { from: reportFilters.dateFrom, to: reportFilters.dateTo }
+            converted: { from: reportFilters.dateFrom, to: reportFilters.dateTo },
+            fromDate: fromDate,
+            toDate: toDate,
+            fromDateLocal: fromDate.toLocaleDateString('es-EC'),
+            toDateLocal: toDate.toLocaleDateString('es-EC')
           });
         }
         
