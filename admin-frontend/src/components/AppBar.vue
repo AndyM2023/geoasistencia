@@ -108,6 +108,15 @@
         </template>
         
         <v-list class="bg-dark-surface">
+          <v-list-item @click="goToProfile">
+            <v-list-item-title class="text-white">
+              <v-icon left color="blue-400">mdi-account-circle</v-icon>
+              Perfil
+            </v-list-item-title>
+          </v-list-item>
+          
+          <v-divider class="my-2" color="rgba(59, 130, 246, 0.2)"></v-divider>
+          
           <v-list-item @click="logout">
             <v-list-item-title class="text-white">
               <v-icon left color="red-400">mdi-logout</v-icon>
@@ -118,15 +127,22 @@
       </v-menu>
     </div>
   </v-app-bar>
+
+  <!-- Modal de Perfil -->
+  <ProfileModal v-model="showProfileModal" />
 </template>
 
 <script>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import ProfileModal from './ProfileModal.vue'
 
 export default {
   name: 'AppBar',
+  components: {
+    ProfileModal
+  },
   props: {
     drawer: {
       type: Boolean,
@@ -141,8 +157,8 @@ export default {
 
     // Computed properties para determinar qué mostrar
     const isRecognitionPage = computed(() => route.path === '/')
-    const isLoginPage = computed(() => route.path === '/login')
-    const isRegisterPage = computed(() => route.path === '/register')
+    const isLoginPage = computed(() => route.path === '/admin/login')
+    const isRegisterPage = computed(() => route.path === '/admin/register')
     const isAppRoute = computed(() => route.path.startsWith('/app'))
     
     // Mostrar botón de menú solo en rutas /app/*
@@ -182,8 +198,14 @@ export default {
       router.push('/')
     }
 
+    const showProfileModal = ref(false)
+
+    const goToProfile = () => {
+      showProfileModal.value = true
+    }
+
     const goToLogin = () => {
-      router.push('/login')
+      router.push('/admin/login')
     }
 
     const goToRecognition = () => {
@@ -193,14 +215,47 @@ export default {
     return {
       toggleDrawer,
       logout,
+      goToProfile,
       goToLogin,
       goToRecognition,
       isRecognitionPage,
       isLoginPage,
       isRegisterPage,
       showMenuButton,
-      displayUserName
+      displayUserName,
+      showProfileModal
     }
   }
 }
 </script>
+
+<style scoped>
+/* Estilos para el menú desplegable */
+.v-list-item {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin: 4px 8px;
+}
+
+.v-list-item:hover {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  transform: translateX(4px);
+}
+
+.v-list-item-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Estilos para el divider */
+.v-divider {
+  opacity: 0.6;
+}
+
+/* Estilos para el botón del menú */
+.v-btn:hover {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+
+</style>

@@ -1,7 +1,7 @@
 import axios from 'axios'
 
-// Usar el proxy de Vite configurado - CORREGIDO para coincidir con backend
-const API_BASE_URL = '/app'
+// URL del backend Django - CORREGIDO para apuntar al backend
+const API_BASE_URL = 'http://localhost:8000/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,

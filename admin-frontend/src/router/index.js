@@ -1,137 +1,97 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import Login from '../views/Login.vue'
-import Register from '../views/Register.vue'
-import Recognition from '../views/Recognition.vue'
-import Layout from '../views/Layout.vue'
-import Dashboard from '../views/Dashboard.vue'
-import Employees from '../views/Employees.vue'
-import Areas from '../views/Areas.vue'
-import Reports from '../views/Reports.vue'
-import About from '../views/About.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Recognition',
-    component: Recognition,
-    meta: { requiresAuth: false }
+    component: () => import('../views/Recognition.vue')
   },
   {
-    path: '/login',
-    name: 'Login',
-    component: Login,
-    meta: { requiresGuest: true }
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: () => import('../views/Login.vue')
   },
   {
-    path: '/register',
+    path: '/admin/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue')
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../views/ResetPassword.vue')
+  },
+  {
+    path: '/admin/register',
     name: 'Register',
-    component: Register,
-    meta: { requiresGuest: true }
+    component: () => import('../views/Register.vue')
   },
   {
     path: '/app',
-    name: 'App',
-    component: Layout,
+    component: () => import('../views/Layout.vue'),
     meta: { requiresAuth: true },
     children: [
       {
         path: '',
-        name: 'AppHome',
         redirect: '/app/dashboard'
       },
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: Dashboard
+        component: () => import('../views/Dashboard.vue')
       },
       {
         path: 'employees',
         name: 'Employees',
-        component: Employees
+        component: () => import('../views/Employees.vue')
       },
       {
         path: 'areas',
         name: 'Areas',
-        component: Areas
+        component: () => import('../views/Areas.vue')
       },
       {
         path: 'reports',
         name: 'Reports',
-        component: Reports
+        component: () => import('../views/Reports.vue')
       }
     ]
   },
   {
     path: '/about',
     name: 'About',
-    component: About,
-    meta: { requiresAuth: false }
-  },
-  // Ruta catch-all para redirigir cualquier ruta del backend al dashboard
-  {
-    path: '/:pathMatch(.*)*',
-    redirect: '/app/dashboard'
+    component: () => import('../views/About.vue')
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(),
   routes
 })
 
-// Navigation guard
-router.beforeEach(async (to, from, next) => {
+// Guardia de navegación para verificar autenticación
+router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   
-  // Inicializar autenticación solo una vez
-  if (!authStore.isInitialized && !authStore.isLoading) {
-    await authStore.initAuth()
-  }
-  
-  // Esperar a que termine la inicialización
-  if (authStore.isLoading) {
-    // Crear promise para esperar la inicialización
-    const waitForInit = async () => {
-      let attempts = 0
-      while (authStore.isLoading && attempts < 50) { // Max 5 segundos
-        await new Promise(resolve => setTimeout(resolve, 100))
-        attempts++
-      }
-      next()
+  // Si la ruta requiere autenticación
+  if (to.meta.requiresAuth) {
+    // Verificar si el usuario está autenticado
+    if (!authStore.isAuthenticated) {
+      // Redirigir al login admin si no está autenticado
+      next('/admin/login')
+      return
     }
-    waitForInit()
-    return
   }
   
-  // Ruta requiere autenticación
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-    return
-  }
-  
-  // Ruta requiere ser invitado (no autenticado)
-  if (to.meta.requiresGuest && authStore.isAuthenticated) {
+  // Si la ruta es login o register y el usuario está autenticado
+  if ((to.name === 'AdminLogin' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') && authStore.isAuthenticated) {
+    // Redirigir al dashboard si ya está autenticado
     next('/app/dashboard')
     return
   }
   
-  // Prevenir acceso a rutas públicas cuando está autenticado
-  if (to.meta.requiresAuth === false && authStore.isAuthenticated && to.path === '/') {
-    next('/app/dashboard')
-    return
-  }
-  
-  // Manejar rutas no encontradas o acceso directo a URLs
-  if (to.matched.length === 0) {
-    if (authStore.isAuthenticated) {
-      next('/app/dashboard')
-    } else {
-      next('/login')
-    }
-    return
-  }
-  
+  // Continuar con la navegación
   next()
 })
 

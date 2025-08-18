@@ -172,9 +172,36 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vue.js frontend
     "http://127.0.0.1:5173",
+    "http://localhost:3000",  # Puerto alternativo
+    "http://127.0.0.1:3000",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Configuraciones adicionales de CORS para desarrollo
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Solo en desarrollo
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Configuración específica para OPTIONS (preflight)
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 horas
 
 # Logging
 LOGGING = {
@@ -188,6 +215,17 @@ LOGGING = {
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
+    },
+    'loggers': {
+        'core': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
     },
 }
 
@@ -220,3 +258,24 @@ if DEBUG:
     print("   - No necesitas reiniciar Django manualmente")
     print("   - Solo reinicia si cambias settings.py o urls.py")
     print("   - Debug toolbar temporalmente deshabilitado")
+
+# ✅ CONFIGURACIÓN DE EMAIL PARA RECUPERACIÓN DE CONTRASEÑA
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() == 'true'
+
+# Configuración por defecto del remitente
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', EMAIL_HOST_USER)
+
+# Configuración de recuperación de contraseña
+PASSWORD_RESET_TIMEOUT = 3600  # 1 hora en segundos
+PASSWORD_RESET_EMAIL_TEMPLATE = 'core/emails/password_reset_email.html'
+
+# Configuración adicional para emails HTML
+EMAIL_USE_LOCALTIME = True
+EMAIL_TIMEOUT = 20  # Timeout en segundos para conexión SMTP

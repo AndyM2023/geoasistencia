@@ -21,7 +21,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('app/', include('core.urls')),
+    path('app/', include('core.urls')),  # URLs existentes para compatibilidad
+    path('api/', include('core.urls')),  # Nuevas URLs para la API del frontend
 ]
 
 # Serve media files in development

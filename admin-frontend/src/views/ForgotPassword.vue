@@ -1,6 +1,6 @@
 <template>
   <AppBar />
-  <v-container fluid class="login-container pa-0">
+  <v-container fluid class="forgot-password-container pa-0">
     <v-row no-gutters class="h-100">
       <!-- Panel izquierdo con gradiente azul oscuro -->
       <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
@@ -16,81 +16,34 @@
 
       <!-- Panel derecho con formulario -->
       <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
-        <v-card class="login-card" elevation="0">
+        <v-card class="forgot-password-card" elevation="0">
           <v-card-text class="pa-8">
-            <h2 class="text-h4 font-weight-bold text-white mb-2">Iniciar Sesión</h2>
-            <p class="text-body-1 text-grey-lighten-1 mb-8">
-              ¿Nuevo en Geoasistencia? 
-              <v-btn variant="text" color="primary" class="text-none px-1" @click="goToRegister">Registrarse</v-btn>
+            <div class="text-center mb-6">
+              <v-icon size="64" color="primary" class="mb-4">mdi-lock-reset</v-icon>
+              <h2 class="text-h4 font-weight-bold text-white mb-2">Recuperar Contraseña</h2>
+              <p class="text-body-1 text-grey-lighten-1">
+                Ingresa tu email de administrador y te enviaremos instrucciones para recuperar tu contraseña.
+              </p>
+            </div>
 
-
-            </p>
-            
-
-            <v-form @submit.prevent="handleLogin" class="login-form">
+            <v-form ref="formRef" @submit.prevent="handleSubmit" class="forgot-password-form">
               <v-text-field
-
-                v-model="form.usuario"
-                label="USUARIO"
-                type="text"
-                placeholder="Ingresa tu usuario"
-
+                v-model="form.email"
+                label="EMAIL"
+                type="email"
+                placeholder="Ingresa tu email de administrador"
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
-                class="mb-4"
-                :rules="[rules.required]"
+                class="mb-6"
+                :rules="[rules.required, rules.email]"
                 hide-details="auto"
+                :disabled="loading"
               >
                 <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-account</v-icon>
+                  <v-icon color="primary">mdi-email</v-icon>
                 </template>
               </v-text-field>
-
-              <v-text-field
-                v-model="form.contraseña"
-                label="CONTRASEÑA"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Ingresa tu contraseña"
-                variant="outlined"
-                color="primary"
-                bg-color="dark-surface"
-                class="mb-4"
-                :rules="[rules.required]"
-                hide-details="auto"
-              >
-                <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-lock</v-icon>
-                </template>
-                <template v-slot:append-inner>
-                  <v-btn
-                    variant="text"
-                    icon
-                    @click="togglePassword"
-                    color="grey-lighten-1"
-                  >
-                    <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
-                  </v-btn>
-                </template>
-              </v-text-field>
-
-              <div class="d-flex justify-space-between align-center mb-6">
-                <v-checkbox
-                  v-model="form.keepSignedIn"
-                  label="Mantener sesión iniciada en este dispositivo"
-                  color="primary"
-                  hide-details
-                  class="text-grey-lighten-1"
-                ></v-checkbox>
-                <v-btn
-                  variant="text"
-                  color="primary"
-                  class="text-none"
-                  @click="goToForgotPassword"
-                >
-                  ¿Olvidaste tu contraseña?
-                </v-btn>
-              </div>
 
               <v-btn
                 type="submit"
@@ -102,9 +55,21 @@
                 class="mb-6"
                 elevation="2"
               >
-                <span v-if="loading">Iniciando sesión...</span>
-                <span v-else>Iniciar Sesión</span>
+                <span v-if="loading">Enviando...</span>
+                <span v-else>Enviar Instrucciones</span>
               </v-btn>
+
+              <div class="text-center">
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  class="text-none"
+                  @click="goToLogin"
+                  :disabled="loading"
+                >
+                  ← Volver al Login
+                </v-btn>
+              </div>
             </v-form>
 
             <!-- Mensajes de error/éxito -->
@@ -127,9 +92,6 @@
             >
               {{ success }}
             </v-alert>
-
-            <!-- Credenciales de demo -->
-            
           </v-card-text>
         </v-card>
       </v-col>
@@ -140,109 +102,93 @@
 <script>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import AppBar from '../components/AppBar.vue'
+import { authService } from '../services/authService'
 
 export default {
-  name: 'Login',
+  name: 'ForgotPassword',
   components: {
     AppBar
   },
   setup() {
     const router = useRouter()
-    const authStore = useAuthStore()
     
     const form = reactive({
-
-      usuario: '',
-      contraseña: '',
-
-      keepSignedIn: false
+      email: ''
     })
     
-    const showPassword = ref(false)
     const loading = ref(false)
     const error = ref('')
     const success = ref('')
+    const formRef = ref(null)
 
     const rules = {
-
-      required: v => !!v || 'Este campo es requerido'
-
+      required: v => !!v || 'Este campo es requerido',
+      email: v => /.+@.+\..+/.test(v) || 'Email inválido'
     }
 
-    const togglePassword = () => {
-      showPassword.value = !showPassword.value
-    }
-
-    const handleLogin = async () => {
+    const handleSubmit = async () => {
       loading.value = true
       error.value = ''
       success.value = ''
 
       try {
-
-        const result = await authStore.login(form.usuario, form.contraseña)
-
+        const result = await authService.requestPasswordReset(form.email)
         
         if (result.success) {
-          success.value = '¡Inicio de sesión exitoso! Redirigiendo...'
-          
-          setTimeout(() => {
-            router.push('/app/dashboard')
-          }, 1500)
+          success.value = result.message
+          form.email = ''
+          // Resetear el estado de validación del formulario
+          if (formRef.value) {
+            formRef.value.resetValidation()
+          }
         } else {
           error.value = result.error
         }
       } catch (err) {
         error.value = 'Ocurrió un error. Por favor intenta de nuevo.'
+        console.error('Error en forgot password:', err)
       } finally {
         loading.value = false
       }
     }
 
-    const goToRegister = () => {
-      router.push('/admin/register')
-    }
-
-    const goToForgotPassword = () => {
-      router.push('/admin/forgot-password')
+    const goToLogin = () => {
+      router.push('/login')
     }
 
     return {
       form,
-      showPassword,
       loading,
       error,
       success,
       rules,
-      togglePassword,
-      handleLogin,
-      goToRegister,
-      goToForgotPassword
+      formRef,
+      handleSubmit,
+      goToLogin
     }
   },
 
   // Hooks de lifecycle para controlar el scroll
   onMounted() {
-    document.body.classList.add('login-page')
+    document.body.classList.add('forgot-password-page')
   },
 
   onUnmounted() {
-    document.body.classList.remove('login-page')
+    document.body.classList.remove('forgot-password-page')
   }
 }
 </script>
 
 <style scoped>
-.login-container {
-  min-height: calc(100vh - 64px); /* Restar altura del AppBar */
+.forgot-password-container {
+  min-height: calc(100vh - 64px);
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   outline: none !important;
-  margin-top: 64px !important; /* Agregar margen superior para el AppBar */
+  margin-top: 64px !important;
 }
 
 .left-panel {
@@ -302,18 +248,13 @@ export default {
   pointer-events: none;
 }
 
-.login-card {
+.forgot-password-card {
   background: rgba(30, 41, 59, 0.8) !important;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 16px;
   max-width: 450px;
   width: 100%;
-}
-
-.demo-credentials {
-  background: rgba(51, 65, 85, 0.6) !important;
-  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 /* Personalización de Vuetify para modo oscuro */
@@ -343,14 +284,6 @@ export default {
   background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
-:deep(.v-checkbox .v-selection-control__input) {
-  color: #00d4ff !important;
-}
-
-:deep(.v-checkbox .v-label) {
-  color: #cbd5e1 !important;
-}
-
 /* Eliminar bordes y márgenes globales */
 :deep(.v-container) {
   margin: 0 !important;
@@ -378,7 +311,7 @@ export default {
     font-size: 1.5rem !important;
   }
   
-  .login-card {
+  .forgot-password-card {
     margin: 1rem;
   }
 }
@@ -393,8 +326,9 @@ export default {
 }
 
 /* Ajustar el contenedor principal para el AppBar */
-.login-container {
+.forgot-password-container {
   position: relative;
   z-index: 1;
 }
 </style>
+
