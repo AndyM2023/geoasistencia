@@ -275,3 +275,7 @@ SERVER_EMAIL = os.getenv('SERVER_EMAIL', EMAIL_HOST_USER)
 # Configuración de recuperación de contraseña
 PASSWORD_RESET_TIMEOUT = 3600  # 1 hora en segundos
 PASSWORD_RESET_EMAIL_TEMPLATE = 'core/emails/password_reset_email.html'
+
+# Configuración adicional para emails HTML
+EMAIL_USE_LOCALTIME = True
+EMAIL_TIMEOUT = 20  # Timeout en segundos para conexión SMTP

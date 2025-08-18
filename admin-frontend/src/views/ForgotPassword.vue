@@ -26,7 +26,7 @@
               </p>
             </div>
 
-            <v-form @submit.prevent="handleSubmit" class="forgot-password-form">
+            <v-form ref="formRef" @submit.prevent="handleSubmit" class="forgot-password-form">
               <v-text-field
                 v-model="form.email"
                 label="EMAIL"
@@ -120,6 +120,7 @@ export default {
     const loading = ref(false)
     const error = ref('')
     const success = ref('')
+    const formRef = ref(null)
 
     const rules = {
       required: v => !!v || 'Este campo es requerido',
@@ -137,6 +138,10 @@ export default {
         if (result.success) {
           success.value = result.message
           form.email = ''
+          // Resetear el estado de validación del formulario
+          if (formRef.value) {
+            formRef.value.resetValidation()
+          }
         } else {
           error.value = result.error
         }
@@ -158,6 +163,7 @@ export default {
       error,
       success,
       rules,
+      formRef,
       handleSubmit,
       goToLogin
     }
@@ -325,3 +331,4 @@ export default {
   z-index: 1;
 }
 </style>
+
