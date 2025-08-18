@@ -184,20 +184,7 @@
                   </v-card-text>
                 </v-card>
 
-                <!-- Botón de verificación de permisos -->
-                <div class="d-flex gap-2 mb-4">
-                  <v-btn
-                    @click="checkLocationPermission"
-                    color="warning"
-                    variant="outlined"
-                    size="small"
-                    :loading="gettingLocation"
-                    :disabled="gettingLocation"
-                  >
-                    <v-icon left>mdi-shield-check</v-icon>
-                    Verificar Permisos
-                  </v-btn>
-                </div>
+
               </v-col>
             </v-row>
           </v-card-text>
@@ -557,63 +544,7 @@ export default {
       }
     }
 
-    // Función para verificar permisos de ubicación
-    const checkLocationPermission = async () => {
-      try {
-        gettingLocation.value = true
-        error.value = ''
-        locationStatus.value = '🔐 Verificando permisos de ubicación...'
-        
-        if (navigator.permissions && navigator.permissions.query) {
-          const permissionStatus = await navigator.permissions.query({ name: 'geolocation' })
-          console.log('🔐 Estado del permiso de ubicación:', permissionStatus.state)
-          
-          let result
-          switch (permissionStatus.state) {
-            case 'granted':
-              result = { status: 'granted', message: '✅ Permiso de ubicación otorgado' }
-              break
-            case 'denied':
-              result = { status: 'denied', message: '❌ Permiso de ubicación denegado' }
-              break
-            case 'prompt':
-              result = { status: 'prompt', message: '⏳ Permiso de ubicación pendiente' }
-              break
-            default:
-              result = { status: 'unknown', message: '❓ Estado de permiso desconocido' }
-          }
-          
-          // Mostrar resultado en la interfaz
-          if (result.status === 'denied') {
-            error.value = '❌ Permiso de ubicación denegado. Ve a Configuración del navegador > Privacidad y seguridad > Ubicación y permite el acceso.'
-            locationStatus.value = ''
-          } else {
-            locationStatus.value = result.message
-            // Limpiar después de 3 segundos
-            setTimeout(() => {
-              locationStatus.value = ''
-            }, 3000)
-          }
-          
-          return result
-        } else {
-          const result = { status: 'unsupported', message: '⚠️ Navegador no soporta verificación de permisos' }
-          locationStatus.value = result.message
-          setTimeout(() => {
-            locationStatus.value = ''
-          }, 3000)
-          return result
-        }
-      } catch (error) {
-        console.error('Error verificando permisos:', error)
-        const result = { status: 'error', message: '❌ Error verificando permisos' }
-        error.value = result.message
-        locationStatus.value = ''
-        return result
-      } finally {
-        gettingLocation.value = false
-      }
-    }
+
 
 
 
@@ -753,8 +684,7 @@ export default {
       capturePhotoFromCamera,
       getEmployeeCredentials,
       verifyFaceAndMarkAttendance,
-      getCurrentLocation,
-      checkLocationPermission
+      getCurrentLocation
     }
   }
 }

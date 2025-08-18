@@ -43,7 +43,7 @@
         color="blue-400"
         class="mr-2"
       >
-        <v-icon>mdi-bell</v-icon>
+
       </v-btn>
       
       <!-- Botón dinámico según la ruta -->

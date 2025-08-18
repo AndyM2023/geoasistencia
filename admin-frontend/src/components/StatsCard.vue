@@ -13,27 +13,7 @@
       </div>
       
       <!-- Indicador de cambio - siempre presente para mantener layout -->
-      <div class="d-flex align-center mt-auto">
-        <div v-if="change !== null && change !== undefined" class="d-flex align-center">
-          <v-icon 
-            :color="change > 0 ? 'success' : 'error'"
-            size="small"
-            class="mr-1"
-          >
-            {{ change > 0 ? 'mdi-trending-up' : 'mdi-trending-down' }}
-          </v-icon>
-          <span 
-            :class="change > 0 ? 'text-success' : 'text-error'"
-            class="text-body-2 font-weight-medium"
-          >
-            {{ Math.abs(change) }}%
-          </span>
-          <span class="text-body-2 text-medium-emphasis ml-1">vs mes anterior</span>
-        </div>
-        <div v-else class="text-body-2 text-medium-emphasis opacity-50">
-          Sin cambios
-        </div>
-      </div>
+
     </v-card-text>
   </v-card>
 </template>
