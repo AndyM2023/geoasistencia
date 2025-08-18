@@ -66,20 +66,18 @@ class PasswordResetService:
             html_message = render_to_string('core/emails/password_reset_email.html', context)
             plain_message = strip_tags(html_message)
             
-            # Enviar email con codificación UTF-8 explícita
-            from django.core.mail import EmailMessage
+            # Enviar email usando send_mail con HTML
+            from django.core.mail import send_mail
             
-            # Crear mensaje con codificación explícita
-            email = EmailMessage(
+            # Enviar email con HTML y texto plano
+            send_mail(
                 subject=f'Recuperación de Contraseña - {context["app_name"]}',
-                body=html_message,
+                message=plain_message,  # Versión texto plano
+                html_message=html_message,  # Versión HTML
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[user.email],
-                headers={'Content-Type': 'text/html; charset=utf-8'}
+                recipient_list=[user.email],
+                fail_silently=False,
             )
-            
-            # Enviar email
-            email.send(fail_silently=False)
             
             logger.info(f"Email de recuperación enviado a {user.email}")
             return True
