@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
+import uuid
+from datetime import timedelta
 
 class User(AbstractUser):
     """Usuario base del sistema (Admin o Empleado)"""
@@ -298,3 +300,41 @@ class Attendance(models.Model):
             from datetime import time
             return self.check_in > time(8, 30)
         return False
+
+class PasswordResetToken(models.Model):
+    """Token para recuperación de contraseña del administrador"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
+    token = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    
+    class Meta:
+        verbose_name = 'Token de Recuperación'
+        verbose_name_plural = 'Tokens de Recuperación'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Token para {self.user.username} - Expira: {self.expires_at}"
+    
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = str(uuid.uuid4())
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(hours=1)
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_expired(self):
+        """Verificar si el token ha expirado"""
+        return timezone.now() > self.expires_at
+    
+    @property
+    def is_valid(self):
+        """Verificar si el token es válido y no ha sido usado"""
+        return not self.is_expired and not self.is_used
+    
+    def mark_as_used(self):
+        """Marcar el token como usado"""
+        self.is_used = True
+        self.save()

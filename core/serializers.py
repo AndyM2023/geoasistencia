@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
 from .models import User, Employee, Area, Attendance
+from .models import PasswordResetToken
 
 User = get_user_model()
 
@@ -280,3 +281,39 @@ class AttendanceReportSerializer(serializers.Serializer):
         choices=[('all', 'Todos'), ('present', 'Presente'), ('absent', 'Ausente'), ('late', 'Tarde')],
         required=False
     )
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer para solicitar recuperación de contraseña"""
+    email = serializers.EmailField()
+    
+    def validate_email(self, value):
+        """Validar que el email existe y pertenece a un administrador"""
+        try:
+            user = User.objects.get(email=value, role='admin', is_active=True)
+            return value
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                "No se encontró una cuenta de administrador activa con este email."
+            )
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer para confirmar y cambiar la contraseña"""
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=8, write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+    
+    def validate(self, attrs):
+        """Validar que las contraseñas coincidan"""
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError("Las contraseñas no coinciden.")
+        return attrs
+    
+    def validate_token(self, value):
+        """Validar que el token sea válido"""
+        try:
+            token_obj = PasswordResetToken.objects.get(token=value)
+            if not token_obj.is_valid:
+                raise serializers.ValidationError("El token ha expirado o ya ha sido usado.")
+            return value
+        except PasswordResetToken.DoesNotExist:
+            raise serializers.ValidationError("Token inválido.")

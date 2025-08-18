@@ -1,6 +1,6 @@
 <template>
   <AppBar />
-  <v-container fluid class="login-container pa-0">
+  <v-container fluid class="reset-password-container pa-0">
     <v-row no-gutters class="h-100">
       <!-- Panel izquierdo con gradiente azul oscuro -->
       <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
@@ -16,48 +16,33 @@
 
       <!-- Panel derecho con formulario -->
       <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
-        <v-card class="login-card" elevation="0">
+        <v-card class="reset-password-card" elevation="0">
           <v-card-text class="pa-8">
-            <h2 class="text-h4 font-weight-bold text-white mb-2">Iniciar Sesión</h2>
-            <p class="text-body-1 text-grey-lighten-1 mb-8">
-              ¿Nuevo en Geoasistencia? 
-              <v-btn variant="text" color="primary" class="text-none px-1" @click="goToRegister">Registrarse</v-btn>
+            <div class="text-center mb-6">
+              <v-icon size="64" color="primary" class="mb-4">mdi-key-change</v-icon>
+              <h2 class="text-h4 font-weight-bold text-white mb-2">Cambiar Contraseña</h2>
+              <p class="text-body-1 text-grey-lighten-1" v-if="tokenValid">
+                Establece tu nueva contraseña para la cuenta: <strong>{{ userEmail }}</strong>
+              </p>
+              <p class="text-body-1 text-grey-lighten-1" v-else>
+                Validando tu enlace de recuperación...
+              </p>
+            </div>
 
-
-            </p>
-            
-
-            <v-form @submit.prevent="handleLogin" class="login-form">
+            <!-- Formulario de cambio de contraseña -->
+            <v-form v-if="tokenValid" @submit.prevent="handleSubmit" class="reset-password-form">
               <v-text-field
-
-                v-model="form.usuario"
-                label="USUARIO"
-                type="text"
-                placeholder="Ingresa tu usuario"
-
+                v-model="form.newPassword"
+                label="NUEVA CONTRASEÑA"
+                :type="showNewPassword ? 'text' : 'password'"
+                placeholder="Ingresa tu nueva contraseña"
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
                 class="mb-4"
-                :rules="[rules.required]"
+                :rules="[rules.required, rules.minLength]"
                 hide-details="auto"
-              >
-                <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-account</v-icon>
-                </template>
-              </v-text-field>
-
-              <v-text-field
-                v-model="form.contraseña"
-                label="CONTRASEÑA"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Ingresa tu contraseña"
-                variant="outlined"
-                color="primary"
-                bg-color="dark-surface"
-                class="mb-4"
-                :rules="[rules.required]"
-                hide-details="auto"
+                :disabled="loading"
               >
                 <template v-slot:prepend-inner>
                   <v-icon color="primary">mdi-lock</v-icon>
@@ -66,31 +51,41 @@
                   <v-btn
                     variant="text"
                     icon
-                    @click="togglePassword"
+                    @click="toggleNewPassword"
                     color="grey-lighten-1"
                   >
-                    <v-icon>{{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                    <v-icon>{{ showNewPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                   </v-btn>
                 </template>
               </v-text-field>
 
-              <div class="d-flex justify-space-between align-center mb-6">
-                <v-checkbox
-                  v-model="form.keepSignedIn"
-                  label="Mantener sesión iniciada en este dispositivo"
-                  color="primary"
-                  hide-details
-                  class="text-grey-lighten-1"
-                ></v-checkbox>
-                <v-btn
-                  variant="text"
-                  color="primary"
-                  class="text-none"
-                  @click="goToForgotPassword"
-                >
-                  ¿Olvidaste tu contraseña?
-                </v-btn>
-              </div>
+              <v-text-field
+                v-model="form.confirmPassword"
+                label="CONFIRMAR CONTRASEÑA"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                placeholder="Confirma tu nueva contraseña"
+                variant="outlined"
+                color="primary"
+                bg-color="dark-surface"
+                class="mb-6"
+                :rules="[rules.required, rules.confirmPassword]"
+                hide-details="auto"
+                :disabled="loading"
+              >
+                <template v-slot:prepend-inner>
+                  <v-icon color="primary">mdi-lock-check</v-icon>
+                </template>
+                <template v-slot:append-inner>
+                  <v-btn
+                    variant="text"
+                    icon
+                    @click="toggleConfirmPassword"
+                    color="grey-lighten-1"
+                  >
+                    <v-icon>{{ showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                  </v-btn>
+                </template>
+              </v-text-field>
 
               <v-btn
                 type="submit"
@@ -102,10 +97,57 @@
                 class="mb-6"
                 elevation="2"
               >
-                <span v-if="loading">Iniciando sesión...</span>
-                <span v-else>Iniciar Sesión</span>
+                <span v-if="loading">Cambiando contraseña...</span>
+                <span v-else>Cambiar Contraseña</span>
               </v-btn>
+
+              <div class="text-center">
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  class="text-none"
+                  @click="goToLogin"
+                  :disabled="loading"
+                >
+                  ← Volver al Login
+                </v-btn>
+              </div>
             </v-form>
+
+            <!-- Estado de validación del token -->
+            <div v-else-if="tokenLoading" class="text-center">
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                size="64"
+                class="mb-4"
+              ></v-progress-circular>
+              <p class="text-body-1 text-grey-lighten-1">Validando enlace...</p>
+            </div>
+
+            <!-- Token inválido -->
+            <div v-else class="text-center">
+              <v-icon size="64" color="error" class="mb-4">mdi-alert-circle</v-icon>
+              <h3 class="text-h5 font-weight-bold text-white mb-2">Enlace Inválido</h3>
+              <p class="text-body-1 text-grey-lighten-1 mb-4">
+                Este enlace de recuperación no es válido o ha expirado.
+              </p>
+              <v-btn
+                color="primary"
+                @click="goToForgotPassword"
+                class="mb-4"
+              >
+                Solicitar Nuevo Enlace
+              </v-btn>
+              <br>
+              <v-btn
+                variant="text"
+                color="primary"
+                @click="goToLogin"
+              >
+                ← Volver al Login
+              </v-btn>
+            </div>
 
             <!-- Mensajes de error/éxito -->
             <v-alert
@@ -127,9 +169,6 @@
             >
               {{ success }}
             </v-alert>
-
-            <!-- Credenciales de demo -->
-            
           </v-card-text>
         </v-card>
       </v-col>
@@ -139,110 +178,148 @@
 
 <script>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { useRouter, useRoute } from 'vue-router'
 import AppBar from '../components/AppBar.vue'
+import { authService } from '../services/authService'
 
 export default {
-  name: 'Login',
+  name: 'ResetPassword',
   components: {
     AppBar
   },
   setup() {
     const router = useRouter()
-    const authStore = useAuthStore()
+    const route = useRoute()
     
     const form = reactive({
-
-      usuario: '',
-      contraseña: '',
-
-      keepSignedIn: false
+      newPassword: '',
+      confirmPassword: ''
     })
     
-    const showPassword = ref(false)
     const loading = ref(false)
     const error = ref('')
     const success = ref('')
+    const tokenValid = ref(false)
+    const tokenLoading = ref(true)
+    const userEmail = ref('')
+    const showNewPassword = ref(false)
+    const showConfirmPassword = ref(false)
 
     const rules = {
-
-      required: v => !!v || 'Este campo es requerido'
-
+      required: v => !!v || 'Este campo es requerido',
+      minLength: v => v.length >= 8 || 'La contraseña debe tener al menos 8 caracteres',
+      confirmPassword: v => v === form.newPassword || 'Las contraseñas no coinciden'
     }
 
-    const togglePassword = () => {
-      showPassword.value = !showPassword.value
+    const validateToken = async () => {
+      try {
+        const token = route.query.token
+        if (!token) {
+          tokenValid.value = false
+          tokenLoading.value = false
+          return
+        }
+
+        const result = await authService.validateResetToken(token)
+        if (result.valid) {
+          tokenValid.value = true
+          userEmail.value = result.user_email
+        } else {
+          tokenValid.value = false
+        }
+      } catch (err) {
+        console.error('Error validando token:', err)
+        tokenValid.value = false
+      } finally {
+        tokenLoading.value = false
+      }
     }
 
-    const handleLogin = async () => {
+    const handleSubmit = async () => {
       loading.value = true
       error.value = ''
       success.value = ''
 
       try {
-
-        const result = await authStore.login(form.usuario, form.contraseña)
-
+        const token = route.query.token
+        const result = await authService.confirmPasswordReset(token, form.newPassword)
         
         if (result.success) {
-          success.value = '¡Inicio de sesión exitoso! Redirigiendo...'
-          
+          success.value = result.message
+          // Redirigir al login después de 3 segundos
           setTimeout(() => {
-            router.push('/app/dashboard')
-          }, 1500)
+            router.push('/login')
+          }, 3000)
         } else {
           error.value = result.error
         }
       } catch (err) {
         error.value = 'Ocurrió un error. Por favor intenta de nuevo.'
+        console.error('Error en reset password:', err)
       } finally {
         loading.value = false
       }
     }
 
-    const goToRegister = () => {
-      router.push('/register')
+    const toggleNewPassword = () => {
+      showNewPassword.value = !showNewPassword.value
+    }
+
+    const toggleConfirmPassword = () => {
+      showConfirmPassword.value = !showConfirmPassword.value
+    }
+
+    const goToLogin = () => {
+      router.push('/login')
     }
 
     const goToForgotPassword = () => {
       router.push('/forgot-password')
     }
 
+    onMounted(() => {
+      validateToken()
+    })
+
     return {
       form,
-      showPassword,
       loading,
       error,
       success,
+      tokenValid,
+      tokenLoading,
+      userEmail,
+      showNewPassword,
+      showConfirmPassword,
       rules,
-      togglePassword,
-      handleLogin,
-      goToRegister,
+      handleSubmit,
+      toggleNewPassword,
+      toggleConfirmPassword,
+      goToLogin,
       goToForgotPassword
     }
   },
 
   // Hooks de lifecycle para controlar el scroll
   onMounted() {
-    document.body.classList.add('login-page')
+    document.body.classList.add('reset-password-page')
   },
 
   onUnmounted() {
-    document.body.classList.remove('login-page')
+    document.body.classList.remove('reset-password-page')
   }
 }
 </script>
 
 <style scoped>
-.login-container {
-  min-height: calc(100vh - 64px); /* Restar altura del AppBar */
+.reset-password-container {
+  min-height: calc(100vh - 64px);
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   outline: none !important;
-  margin-top: 64px !important; /* Agregar margen superior para el AppBar */
+  margin-top: 64px !important;
 }
 
 .left-panel {
@@ -302,18 +379,13 @@ export default {
   pointer-events: none;
 }
 
-.login-card {
+.reset-password-card {
   background: rgba(30, 41, 59, 0.8) !important;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 16px;
   max-width: 450px;
   width: 100%;
-}
-
-.demo-credentials {
-  background: rgba(51, 65, 85, 0.6) !important;
-  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 /* Personalización de Vuetify para modo oscuro */
@@ -343,14 +415,6 @@ export default {
   background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
-:deep(.v-checkbox .v-selection-control__input) {
-  color: #00d4ff !important;
-}
-
-:deep(.v-checkbox .v-label) {
-  color: #cbd5e1 !important;
-}
-
 /* Eliminar bordes y márgenes globales */
 :deep(.v-container) {
   margin: 0 !important;
@@ -378,7 +442,7 @@ export default {
     font-size: 1.5rem !important;
   }
   
-  .login-card {
+  .reset-password-card {
     margin: 1rem;
   }
 }
@@ -393,7 +457,7 @@ export default {
 }
 
 /* Ajustar el contenedor principal para el AppBar */
-.login-container {
+.reset-password-container {
   position: relative;
   z-index: 1;
 }
