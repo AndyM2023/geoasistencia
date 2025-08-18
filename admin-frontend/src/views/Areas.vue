@@ -5,16 +5,6 @@
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Áreas</h1>
           <div class="d-flex gap-2">
-            <!-- ✅ BOTÓN DE CONTROL DE POLLING -->
-            <v-btn 
-              :color="pollingEnabled ? 'green-400' : 'orange-400'" 
-              :icon="pollingEnabled ? 'mdi-pause' : 'mdi-play'"
-              @click="togglePolling" 
-              :title="pollingEnabled ? 'Pausar actualización automática' : 'Reanudar actualización automática'"
-              variant="tonal"
-              size="small"
-            ></v-btn>
-            
             <v-btn color="blue-400" prepend-icon="mdi-plus" @click="openNewAreaDialog" class="neon-border">
               Nueva Área
             </v-btn>
@@ -38,25 +28,6 @@
             color="blue-400"
             class="text-white"
           ></v-text-field>
-          
-          <!-- ✅ INDICADOR DE POLLING -->
-          <div class="d-flex align-center gap-2">
-            <v-chip 
-              :color="pollingEnabled ? 'green-500' : 'orange-500'" 
-              variant="tonal" 
-              size="small"
-              class="polling-indicator"
-            >
-              <v-icon left size="small">
-                {{ pollingEnabled ? 'mdi-sync' : 'mdi-sync-off' }}
-              </v-icon>
-              {{ pollingEnabled ? 'Auto-actualizando' : 'Pausado' }}
-            </v-chip>
-            
-            <span class="text-caption text-grey-300">
-              ({{ POLLING_INTERVAL_MS / 1000 }}s)
-            </span>
-          </div>
         </div>
       </v-card-title>
 
@@ -75,28 +46,29 @@
           {{ item.radius }}m
         </template>
         
-        <template v-slot:item.actions="{ item }">
-          <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editArea(item)" title="Editar área"></v-btn>
-          
-          <!-- Botón dinámico según el estado del área -->
-          <v-btn 
-            v-if="item.status === 'active'"
-            icon="mdi-account-off" 
-            size="small" 
-            color="red-400" 
-            @click="deleteArea(item)"
-            title="Desactivar área"
-          ></v-btn>
-          
-          <v-btn 
-            v-else
-            icon="mdi-account-check" 
-            size="small" 
-            color="green-400" 
-            @click="activateArea(item)"
-            title="Reactivar área"
-          ></v-btn>
-        </template>
+                 <template v-slot:item.actions="{ item }">
+           <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editArea(item)" title="Editar área"></v-btn>
+           
+           <!-- Botón dinámico según el estado del área -->
+           <v-btn 
+             v-if="item.status === 'active'"
+             icon="mdi-account-off" 
+             size="small" 
+             :color="item.employee_count > 0 ? 'grey-400' : 'red-400'"
+             @click="item.employee_count > 0 ? null : deleteArea(item)"
+             :disabled="item.employee_count > 0"
+             :title="item.employee_count > 0 ? 'No se puede desactivar: tiene empleados asignados' : 'Desactivar área'"
+           ></v-btn>
+           
+           <v-btn 
+             v-else
+             icon="mdi-account-check" 
+             size="small" 
+             color="green-400" 
+             @click="activateArea(item)"
+             title="Reactivar área"
+           ></v-btn>
+         </template>
         
         <template v-slot:item.latitude="{ item }">
           <span :title="item.latitude">{{ formatCoordinate(item.latitude) }}</span>
@@ -494,9 +466,8 @@ export default {
     
     const areas = ref([])
     
-    // ✅ POLLING AUTOMÁTICO para mantener la lista actualizada
+    // Polling automático interno para mantener la lista actualizada
     const pollingInterval = ref(null)
-    const pollingEnabled = ref(true)
     const POLLING_INTERVAL_MS = 30000 // 30 segundos
     
     // Estado para mensajes
@@ -564,14 +535,14 @@ export default {
        }
      }
      
-     // ✅ FUNCIONES DE POLLING AUTOMÁTICO
+     // Función de polling automático interno
      const startPolling = () => {
        if (pollingInterval.value) {
          clearInterval(pollingInterval.value)
        }
        
        pollingInterval.value = setInterval(async () => {
-         if (pollingEnabled.value && !loading.value) {
+         if (!loading.value) {
            console.log('🔄 Polling automático: Recargando áreas...')
            await loadAreas()
          }
@@ -585,18 +556,6 @@ export default {
          clearInterval(pollingInterval.value)
          pollingInterval.value = null
          console.log('⏹️ Polling automático detenido')
-       }
-     }
-     
-     const togglePolling = () => {
-       if (pollingEnabled.value) {
-         stopPolling()
-         pollingEnabled.value = false
-         console.log('⏸️ Polling automático pausado')
-       } else {
-         pollingEnabled.value = true
-         startPolling()
-         console.log('▶️ Polling automático reanudado')
        }
      }
      
@@ -641,10 +600,16 @@ export default {
         }
       }
     
-    const deleteArea = (area) => {
-      areaToDelete.value = area
-      showDeleteDialog.value = true
-    }
+         const deleteArea = (area) => {
+       // Verificar si el área tiene empleados antes de permitir desactivarla
+       if (area.employee_count > 0) {
+         showMessage(`No se puede desactivar el área "${area.name}" porque tiene ${area.employee_count} empleado(s) asignado(s). Primero debes reasignar o desactivar los empleados.`, 'warning')
+         return
+       }
+       
+       areaToDelete.value = area
+       showDeleteDialog.value = true
+     }
     
     const activateArea = async (area) => {
        try {
@@ -1144,9 +1109,7 @@ export default {
       refreshMap,
       // Funciones de formateo
       formatCoordinate,
-      showMessage,
-      pollingEnabled, // Exponer la variable de polling para el botón
-      togglePolling // Exponer la función de toggle para el botón
+      showMessage
     }
   }
 }
@@ -1265,27 +1228,7 @@ export default {
   }
 }
  
- /* ✅ ESTILOS PARA EL INDICADOR DE POLLING */
- .polling-indicator {
-   animation: pulse 2s infinite;
-   font-weight: 500 !important;
- }
- 
- .polling-indicator:deep(.v-icon) {
-   animation: spin 2s linear infinite;
- }
- 
- @keyframes pulse {
-   0%, 100% { opacity: 1; }
-   50% { opacity: 0.7; }
- }
- 
- @keyframes spin {
-   from { transform: rotate(0deg); }
-   to { transform: rotate(360deg); }
- }
- 
- /* Responsive para el header con polling */
+ /* Responsive para el header */
  @media (max-width: 768px) {
    .areas-header .d-flex {
      flex-direction: column;

@@ -111,7 +111,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import StatsCard from '../components/StatsCard.vue'
@@ -170,10 +170,50 @@ export default {
       }
     }
     
+    // Polling interno para mantener datos actualizados
+    const pollingInterval = ref(null)
+    const POLLING_INTERVAL_MS = 60000 // 1 minuto
+    
+    const startPolling = () => {
+      if (pollingInterval.value) {
+        clearInterval(pollingInterval.value)
+      }
+      
+      pollingInterval.value = setInterval(async () => {
+        console.log('🔄 Polling automático: Actualizando datos del dashboard...')
+        try {
+          // Solo actualizar si no está cargando
+          if (!loading.value) {
+            await loadDashboardData()
+          }
+        } catch (error) {
+          console.error('❌ Error en polling automático:', error)
+        }
+      }, POLLING_INTERVAL_MS)
+      
+      console.log('✅ Polling automático iniciado cada', POLLING_INTERVAL_MS / 1000, 'segundos')
+    }
+    
+    const stopPolling = () => {
+      if (pollingInterval.value) {
+        clearInterval(pollingInterval.value)
+        pollingInterval.value = null
+        console.log('⏹️ Polling automático detenido')
+      }
+    }
+    
     onMounted(async () => {
       // El router guard ya maneja la autenticación
       // Solo cargar datos si llegamos aquí
       loadDashboardData()
+      
+      // Iniciar polling automático
+      startPolling()
+    })
+    
+    // Limpiar polling al desmontar el componente
+    onUnmounted(() => {
+      stopPolling()
     })
     
     return {
@@ -183,7 +223,10 @@ export default {
       weeklyAttendanceData,
       isAuthenticated,
       loadDashboardData,
-      getStatusColor
+      getStatusColor,
+      // Funciones de polling
+      startPolling,
+      stopPolling
     }
   }
 }

@@ -602,7 +602,6 @@ export default {
     ]
     
     const headers = [
-      { title: 'ID', key: 'employee_id', sortable: true },
       { title: 'Nombre Completo', key: 'full_name', sortable: true },
       { title: 'Email', key: 'email_display', sortable: true },
       { title: 'Cargo', key: 'position', sortable: true },

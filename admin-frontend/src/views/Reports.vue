@@ -184,7 +184,7 @@
           <v-card-text class="pa-1">
             <div class="d-flex align-center mb-1">
               <div class="flex-grow-1">
-                <div class="text-h6 font-weight-bold mb-1 text-warning">Llegadas Tardes</div>
+                <div class="text-h6 font-weight-bold mb-1 text-warning">Atrasos</div>
                 <div class="text-h4 font-weight-bold text-warning">{{ stats.lateCount }}</div>
               </div>
               <div class="ml-1">
