@@ -4,15 +4,16 @@ import { useAuthStore } from '../stores/auth'
 const routes = [
   {
     path: '/',
-    redirect: '/login'
+    name: 'Recognition',
+    component: () => import('../views/Recognition.vue')
   },
   {
-    path: '/login',
-    name: 'Login',
+    path: '/admin/login',
+    name: 'AdminLogin',
     component: () => import('../views/Login.vue')
   },
   {
-    path: '/forgot-password',
+    path: '/admin/forgot-password',
     name: 'ForgotPassword',
     component: () => import('../views/ForgotPassword.vue')
   },
@@ -22,7 +23,7 @@ const routes = [
     component: () => import('../views/ResetPassword.vue')
   },
   {
-    path: '/register',
+    path: '/admin/register',
     name: 'Register',
     component: () => import('../views/Register.vue')
   },
@@ -54,11 +55,6 @@ const routes = [
         path: 'reports',
         name: 'Reports',
         component: () => import('../views/Reports.vue')
-      },
-      {
-        path: 'recognition',
-        name: 'Recognition',
-        component: () => import('../views/Recognition.vue')
       }
     ]
   },
@@ -82,14 +78,14 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
     // Verificar si el usuario está autenticado
     if (!authStore.isAuthenticated) {
-      // Redirigir al login si no está autenticado
-      next('/login')
+      // Redirigir al login admin si no está autenticado
+      next('/admin/login')
       return
     }
   }
   
   // Si la ruta es login o register y el usuario está autenticado
-  if ((to.name === 'Login' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') && authStore.isAuthenticated) {
+  if ((to.name === 'AdminLogin' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') && authStore.isAuthenticated) {
     // Redirigir al dashboard si ya está autenticado
     next('/app/dashboard')
     return

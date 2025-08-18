@@ -202,11 +202,11 @@ export default {
     }
 
     const goToRegister = () => {
-      router.push('/register')
+      router.push('/admin/register')
     }
 
     const goToForgotPassword = () => {
-      router.push('/forgot-password')
+      router.push('/admin/forgot-password')
     }
 
     return {
