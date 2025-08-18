@@ -99,10 +99,81 @@ export const authService = {
       console.error('Detalles del error:', {
         message: error.message,
         status: error.response?.status,
-        data: error.response?.data,
-        config: error.config
+        data: error.response?.data
       })
-      return { success: false, error: error.message, user: null }
+      return { success: false, error: 'Error obteniendo perfil del usuario' }
+    }
+  },
+
+  // ✅ MÉTODOS PARA RECUPERACIÓN DE CONTRASEÑA
+  async requestPasswordReset(email) {
+    try {
+      console.log('🔑 Auth Service - Solicitando recuperación de contraseña para:', email)
+      
+      const response = await api.post('/password-reset/request_reset/', { email })
+      
+      console.log('🎉 Auth Service - Respuesta de recuperación:', response.data)
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      console.error('💥 Auth Service - Error en recuperación de contraseña:', error)
+      
+      if (error.response?.data?.error) {
+        return { success: false, error: error.response.data.error }
+      }
+      
+      return { 
+        success: false, 
+        error: 'Ocurrió un error al solicitar la recuperación. Por favor intenta de nuevo.' 
+      }
+    }
+  },
+
+  async validateResetToken(token) {
+    try {
+      console.log('🔑 Auth Service - Validando token de recuperación:', token)
+      
+      const response = await api.get(`/password-reset/validate_token/?token=${token}`)
+      
+      console.log('🎉 Auth Service - Token válido:', response.data)
+      return { 
+        valid: true, 
+        user_email: response.data.user_email,
+        expires_at: response.data.expires_at
+      }
+    } catch (error) {
+      console.error('💥 Auth Service - Error validando token:', error)
+      
+      if (error.response?.data?.error) {
+        return { valid: false, error: error.response.data.error }
+      }
+      
+      return { valid: false, error: 'Token inválido o expirado' }
+    }
+  },
+
+  async confirmPasswordReset(token, newPassword) {
+    try {
+      console.log('🔑 Auth Service - Confirmando cambio de contraseña')
+      
+      const response = await api.post('/password-reset/confirm_reset/', {
+        token,
+        new_password: newPassword,
+        confirm_password: newPassword
+      })
+      
+      console.log('🎉 Auth Service - Contraseña cambiada exitosamente:', response.data)
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      console.error('💥 Auth Service - Error cambiando contraseña:', error)
+      
+      if (error.response?.data?.error) {
+        return { success: false, error: error.response.data.error }
+      }
+      
+      return { 
+        success: false, 
+        error: 'Ocurrió un error al cambiar la contraseña. Por favor intenta de nuevo.' 
+      }
     }
   },
 

@@ -7,16 +7,19 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import date, timedelta
-from .models import User, Employee, Area, Attendance, FaceProfile
+from .models import User, Employee, Area, Attendance, FaceProfile, PasswordResetToken
 from .serializers import (
     UserSerializer, EmployeeSerializer, AreaSerializer, AttendanceSerializer,
-    LoginSerializer, DashboardStatsSerializer, AttendanceReportSerializer
+    LoginSerializer, DashboardStatsSerializer, AttendanceReportSerializer,
+    PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 )
 from .services.face_service_singleton import face_service_singleton
+from .services.password_reset_service import PasswordResetService
 
 from rest_framework.views import APIView
 from django.contrib.auth import update_session_auth_hash
 import logging
+from django.conf import settings
 
 # Configurar logging para debugging
 logger = logging.getLogger(__name__)
@@ -984,3 +987,159 @@ class ChangePasswordView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class PasswordResetViewSet(viewsets.ViewSet):
+    """ViewSet para recuperación de contraseña del administrador"""
+    permission_classes = [permissions.AllowAny]
+    
+    @action(detail=False, methods=['post'])
+    def request_reset(self, request):
+        """Solicitar recuperación de contraseña"""
+        print(f"\n🔍 === DEBUG COMPLETO DE REQUEST_RESET ===")
+        print(f"🔍 Timestamp: {timezone.now()}")
+        print(f"🔍 Método: {request.method}")
+        print(f"🔍 URL: {request.path}")
+        print(f"🔍 Headers: {dict(request.headers)}")
+        print(f"🔍 Content-Type: {request.content_type}")
+        print(f"🔍 Datos recibidos: {request.data}")
+        print(f"🔍 Query params: {request.query_params}")
+        print(f"🔍 User: {request.user}")
+        
+        try:
+            print(f"\n🔍 PASO 1: Validando serializer...")
+            serializer = PasswordResetRequestSerializer(data=request.data)
+            print(f"🔍 Serializer creado: {serializer}")
+            
+            if serializer.is_valid():
+                print(f"🔍 ✅ Serializer válido")
+                email = serializer.validated_data['email']
+                print(f"🔍 Email validado: {email}")
+                
+                print(f"\n🔍 PASO 2: Buscando usuario...")
+                user = User.objects.get(email=email, role='admin', is_active=True)
+                print(f"🔍 ✅ Usuario encontrado: {user.username} (ID: {user.id})")
+                
+                print(f"\n🔍 PASO 3: Creando token...")
+                try:
+                    token = PasswordResetService.create_reset_token(user)
+                    print(f"🔍 ✅ Token creado: {token.token[:20]}... (ID: {token.id})")
+                except Exception as token_error:
+                    print(f"🔍 ❌ Error creando token: {token_error}")
+                    import traceback
+                    print(f"🔍 Traceback del token: {traceback.format_exc()}")
+                    raise token_error
+                
+                print(f"\n🔍 PASO 4: Enviando email...")
+                try:
+                    print(f"🔍 Llamando a PasswordResetService.send_reset_email...")
+                    result = PasswordResetService.send_reset_email(user, token)
+                    print(f"🔍 ✅ Email enviado exitosamente: {result}")
+                except Exception as email_error:
+                    print(f"🔍 ❌ Error enviando email: {email_error}")
+                    print(f"🔍 Tipo de error: {type(email_error)}")
+                    import traceback
+                    print(f"🔍 Traceback del email: {traceback.format_exc()}")
+                    
+                    # Eliminar token si falla el email
+                    print(f"🔍 Limpiando token fallido...")
+                    token.delete()
+                    print(f"🔍 ✅ Token eliminado")
+                    raise email_error
+                
+                print(f"\n🔍 PASO 5: Enviando respuesta exitosa...")
+                response_data = {
+                    'message': 'Se ha enviado un email con instrucciones para recuperar tu contraseña.',
+                    'email': email
+                }
+                print(f"🔍 Datos de respuesta: {response_data}")
+                
+                return Response(response_data, status=status.HTTP_200_OK)
+            
+            else:
+                print(f"🔍 ❌ Serializer inválido")
+                print(f"🔍 Errores: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except User.DoesNotExist:
+            print(f"🔍 ❌ Usuario no encontrado para email: {request.data.get('email', 'N/A')}")
+            return Response({
+                'error': 'No se encontró una cuenta de administrador activa con este email.'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"\n🔍 ❌ ERROR GENERAL EN REQUEST_RESET")
+            print(f"🔍 Tipo de error: {type(e)}")
+            print(f"🔍 Mensaje: {str(e)}")
+            print(f"🔍 Args: {e.args}")
+            
+            import traceback
+            print(f"🔍 TRACEBACK COMPLETO:")
+            traceback.print_exc()
+            
+            # Intentar usar logger si está disponible
+            try:
+                logger.error(f"Error en request_reset: {str(e)}")
+                print(f"🔍 ✅ Logger funcionando")
+            except Exception as log_error:
+                print(f"🔍 ❌ Error en logger: {log_error}")
+            
+            return Response({
+                'error': 'Ocurrió un error al procesar tu solicitud. Por favor intenta de nuevo.',
+                'debug_info': str(e) if settings.DEBUG else None
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def confirm_reset(self, request):
+        """Confirmar y cambiar la contraseña"""
+        try:
+            serializer = PasswordResetConfirmSerializer(data=request.data)
+            if serializer.is_valid():
+                token_string = serializer.validated_data['token']
+                new_password = serializer.validated_data['new_password']
+                
+                # Resetear contraseña
+                PasswordResetService.reset_password(token_string, new_password)
+                
+                return Response({
+                    'message': 'Tu contraseña ha sido cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.'
+                }, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except ValueError as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error en confirm_reset: {str(e)}")
+            return Response({
+                'error': 'Ocurrió un error al cambiar tu contraseña. Por favor intenta de nuevo.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def validate_token(self, request):
+        """Validar un token de recuperación"""
+        try:
+            token_string = request.query_params.get('token')
+            if not token_string:
+                return Response({
+                    'error': 'Token requerido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            token = PasswordResetService.validate_token(token_string)
+            if token:
+                return Response({
+                    'valid': True,
+                    'user_email': token.user.email,
+                    'expires_at': token.expires_at
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'valid': False,
+                    'error': 'Token inválido o expirado'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error validando token: {str(e)}")
+            return Response({
+                'error': 'Error validando token'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

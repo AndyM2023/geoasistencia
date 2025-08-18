@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     AuthViewSet, DashboardViewSet, EmployeeViewSet, 
-    AreaViewSet, AttendanceViewSet, ChangePasswordView
+    AreaViewSet, AttendanceViewSet, ChangePasswordView, PasswordResetViewSet
 )
 
 router = DefaultRouter()
@@ -11,6 +11,7 @@ router.register(r'dashboard', DashboardViewSet, basename='dashboard')
 router.register(r'employees', EmployeeViewSet, basename='employee')
 router.register(r'areas', AreaViewSet, basename='area')
 router.register(r'attendance', AttendanceViewSet, basename='attendance')
+router.register(r'password-reset', PasswordResetViewSet, basename='password-reset')
 
 urlpatterns = [
     path('', include(router.urls)),
