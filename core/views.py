@@ -14,6 +14,13 @@ from .serializers import (
 )
 from .services.face_service_singleton import face_service_singleton
 
+from rest_framework.views import APIView
+from django.contrib.auth import update_session_auth_hash
+import logging
+
+# Configurar logging para debugging
+logger = logging.getLogger(__name__)
+
 User = get_user_model()
 
 class AuthViewSet(viewsets.ViewSet):
@@ -886,3 +893,94 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# ============================================================================
+# VISTA PARA CAMBIO DE CONTRASEÑA
+# ============================================================================
+
+class ChangePasswordView(APIView):
+    """
+    Vista para cambiar la contraseña del usuario autenticado.
+    Requiere autenticación y valida la contraseña actual.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        try:
+            logger.info(f"🔐 Cambio de contraseña solicitado para usuario: {request.user.username}")
+            
+            # Obtener datos del request
+            current_password = request.data.get('current_password')
+            new_password = request.data.get('new_password')
+            
+            logger.info(f"🔍 Datos recibidos - current_password: {'***' if current_password else 'vacío'}, new_password: {'***' if new_password else 'vacío'}")
+            
+            # Validar que se proporcionen ambos campos
+            if not current_password or not new_password:
+                logger.warning("⚠️ Campos de contraseña faltantes")
+                return Response(
+                    {
+                        'error': 'Se requieren tanto la contraseña actual como la nueva',
+                        'detail': 'Ambos campos current_password y new_password son obligatorios'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar contraseña actual
+            if not request.user.check_password(current_password):
+                logger.warning(f"⚠️ Contraseña actual incorrecta para usuario: {request.user.username}")
+                return Response(
+                    {
+                        'current_password': ['La contraseña actual es incorrecta'],
+                        'detail': 'La contraseña actual proporcionada no coincide con la registrada'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar nueva contraseña (mínimo 8 caracteres)
+            if len(new_password) < 8:
+                logger.warning(f"⚠️ Nueva contraseña muy corta para usuario: {request.user.username}")
+                return Response(
+                    {
+                        'new_password': ['La contraseña debe tener al menos 8 caracteres'],
+                        'detail': 'La nueva contraseña no cumple con los requisitos mínimos de seguridad'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar que la nueva contraseña sea diferente a la actual
+            if current_password == new_password:
+                logger.warning(f"⚠️ Nueva contraseña igual a la actual para usuario: {request.user.username}")
+                return Response(
+                    {
+                        'new_password': ['La nueva contraseña debe ser diferente a la actual'],
+                        'detail': 'No puedes usar la misma contraseña'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Cambiar contraseña
+            logger.info(f"🔄 Cambiando contraseña para usuario: {request.user.username}")
+            request.user.set_password(new_password)
+            request.user.save()
+            
+            # Actualizar sesión para evitar logout automático
+            update_session_auth_hash(request, request.user)
+            
+            logger.info(f"✅ Contraseña cambiada exitosamente para usuario: {request.user.username}")
+            
+            return Response({
+                'message': 'Contraseña cambiada exitosamente',
+                'success': True,
+                'detail': 'Tu contraseña ha sido actualizada. La sesión se mantendrá activa.'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"❌ Error inesperado cambiando contraseña: {str(e)}")
+            return Response(
+                {
+                    'error': 'Error interno del servidor',
+                    'detail': 'Ocurrió un error inesperado al cambiar la contraseña'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

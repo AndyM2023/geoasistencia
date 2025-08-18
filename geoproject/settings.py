@@ -189,6 +189,17 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'INFO',
     },
+    'loggers': {
+        'core': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
 }
 
 # ✅ CONFIGURACIÓN DE AUTO-RELOAD PARA DESARROLLO
