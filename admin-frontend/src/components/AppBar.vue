@@ -157,8 +157,8 @@ export default {
 
     // Computed properties para determinar qué mostrar
     const isRecognitionPage = computed(() => route.path === '/')
-    const isLoginPage = computed(() => route.path === '/login')
-    const isRegisterPage = computed(() => route.path === '/register')
+    const isLoginPage = computed(() => route.path === '/admin/login')
+    const isRegisterPage = computed(() => route.path === '/admin/register')
     const isAppRoute = computed(() => route.path.startsWith('/app'))
     
     // Mostrar botón de menú solo en rutas /app/*
@@ -205,7 +205,7 @@ export default {
     }
 
     const goToLogin = () => {
-      router.push('/login')
+      router.push('/admin/login')
     }
 
     const goToRecognition = () => {

@@ -40,7 +40,7 @@
                 color="primary"
                 bg-color="dark-surface"
                 class="mb-4"
-                :rules="[rules.required, rules.minLength]"
+                :rules="[rules.password]"
                 hide-details="auto"
                 :disabled="loading"
               >
@@ -68,7 +68,7 @@
                 color="primary"
                 bg-color="dark-surface"
                 class="mb-6"
-                :rules="[rules.required, rules.confirmPassword]"
+                :rules="[rules.confirmPassword]"
                 hide-details="auto"
                 :disabled="loading"
               >
@@ -207,8 +207,24 @@ export default {
 
     const rules = {
       required: v => !!v || 'Este campo es requerido',
-      minLength: v => v.length >= 8 || 'La contraseña debe tener al menos 8 caracteres',
-      confirmPassword: v => v === form.newPassword || 'Las contraseñas no coinciden'
+      
+      // Contraseña: mínimo 8 caracteres, mayúsculas, minúsculas, números
+      password: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v.length < 8) return 'La contraseña debe tener al menos 8 caracteres'
+        if (!/(?=.*[a-z])/.test(v)) return 'La contraseña debe contener al menos una minúscula'
+        if (!/(?=.*[A-Z])/.test(v)) return 'La contraseña debe contener al menos una mayúscula'
+        if (!/(?=.*\d)/.test(v)) return 'La contraseña debe contener al menos un número'
+        if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(v)) return 'La contraseña debe contener al menos un carácter especial'
+        return true
+      },
+      
+      // Confirmar contraseña: debe coincidir
+      confirmPassword: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v !== form.newPassword) return 'Las contraseñas no coinciden'
+        return true
+      }
     }
 
     const validateToken = async () => {
@@ -246,9 +262,9 @@ export default {
         
         if (result.success) {
           success.value = result.message
-          // Redirigir al login después de 3 segundos
+          // Redirigir al login admin después de 3 segundos
           setTimeout(() => {
-            router.push('/login')
+            router.push('/admin/login')
           }, 3000)
         } else {
           error.value = result.error
@@ -270,11 +286,11 @@ export default {
     }
 
     const goToLogin = () => {
-      router.push('/login')
+      router.push('/admin/login')
     }
 
     const goToForgotPassword = () => {
-      router.push('/forgot-password')
+      router.push('/admin/forgot-password')
     }
 
     onMounted(() => {
