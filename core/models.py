@@ -118,7 +118,7 @@ class Employee(models.Model):
     """Empleado del sistema"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     employee_id = models.PositiveIntegerField(unique=True, blank=True, null=True, verbose_name='ID de Empleado')
-    cedula = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='Cédula de Identidad')
+
     POSITION_CHOICES = [
         ('desarrollador', 'Desarrollador'),
         ('disenador', 'Diseñador'),

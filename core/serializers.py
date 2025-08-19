@@ -100,19 +100,18 @@ class EmployeeSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True, required=False)
     last_name = serializers.CharField(write_only=True, required=False)
     email = serializers.EmailField(write_only=True, required=False)
-    cedula = serializers.CharField(write_only=True, required=False)
     
     # Campo para leer la cédula del usuario
     cedula_display = serializers.CharField(source='user.cedula', read_only=True)
     
     area_name = serializers.CharField(source='area.name', read_only=True)
-    full_name = serializers.ReadOnlyField()
-    email_display = serializers.ReadOnlyField(source='email')
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    email_display = serializers.CharField(source='user.email', read_only=True)
     
     class Meta:
         model = Employee
         fields = [
-            'id', 'user', 'user_id', 'employee_id', 'cedula', 'cedula_display', 'position', 'area', 'area_name',
+            'id', 'user', 'user_id', 'employee_id', 'cedula_display', 'position', 'area', 'area_name',
             'hire_date', 'photo', 'full_name', 'email_display', 'created_at', 'updated_at',
             'first_name', 'last_name', 'email'  # Campos para crear usuario
         ]
@@ -174,9 +173,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
             from django.utils import timezone
             validated_data['hire_date'] = timezone.now().date()
         
-        # CRÍTICO: Asignar la cédula al empleado
-        if cedula:
-            validated_data['cedula'] = cedula
+        # La cédula se asigna solo al usuario, no al empleado
+        # (El campo cedula ya no existe en el modelo Employee)
         
         # Crear empleado
         employee = Employee.objects.create(**validated_data)

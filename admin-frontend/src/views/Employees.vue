@@ -110,13 +110,14 @@
                 </v-avatar>
               </div>
               
-              <!-- Información del empleado -->
-              <v-card-text class="text-center pa-4">
-                <h3 class="text-h6 text-white mb-2">{{ employee.full_name }}</h3>
-                <p class="text-grey-400 mb-1">{{ positions.find(p => p.value === employee.position)?.title || employee.position }}</p>
-                <p class="text-grey-500 text-sm">{{ employee.area_name }}</p>
-                <p class="text-blue-400 text-sm font-weight-medium">{{ employee.email_display }}</p>
-              </v-card-text>
+                             <!-- Información del empleado -->
+               <v-card-text class="text-center pa-4">
+                 <h3 class="text-h6 text-white mb-2">{{ employee.full_name }}</h3>
+                 <p class="text-grey-400 mb-1">{{ positions.find(p => p.value === employee.position)?.title || employee.position }}</p>
+                 <p class="text-grey-500 text-sm">{{ employee.area_name }}</p>
+                 <p class="text-blue-400 text-sm font-weight-medium">{{ employee.email_display }}</p>
+                 <p class="text-grey-600 text-xs mt-2">Cédula: {{ employee.cedula_display || 'N/A' }}</p>
+               </v-card-text>
               
               <!-- Acciones -->
               <v-card-actions class="justify-center pa-4">
@@ -565,12 +566,12 @@ export default {
        const existingCedulas = computed(() => {
          if (!editingEmployee.value) {
            // Si es un nuevo empleado, todas las cédulas existentes están prohibidas
-           return employees.value.map(emp => emp.cedula_display || emp.cedula || emp.user.cedula).filter(cedula => cedula)
+           return employees.value.map(emp => emp.cedula_display || emp.user.cedula).filter(cedula => cedula)
          } else {
            // Si es edición, excluir la cédula del empleado actual
            return employees.value
              .filter(emp => emp.id !== editingEmployee.value.id)
-             .map(emp => emp.cedula_display || emp.cedula || emp.user.cedula)
+             .map(emp => emp.cedula_display || emp.user.cedula)
              .filter(cedula => cedula)
          }
        })
@@ -601,27 +602,29 @@ export default {
       { title: 'Otro', value: 'otro' }
     ]
     
-    const headers = [
-      { title: 'Nombre Completo', key: 'full_name', sortable: true },
-      { title: 'Email', key: 'email_display', sortable: true },
-      { title: 'Cargo', key: 'position', sortable: true },
-      { title: 'Área', key: 'area_name', sortable: true },
-      { title: 'Acciones', key: 'actions', sortable: false }
-    ]
+         const headers = [
+       { title: 'Nombre Completo', key: 'full_name', sortable: true },
+       { title: 'Cédula', key: 'cedula_display', sortable: true },
+       { title: 'Email', key: 'email_display', sortable: true },
+       { title: 'Cargo', key: 'position', sortable: true },
+       { title: 'Área', key: 'area_name', sortable: true },
+       { title: 'Acciones', key: 'actions', sortable: false }
+     ]
     
-    // Computed property para empleados filtrados por búsqueda
-    const filteredEmployees = computed(() => {
-      if (!search.value) return employees.value
-      
-      const searchTerm = search.value.toLowerCase()
-      return employees.value.filter(employee => 
-        employee.full_name?.toLowerCase().includes(searchTerm) ||
-        employee.email_display?.toLowerCase().includes(searchTerm) ||
-        // Buscar en el título del cargo (más legible para el usuario)
-        positions.find(p => p.value === employee.position)?.title?.toLowerCase().includes(searchTerm) ||
-        employee.area_name?.toLowerCase().includes(searchTerm)
-      )
-    })
+         // Computed property para empleados filtrados por búsqueda
+     const filteredEmployees = computed(() => {
+       if (!search.value) return employees.value
+       
+       const searchTerm = search.value.toLowerCase()
+       return employees.value.filter(employee => 
+         employee.full_name?.toLowerCase().includes(searchTerm) ||
+         employee.cedula_display?.toLowerCase().includes(searchTerm) ||
+         employee.email_display?.toLowerCase().includes(searchTerm) ||
+         // Buscar en el título del cargo (más legible para el usuario)
+         positions.find(p => p.value === employee.position)?.title?.toLowerCase().includes(searchTerm) ||
+         employee.area_name?.toLowerCase().includes(searchTerm)
+       )
+     })
     
          const loadEmployees = async () => {
        loading.value = true
@@ -714,17 +717,15 @@ export default {
          const editEmployee = (employee) => {
                 console.log('🔍 editEmployee - Empleado recibido:', JSON.stringify(employee, null, 2))
          console.log('🔍 editEmployee - User completo:', JSON.stringify(employee.user, null, 2))
-         console.log('🔍 editEmployee - Cédula del empleado:', employee.cedula)
          console.log('🔍 editEmployee - Cédula del user:', employee.user.cedula)
          console.log('🔍 editEmployee - Cédula display:', employee.cedula_display)
-         console.log('🔍 editEmployee - Tipo de cédula empleado:', typeof employee.cedula)
        
        editingEmployee.value = employee
                 employeeForm.value = {
            first_name: employee.user.first_name,
            last_name: employee.user.last_name,
            email: employee.user.email,
-           cedula: employee.cedula_display || employee.cedula || employee.user.cedula || '', // Usar cedula_display del backend
+           cedula: employee.cedula_display || '', // Usar cedula_display del backend
            position: employee.position || 'otro', // Usar valor por defecto si no hay cargo
            area: employee.area
          }
