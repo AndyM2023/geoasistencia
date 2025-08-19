@@ -678,7 +678,7 @@ export default {
     }
 
     const goToLogin = () => {
-      router.push('/login')
+      router.push('/admin/login')
     }
 
     const handleRegister = async () => {
@@ -756,7 +756,7 @@ export default {
               success.value = '¡Registro exitoso! Redirigiendo al login...'
               
               setTimeout(() => {
-                router.push('/login')
+                router.push('/admin/login')
               }, 1500)
             }
           } catch (loginError) {
@@ -764,7 +764,7 @@ export default {
             success.value = '¡Registro exitoso! Redirigiendo al login...'
             
             setTimeout(() => {
-              router.push('/login')
+              router.push('/admin/login')
             }, 1500)
           }
         } else {

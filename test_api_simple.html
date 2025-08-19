@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Employee Update API</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Test Employee Update API</h1>
+    <button onclick="testUpdate()">Test Update Employee 21</button>
+    <div id="result"></div>
+
+    <script>
+        async function testUpdate() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Primero obtener el empleado
+                console.log('🔍 Getting employee 21...');
+                const getResponse = await axios.get('http://localhost:8000/api/employees/21/');
+                console.log('✅ GET Response:', getResponse.data);
+                
+                // Datos de actualización
+                const updateData = {
+                    "first_name": "Test",
+                    "last_name": "User",
+                    "email": "test@example.com",
+                    "cedula": "1234567890",
+                    "position": "desarrollador",
+                    "area": 1,
+                    "photo": null
+                };
+                
+                console.log('📤 Update data:', updateData);
+                
+                // Intentar actualizar
+                const updateResponse = await axios.put('http://localhost:8000/api/employees/21/', updateData, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('✅ Update successful:', updateResponse.data);
+                resultDiv.innerHTML = '<p style="color: green;">✅ Update successful!</p>';
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                
+                let errorMessage = '❌ Error occurred';
+                if (error.response) {
+                    errorMessage += `<br>Status: ${error.response.status}`;
+                    errorMessage += `<br>Data: ${JSON.stringify(error.response.data, null, 2)}`;
+                } else if (error.request) {
+                    errorMessage += '<br>No response received';
+                } else {
+                    errorMessage += `<br>${error.message}`;
+                }
+                
+                resultDiv.innerHTML = `<p style="color: red;">${errorMessage}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
