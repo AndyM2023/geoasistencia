@@ -1,12 +1,21 @@
 <template>
   <v-app>
+    <!-- 🔐 INICIALIZADOR DE AUTENTICACIÓN GLOBAL -->
+    <AuthInitializer />
+    
+    <!-- 🚀 CONTENIDO PRINCIPAL -->
     <router-view />
   </v-app>
 </template>
 
 <script>
+import AuthInitializer from './components/AuthInitializer.vue'
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    AuthInitializer
+  }
 }
 </script>
 
