@@ -153,25 +153,15 @@ class FaceRecognitionService:
             
             # Crear ID único para el empleado
             employee_id = f"{employee.employee_id or employee.id}"
-            employee_name = f"{employee.user.first_name}{employee.user.last_name}".replace(" ", "")
             
-            # ✅ SANITIZAR NOMBRE PARA EVITAR CARACTERES ESPECIALES
-            import unicodedata
-            import re
-            
-            # Normalizar caracteres Unicode y remover acentos
-            employee_name_sanitized = unicodedata.normalize('NFD', employee_name)
-            employee_name_sanitized = ''.join(c for c in employee_name_sanitized if not unicodedata.combining(c))
-            
-            # Remover caracteres no alfanuméricos
-            employee_name_sanitized = re.sub(r'[^a-zA-Z0-9]', '', employee_name_sanitized)
-            
+            # ✅ NUEVA LÓGICA: SOLO USAR ID (más robusto)
+            # Ya no usamos el nombre del empleado para evitar problemas de sincronización
             print(f"🆔 ID del empleado: {employee_id}")
-            print(f"📝 Nombre del empleado: {employee_name}")
-            print(f"📝 Nombre sanitizado: {employee_name_sanitized}")
+            print(f"📝 Nombre del empleado: {employee.user.first_name} {employee.user.last_name}")
+            print(f"🎯 NUEVA ESTRATEGIA: Carpeta solo con ID para máxima robustez")
             
-            # Crear carpeta para el empleado (usar nombre sanitizado)
-            employee_folder = os.path.join(self.faces_dir, f"{employee_id}{employee_name_sanitized}")
+            # Crear carpeta para el empleado (SOLO ID - más robusto)
+            employee_folder = os.path.join(self.faces_dir, f"{employee_id}")
             
             # Si es actualización, limpiar carpeta anterior
             if is_update and os.path.exists(employee_folder):
@@ -384,8 +374,7 @@ class FaceRecognitionService:
                 
                 # ✅ OPTIMIZACIÓN 3: Comparar solo con embeddings del empleado (más rápido)
                 employee_id = str(employee.employee_id or employee.id)
-                employee_name = f"{employee.user.first_name}{employee.user.last_name}".replace(" ", "")
-                employee_folder = os.path.join(self.faces_dir, f"{employee_id}{employee_name}")
+                employee_folder = os.path.join(self.faces_dir, f"{employee_id}")
                 
                 if not os.path.exists(employee_folder):
                     return {
@@ -496,20 +485,9 @@ class FaceRecognitionService:
             
             # Verificar si existe carpeta física
             employee_id = str(employee.employee_id or employee.id)
-            employee_name = f"{employee.user.first_name}{employee.user.last_name}".replace(" ", "")
             
-            # ✅ SANITIZAR NOMBRE PARA EVITAR CARACTERES ESPECIALES
-            import unicodedata
-            import re
-            
-            # Normalizar caracteres Unicode y remover acentos
-            employee_name_sanitized = unicodedata.normalize('NFD', employee_name)
-            employee_name_sanitized = ''.join(c for c in employee_name_sanitized if not unicodedata.combining(c))
-            
-            # Remover caracteres no alfanuméricos
-            employee_name_sanitized = re.sub(r'[^a-zA-Z0-9]', '', employee_name_sanitized)
-            
-            employee_folder = os.path.join(self.faces_dir, f"{employee_id}{employee_name_sanitized}")
+            # ✅ NUEVA LÓGICA: SOLO USAR ID (más robusto)
+            employee_folder = os.path.join(self.faces_dir, f"{employee_id}")
             folder_exists = os.path.exists(employee_folder)
             
             # Verificar si está en el sistema facial
