@@ -43,6 +43,41 @@ api.interceptors.response.use(
   (error) => {
     console.error('❌ API Error:', error.config?.method?.toUpperCase(), error.config?.url, error.response?.status)
     
+    // Mostrar detalles del error para debugging
+    if (error.response) {
+      console.error('📊 Error Response Details:')
+      console.error('   - Status:', error.response.status)
+      console.error('   - Status Text:', error.response.statusText)
+      console.error('   - Headers:', error.response.headers)
+      console.error('   - Data:', error.response.data)
+      
+      // Si es un error 400, mostrar más detalles
+      if (error.response.status === 400) {
+        console.error('🔍 400 Bad Request Details:')
+        console.error('   - Request URL:', error.config?.url)
+        console.error('   - Request Method:', error.config?.method)
+        console.error('   - Request Data:', error.config?.data)
+        console.error('   - Request Headers:', error.config?.headers)
+        
+        // Intentar parsear el error como JSON
+        if (error.response.data) {
+          try {
+            const errorData = typeof error.response.data === 'string' ? JSON.parse(error.response.data) : error.response.data
+            console.error('   - Parsed Error Data:', errorData)
+            
+            // Si hay errores de validación específicos, mostrarlos
+            if (errorData && typeof errorData === 'object') {
+              Object.keys(errorData).forEach(key => {
+                console.error(`   - Field Error [${key}]:`, errorData[key])
+              })
+            }
+          } catch (e) {
+            console.error('   - Raw Error Data (could not parse):', error.response.data)
+          }
+        }
+      }
+    }
+    
     if (error.response?.status === 401) {
       // Token expirado, solo limpiar - dejar que Vue Router maneje la redirección
       localStorage.removeItem('token')

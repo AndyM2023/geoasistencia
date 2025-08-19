@@ -297,6 +297,25 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def update(self, request, *args, **kwargs):
+        """Override update method to add debugging"""
+        print(f"\n🔍 EmployeeViewSet.update() - Request data:")
+        print(f"   - Method: {request.method}")
+        print(f"   - URL: {request.path}")
+        print(f"   - Data keys: {list(request.data.keys())}")
+        print(f"   - Data: {request.data}")
+        print(f"   - Content-Type: {request.content_type}")
+        
+        try:
+            response = super().update(request, *args, **kwargs)
+            print(f"✅ Update successful: {response.status_code}")
+            return response
+        except Exception as e:
+            print(f"❌ Update failed with error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+    
     def get_queryset(self):
         # Por defecto, solo mostrar empleados activos
         queryset = Employee.objects.select_related('user', 'area').filter(user__is_active=True)
