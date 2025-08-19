@@ -472,57 +472,70 @@ class FaceRecognitionService:
     
     def get_employee_face_status(self, employee):
         """
-        Obtiene el estado del perfil facial de un empleado con verificación de sincronización
+        Obtiene el estado del perfil facial de un empleado de forma SIMPLE
+        ✅ VERIFICA: Base de datos + Archivos físicos básicos
         
         Args:
             employee: Instancia del modelo Employee
             
         Returns:
-            dict: Estado del perfil facial
+            dict: Estado simple del perfil facial
         """
         try:
             face_profile = employee.face_profile
             
             # Verificar si existe carpeta física
             employee_id = str(employee.employee_id or employee.id)
-            
-            # ✅ NUEVA LÓGICA: SOLO USAR ID (más robusto)
             employee_folder = os.path.join(self.faces_dir, f"{employee_id}")
             folder_exists = os.path.exists(employee_folder)
             
-            # Verificar si está en el sistema facial
-            system_has_person = False
-            if self.facial_system:
+            # ✅ VERIFICACIÓN SIMPLE: Solo contar archivos básicos
+            physical_photos_count = 0
+            physical_embeddings_count = 0
+            
+            if folder_exists:
                 try:
-                    result = self.facial_system.list_all_persons()
-                    if result.get('success'):
-                        for person in result.get('persons', []):
-                            if person.get('id') == employee_id:
-                                system_has_person = True
-                                break
-                except:
-                    pass
+                    files = os.listdir(employee_folder)
+                    
+                    # Contar fotos (.jpg) y embeddings (.npy) físicos
+                    for file in files:
+                        if file.endswith('.jpg'):
+                            physical_photos_count += 1
+                        elif file.endswith('.npy'):
+                            physical_embeddings_count += 1
+                            
+                except Exception as e:
+                    print(f"⚠️ Error contando archivos físicos: {e}")
+                    physical_photos_count = 0
+                    physical_embeddings_count = 0
+            
+            # ✅ LÓGICA SIMPLE: Solo verificar si hay archivos físicos
+            has_physical_files = physical_photos_count > 0 and physical_embeddings_count > 0
+            is_actually_trained = face_profile.is_trained and has_physical_files
             
             return {
                 'has_profile': True,
-                'is_trained': face_profile.is_trained,
+                'is_trained': is_actually_trained,  # Solo True si hay archivos físicos
                 'photos_count': face_profile.photos_count,
+                'physical_photos_count': physical_photos_count,  # Fotos reales en disco
+                'physical_embeddings_count': physical_embeddings_count,  # Embeddings reales en disco
                 'last_training': face_profile.last_training,
                 'confidence_threshold': face_profile.confidence_threshold,
                 'folder_exists': folder_exists,
-                'system_has_person': system_has_person,
-                'is_synchronized': folder_exists and system_has_person
+                'has_physical_files': has_physical_files
             }
+            
         except FaceProfile.DoesNotExist:
             return {
                 'has_profile': False,
                 'is_trained': False,
                 'photos_count': 0,
+                'physical_photos_count': 0,
+                'physical_embeddings_count': 0,
                 'last_training': None,
                 'confidence_threshold': 0.90,
                 'folder_exists': False,
-                'system_has_person': False,
-                'is_synchronized': True  # Si no existe en ningún lado, está sincronizado
+                'has_physical_files': False
             }
     
     def _extract_face_region(self, image):
@@ -760,3 +773,5 @@ class FaceRecognitionService:
         except Exception as e:
             print(f"Error guardando imagen: {e}")
         return False
+
+

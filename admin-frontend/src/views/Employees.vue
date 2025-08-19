@@ -234,29 +234,7 @@
                   
                 </v-col>
               
-              <v-col cols="12">
-                <v-alert
-                  type="info"
-                  variant="tonal"
-                  class="mb-4"
-                  icon="mdi-information"
-                >
-                  <template v-slot:title>
-                    <strong>🔐 Usuario y Contraseña Automáticos</strong>
-                  </template>
-                  <div class="text-body-2">
-                    <p class="mb-2">
-                      <strong>Usuario:</strong> Se generará automáticamente usando la primera letra del nombre + apellido completo
-                    </p>
-                    <p class="mb-2">
-                      <strong>Contraseña:</strong> Será la cédula ingresada
-                    </p>
-                    <p class="text-caption text-grey-600">
-                      <strong>Ejemplo:</strong> "Luis Roma" con cédula "12345678" → Usuario: <code>lroma</code>, Contraseña: <code>12345678</code>
-                    </p>
-                  </div>
-                </v-alert>
-              </v-col>
+
               
               <v-col cols="12" sm="6">
                 <v-select
@@ -288,15 +266,15 @@
               </v-col>
             </v-row>
 
-            <!-- Sección de Registro Facial -->
-            <v-row>
+            <!-- Sección de Registro Facial - SOLO para edición -->
+            <v-row v-if="editingEmployee">
               <v-col cols="12">
                 <v-divider class="mb-4"></v-divider>
                 <h3 class="text-white mb-4">🎯 Registro Facial</h3>
               </v-col>
             </v-row>
 
-            <v-row>
+            <v-row v-if="editingEmployee">
               <v-col cols="12">
                 <v-card class="bg-dark-surface border border-blue-500/20">
                   <v-card-title class="text-sm text-blue-400">📷 Registro Facial</v-card-title>
@@ -403,6 +381,8 @@
                       </div>
                     </div>
                     
+                    
+                    
                     <!-- Ayuda si faltan datos -->
                     <div v-if="!employeeForm.first_name || !employeeForm.last_name" class="mt-4">
                       <v-alert
@@ -415,6 +395,21 @@
                     </div>
                   </v-card-text>
                 </v-card>
+              </v-col>
+            </v-row>
+
+            <!-- Mensaje informativo para nuevos empleados -->
+            <v-row v-if="!editingEmployee">
+              <v-col cols="12">
+                <v-divider class="mb-4"></v-divider>
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="compact"
+                  class="text-center"
+                >
+                  💡 <strong>Registro Facial:</strong> Una vez creado el empleado, podrás registrar su rostro desde la lista de empleados
+                </v-alert>
               </v-col>
             </v-row>
           </v-form>
@@ -876,10 +871,9 @@ export default {
       // Mostrar mensaje de éxito
       showMessage('Registro facial completado exitosamente')
       
-      // Cerrar el diálogo principal después del registro facial
-      showDialog.value = false
-      dialogReady.value = false
-      editingEmployee.value = null
+      // ✅ NO cerrar automáticamente el diálogo principal
+      // Solo cerrar el registro facial, mantener el diálogo de empleado abierto
+      // para que el usuario pueda seguir editando si lo desea
       resetFaceRegistration()
     }
     
@@ -965,20 +959,24 @@ export default {
         // Llamar al servicio para verificar el estado
         const response = await faceService.getFaceStatus(employeeId)
         
-        if (response.has_profile && response.is_trained) {
-          // El empleado ya tiene rostro registrado
+        console.log('🔍 Respuesta del servicio facial:', response)
+        
+        // ✅ LÓGICA SIMPLE: Solo verificar si existe perfil completo
+        if (response.has_profile && response.is_trained && response.has_physical_files) {
+          // El empleado tiene rostro registrado Y archivos físicos existen
           faceRegistration.value = {
             isCapturing: false,
             isTraining: false,
             status: 'trained',
             statusText: 'Rostro ya registrado',
-            photosCount: response.photos_count || 0,
+            photosCount: response.physical_photos_count || response.photos_count || 0,
             confidence: 90,
             capturedPhotos: null
           }
-          console.log('✅ Empleado ya tiene rostro registrado:', response)
+          console.log('✅ Empleado tiene rostro registrado COMPLETO:', response)
+          
         } else {
-          // El empleado no tiene rostro registrado
+          // El empleado no tiene rostro registrado o está incompleto
           faceRegistration.value = {
             isCapturing: false,
             isTraining: false,
@@ -988,7 +986,7 @@ export default {
             confidence: 90,
             capturedPhotos: null
           }
-          console.log('❌ Empleado no tiene rostro registrado')
+          console.log('❌ Empleado no tiene rostro registrado completo')
         }
       } catch (error) {
         console.error('Error verificando estado facial:', error)
@@ -1076,6 +1074,31 @@ export default {
          form.value.validate();
        }
      }
+
+    // ✅ Función para abrir registro facial directamente desde la lista
+    const openFaceRegistration = (employee) => {
+      console.log('🎯 Abriendo registro facial para empleado:', employee)
+      
+      // Establecer el empleado como en edición para mostrar la sección facial
+      editingEmployee.value = employee
+      
+      // Preparar el formulario con los datos del empleado
+      employeeForm.value = {
+        first_name: employee.user.first_name,
+        last_name: employee.user.last_name,
+        email: employee.user.email,
+        cedula: employee.cedula_display || employee.cedula || employee.user.cedula || '',
+        position: employee.position || 'otro',
+        area: employee.area
+      }
+      
+      // Verificar estado facial del empleado
+      checkFaceRegistrationStatus(employee.id)
+      
+      // Abrir el diálogo
+      showDialog.value = true
+    }
+    
     
     onMounted(() => {
       loadEmployees()
@@ -1131,6 +1154,7 @@ export default {
       confirmDelete,
       activateEmployee,
       saveEmployee,
+      openFaceRegistration,
       // Funciones de registro facial
       faceRegistration,
       onPhotoCaptured,
@@ -1141,9 +1165,9 @@ export default {
       trainFaceModel,
       resetFaceRegistration,
       checkFaceRegistrationStatus,
-             // Funciones de validación
-       validateNameField,
-       validateCedula
+                    // Funciones de validación
+        validateNameField,
+        validateCedula
     }
   }
 }

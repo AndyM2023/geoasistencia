@@ -67,5 +67,7 @@ export const faceService = {
             console.error('Error en la verificación facial:', error);
             throw error;
         }
-    }
+    },
+
+
 };
