@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
 from .models import User, Employee, Area, Attendance
 from .models import PasswordResetToken
+import os
 
 User = get_user_model()
 
@@ -105,6 +106,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
     # Campo para la foto del empleado
     photo = serializers.ImageField(required=False, allow_null=True)
     
+    # Campo para indicar que se debe eliminar la foto
+    delete_photo = serializers.BooleanField(required=False, write_only=True)
+    
     # Validación personalizada para position
     def validate_position(self, value):
         """Validar que el position sea una opción válida"""
@@ -142,7 +146,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'user_id', 'employee_id', 'cedula', 'cedula_display', 'position', 'area', 'area_name',
             'hire_date', 'photo', 'photo_url', 'full_name', 'email_display', 'created_at', 'updated_at',
-            'first_name', 'last_name', 'email'  # Campos para crear usuario
+            'first_name', 'last_name', 'email', 'delete_photo'  # Campos para crear usuario
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name', 'cedula_display']
     
@@ -295,10 +299,23 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 instance.photo = photo
             elif delete_photo:
                 print(f"   - Eliminando foto del empleado")
-                # Eliminar la foto existente
+                # Eliminar la foto existente del sistema de archivos
                 if instance.photo:
-                    instance.photo.delete(save=False)  # No guardar aún
-                instance.photo = None
+                    try:
+                        # Eliminar el archivo físico del sistema
+                        if os.path.exists(instance.photo.path):
+                            os.remove(instance.photo.path)
+                            print(f"   - Archivo físico eliminado: {instance.photo.path}")
+                        # Limpiar el campo del modelo
+                        instance.photo = None
+                        print(f"   - Campo photo establecido a None")
+                    except Exception as e:
+                        print(f"   - Error eliminando archivo físico: {e}")
+                        # Aún así, limpiar el campo del modelo
+                        instance.photo = None
+                else:
+                    print(f"   - No había foto para eliminar")
+                    instance.photo = None
             
             instance.save()
             print(f"✅ Empleado actualizado: {instance.id}")

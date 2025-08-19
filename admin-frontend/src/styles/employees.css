@@ -1,5 +1,41 @@
 /* ===== ESTILOS ESPECÍFICOS PARA LA PÁGINA DE EMPLEADOS ===== */
 
+/* ===== ESTILOS PARA FOTOS DE EMPLEADOS ===== */
+.employee-photo-preview {
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.photo-delete-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-delete 2s infinite;
+}
+
+@keyframes pulse-delete {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.position-relative {
+  position: relative;
+}
+
 /* ===== HEADER DE EMPLEADOS ===== */
 .employee-header {
   margin-top: 0.5rem !important;
