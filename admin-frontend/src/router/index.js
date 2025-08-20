@@ -8,6 +8,10 @@ const routes = [
     component: () => import('../views/Recognition.vue')
   },
   {
+    path: '/recognition',
+    redirect: '/'
+  },
+  {
     path: '/admin/login',
     name: 'AdminLogin',
     component: () => import('../views/Login.vue')
@@ -16,6 +20,16 @@ const routes = [
     path: '/admin/forgot-password',
     name: 'ForgotPassword',
     component: () => import('../views/ForgotPassword.vue')
+  },
+  {
+    path: '/employee/forgot-password',
+    name: 'EmployeeForgotPassword',
+    component: () => import('../views/EmployeeForgotPassword.vue')
+  },
+  {
+    path: '/employee/reset-password',
+    name: 'EmployeeResetPassword',
+    component: () => import('../views/EmployeeResetPassword.vue')
   },
   {
     path: '/reset-password',

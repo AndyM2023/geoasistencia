@@ -427,3 +427,18 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             return value
         except PasswordResetToken.DoesNotExist:
             raise serializers.ValidationError("Token inválido.")
+
+
+class EmployeePasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer para solicitar recuperación de contraseña de empleados"""
+    email = serializers.EmailField()
+    
+    def validate_email(self, value):
+        """Validar que el email existe y pertenece a un empleado"""
+        try:
+            user = User.objects.get(email=value, role='employee', is_active=True)
+            return value
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                "No se encontró una cuenta de empleado activa con este email."
+            )

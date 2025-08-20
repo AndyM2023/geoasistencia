@@ -12,7 +12,7 @@
       <v-col cols="12" class="d-flex align-center justify-center">
         <v-card class="recognition-card" elevation="0">
           <v-card-text class="pa-8 pa-4 pa-md-8">
-            <h2 class="text-h6 text-h5-md font-weight-bold text-white mb-6 text-center">Reconocimiento Facial</h2>
+            <h2 class="text-h6 text-h5-md font-weight-bold text-white mb-1 text-center">Reconocimiento Facial</h2>
             
             <v-row>
               <!-- Columna izquierda: Cámara -->
@@ -111,6 +111,20 @@
                       </v-btn>
                     </template>
                   </v-text-field>
+
+                  <!-- Enlace para recuperar contraseña -->
+                  <div class="text-center mb-4">
+                    <v-btn
+                      variant="text"
+                      color="primary"
+                      size="small"
+                      class="forgot-password-link"
+                      @click="goToForgotPassword"
+                    >
+                      <v-icon left size="16" class="mr-1">mdi-help-circle</v-icon>
+                      ¿Olvidaste la contraseña?
+                    </v-btn>
+                  </div>
 
                   <v-btn
                     type="submit"
@@ -657,6 +671,11 @@ export default {
       stopCamera()
     })
 
+    // Función para ir a recuperar contraseña
+    const goToForgotPassword = () => {
+      router.push('/employee/forgot-password')
+    }
+
     return {
       // Variables del formulario
       form,
@@ -684,7 +703,10 @@ export default {
       capturePhotoFromCamera,
       getEmployeeCredentials,
       verifyFaceAndMarkAttendance,
-      getCurrentLocation
+      getCurrentLocation,
+      
+      // Función para recuperar contraseña
+      goToForgotPassword
     }
   }
 }
@@ -813,7 +835,7 @@ export default {
   border-radius: 16px;
   max-width: 700px;
   width: 100%;
-  margin-top: 60px;
+  margin-top: 10px;
   transition: all 0.3s ease;
 }
 
@@ -821,35 +843,35 @@ export default {
 @media (max-width: 1200px) {
   .recognition-card {
     max-width: 600px;
-    margin-top: 50px;
+    margin-top: 25px;
   }
 }
 
 @media (max-width: 1000px) {
   .recognition-card {
     max-width: 550px;
-    margin-top: 45px;
+    margin-top: 20px;
   }
 }
 
 @media (max-width: 900px) {
   .recognition-card {
     max-width: 500px;
-    margin-top: 40px;
+    margin-top: 15px;
   }
 }
 
 @media (max-width: 800px) {
   .recognition-card {
     max-width: 450px;
-    margin-top: 35px;
+    margin-top: 10px;
   }
 }
 
 @media (max-width: 768px) {
   .recognition-card {
     max-width: 95%;
-    margin-top: 40px;
+    margin-top: 15px;
     margin-left: 2.5%;
     margin-right: 2.5%;
   }
@@ -858,7 +880,7 @@ export default {
 @media (max-width: 600px) {
   .recognition-card {
     max-width: 98%;
-    margin-top: 20px;
+    margin-top: 10px;
     margin-left: 1%;
     margin-right: 1%;
   }
@@ -1245,6 +1267,25 @@ export default {
   
   .text-caption-md {
     font-size: 0.65rem !important;
+  }
+}
+
+/* Estilos para el enlace de recuperar contraseña */
+.forgot-password-link {
+  font-size: 0.875rem !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+}
+
+.forgot-password-link:hover {
+  color: #00d4ff !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Responsive para el enlace de recuperar contraseña */
+@media (max-width: 600px) {
+  .forgot-password-link {
+    font-size: 0.8rem !important;
   }
 }
 </style>
