@@ -8,6 +8,10 @@ const routes = [
     component: () => import('../views/Recognition.vue')
   },
   {
+    path: '/recognition',
+    redirect: '/'
+  },
+  {
     path: '/admin/login',
     name: 'AdminLogin',
     component: () => import('../views/Login.vue')
@@ -16,6 +20,16 @@ const routes = [
     path: '/admin/forgot-password',
     name: 'ForgotPassword',
     component: () => import('../views/ForgotPassword.vue')
+  },
+  {
+    path: '/employee/forgot-password',
+    name: 'EmployeeForgotPassword',
+    component: () => import('../views/EmployeeForgotPassword.vue')
+  },
+  {
+    path: '/employee/reset-password',
+    name: 'EmployeeResetPassword',
+    component: () => import('../views/EmployeeResetPassword.vue')
   },
   {
     path: '/reset-password',
@@ -71,27 +85,47 @@ const router = createRouter({
 })
 
 // Guardia de navegación para verificar autenticación
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+  
+  // 🔄 ESPERAR A QUE SE INICIALICE LA AUTENTICACIÓN
+  if (!authStore.isInitialized) {
+    console.log('🔄 Router - Esperando inicialización de autenticación...')
+    try {
+      await authStore.initAuth()
+      console.log('✅ Router - Autenticación inicializada')
+    } catch (error) {
+      console.error('❌ Router - Error inicializando autenticación:', error)
+    }
+  }
   
   // Si la ruta requiere autenticación
   if (to.meta.requiresAuth) {
+    console.log('🔒 Router - Ruta protegida, verificando autenticación...')
+    console.log(`   - Usuario autenticado: ${authStore.isAuthenticated}`)
+    console.log(`   - Usuario: ${authStore.user ? authStore.user.username : 'No hay usuario'}`)
+    
     // Verificar si el usuario está autenticado
     if (!authStore.isAuthenticated) {
+      console.log('❌ Router - Usuario no autenticado, redirigiendo a login')
       // Redirigir al login admin si no está autenticado
       next('/admin/login')
       return
+    } else {
+      console.log('✅ Router - Usuario autenticado, permitiendo acceso')
     }
   }
   
   // Si la ruta es login o register y el usuario está autenticado
   if ((to.name === 'AdminLogin' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') && authStore.isAuthenticated) {
+    console.log('🔄 Router - Usuario ya autenticado, redirigiendo a dashboard')
     // Redirigir al dashboard si ya está autenticado
     next('/app/dashboard')
     return
   }
   
   // Continuar con la navegación
+  console.log('✅ Router - Navegación permitida')
   next()
 })
 

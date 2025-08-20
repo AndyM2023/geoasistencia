@@ -1,6 +1,6 @@
 <template>
   <AppBar />
-  <v-container fluid class="forgot-password-container pa-0">
+  <v-container fluid class="employee-forgot-password-container pa-0">
     <v-row no-gutters class="h-100">
       <!-- Panel izquierdo con gradiente azul oscuro -->
       <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
@@ -8,7 +8,7 @@
           <h1 class="logo-text text-h3 font-weight-bold text-white">
             GEOASISTENCIA
             <br>
-            ADMIN
+            EMPLEADOS
           </h1>
           <div class="logo-glow"></div>
         </div>
@@ -16,22 +16,22 @@
 
       <!-- Panel derecho con formulario -->
       <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
-        <v-card class="forgot-password-card" elevation="0">
+        <v-card class="employee-forgot-password-card" elevation="0">
           <v-card-text class="pa-8">
             <div class="text-center mb-6">
-              <v-icon size="64" color="primary" class="mb-4">mdi-lock-reset</v-icon>
+              <v-icon size="64" color="primary" class="mb-4">mdi-account-lock</v-icon>
               <h2 class="text-h4 font-weight-bold text-white mb-2">Recuperar Contraseña</h2>
               <p class="text-body-1 text-grey-lighten-1">
-                Ingresa tu email de administrador y te enviaremos instrucciones para recuperar tu contraseña.
+                Ingresa tu email de empleado y te enviaremos instrucciones para recuperar tu contraseña.
               </p>
             </div>
 
-            <v-form ref="formRef" @submit.prevent="handleSubmit" class="forgot-password-form">
+            <v-form ref="formRef" @submit.prevent="handleSubmit" class="employee-forgot-password-form">
               <v-text-field
                 v-model="form.email"
                 label="EMAIL"
                 type="email"
-                placeholder="Ingresa tu email de administrador"
+                placeholder="Ingresa tu email de empleado"
                 variant="outlined"
                 color="primary"
                 bg-color="dark-surface"
@@ -64,10 +64,10 @@
                   variant="text"
                   color="primary"
                   class="text-none"
-                  @click="goToLogin"
+                  @click="goToRecognition"
                   :disabled="loading"
                 >
-                  ← Volver al Login
+                  ← Volver al Reconocimiento Facial
                 </v-btn>
               </div>
             </v-form>
@@ -103,10 +103,10 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppBar from '../components/AppBar.vue'
-import { authService } from '../services/authService'
+import { employeeAuthService } from '../services/employeeAuthService'
 
 export default {
-  name: 'ForgotPassword',
+  name: 'EmployeeForgotPassword',
   components: {
     AppBar
   },
@@ -133,7 +133,21 @@ export default {
       success.value = ''
 
       try {
-        const result = await authService.requestPasswordReset(form.email)
+        // Primero verificar que el email pertenezca a un empleado
+        const verifyResult = await employeeAuthService.verifyEmployeeEmail(form.email)
+        
+        if (!verifyResult.success) {
+          error.value = verifyResult.error
+          return
+        }
+        
+        if (!verifyResult.isEmployee) {
+          error.value = 'Este email no está registrado como empleado en el sistema.'
+          return
+        }
+
+        // Solicitar recuperación de contraseña
+        const result = await employeeAuthService.requestPasswordReset(form.email)
         
         if (result.success) {
           success.value = result.message
@@ -147,14 +161,14 @@ export default {
         }
       } catch (err) {
         error.value = 'Ocurrió un error. Por favor intenta de nuevo.'
-        console.error('Error en forgot password:', err)
+        console.error('Error en employee forgot password:', err)
       } finally {
         loading.value = false
       }
     }
 
-    const goToLogin = () => {
-      router.push('/admin/login')
+    const goToRecognition = () => {
+      router.push('/')
     }
 
     return {
@@ -165,23 +179,23 @@ export default {
       rules,
       formRef,
       handleSubmit,
-      goToLogin
+      goToRecognition
     }
   },
 
   // Hooks de lifecycle para controlar el scroll
   onMounted() {
-    document.body.classList.add('forgot-password-page')
+    document.body.classList.add('employee-forgot-password-page')
   },
 
   onUnmounted() {
-    document.body.classList.remove('forgot-password-page')
+    document.body.classList.remove('employee-forgot-password-page')
   }
 }
 </script>
 
 <style scoped>
-.forgot-password-container {
+.employee-forgot-password-container {
   min-height: calc(100vh - 64px);
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
   margin: 0 !important;
@@ -204,15 +218,14 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 30% 70%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
-  pointer-events: none;
+  background: linear-gradient(45deg, rgba(59, 130, 246, 0.1) 0%, rgba(0, 212, 255, 0.1) 100%);
+  z-index: 1;
 }
 
 .logo-text {
   position: relative;
   z-index: 2;
-  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-  letter-spacing: 2px;
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
 .logo-glow {
@@ -222,38 +235,34 @@ export default {
   transform: translate(-50%, -50%);
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
   border-radius: 50%;
+  z-index: 1;
   animation: pulse 3s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.6;
+  }
 }
 
 .right-panel {
-  background: #16213e;
-  position: relative;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  padding: 2rem;
 }
 
-.right-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.forgot-password-card {
+.employee-forgot-password-card {
   background: rgba(30, 41, 59, 0.8) !important;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 16px;
-  max-width: 450px;
+  max-width: 500px;
   width: 100%;
 }
 
@@ -284,51 +293,36 @@ export default {
   background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
-/* Eliminar bordes y márgenes globales */
-:deep(.v-container) {
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-}
-
-:deep(.v-row) {
-  margin: 0 !important;
-  border: none !important;
-}
-
-:deep(.v-col) {
-  padding: 0 !important;
-  border: none !important;
-}
-
 /* Responsive */
 @media (max-width: 960px) {
   .left-panel {
-    min-height: 200px;
+    display: none;
+  }
+  
+  .right-panel {
+    padding: 1rem;
+  }
+  
+  .employee-forgot-password-card {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .employee-forgot-password-container {
+    margin-top: 56px !important;
+  }
+  
+  .right-panel {
+    padding: 0.5rem;
+  }
+  
+  .employee-forgot-password-card .v-card-text {
+    padding: 1.5rem !important;
   }
   
   .logo-text {
     font-size: 1.5rem !important;
   }
-  
-  .forgot-password-card {
-    margin: 1rem;
-  }
-}
-
-/* Asegurar que el AppBar sea visible */
-:deep(.v-app-bar) {
-  z-index: 1000 !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-}
-
-/* Ajustar el contenedor principal para el AppBar */
-.forgot-password-container {
-  position: relative;
-  z-index: 1;
 }
 </style>
-

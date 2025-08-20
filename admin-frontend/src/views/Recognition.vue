@@ -1,5 +1,62 @@
 <template>
   <AppBar />
+  
+  <!-- Sistema de notificaciones flotantes -->
+  <div class="notifications-overlay">
+    <!-- Notificación de error -->
+    <transition name="slide-down">
+      <v-alert
+        v-if="error"
+        type="error"
+        variant="tonal"
+        class="floating-notification error-notification"
+        closable
+        @click:close="error = ''"
+        max-width="400"
+      >
+        <template v-slot:prepend>
+          <v-icon>mdi-alert-circle</v-icon>
+        </template>
+        {{ error }}
+      </v-alert>
+    </transition>
+
+    <!-- Notificación de éxito -->
+    <transition name="slide-down">
+      <v-alert
+        v-if="success"
+        type="success"
+        variant="tonal"
+        class="floating-notification success-notification"
+        max-width="400"
+      >
+        <template v-slot:prepend>
+          <v-icon>mdi-check-circle</v-icon>
+        </template>
+        {{ success }}
+      </v-alert>
+    </transition>
+
+    <!-- Notificación de ubicación -->
+    <transition name="slide-down">
+      <v-alert
+        v-if="locationStatus"
+        type="info"
+        variant="tonal"
+        class="floating-notification location-notification"
+        max-width="400"
+        :icon="gettingLocation ? 'mdi-loading mdi-spin' : 'mdi-map-marker'"
+      >
+        <div class="d-flex align-center">
+          <span v-if="gettingLocation" class="mr-2">
+            <v-progress-circular indeterminate size="16" color="info"></v-progress-circular>
+          </span>
+          {{ locationStatus }}
+        </div>
+      </v-alert>
+    </transition>
+  </div>
+  
   <v-container fluid class="recognition-container pa-0">
     <!-- Imagen del lado izquierdo - Responsive -->
     <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image d-none d-md-block">
@@ -12,7 +69,7 @@
       <v-col cols="12" class="d-flex align-center justify-center">
         <v-card class="recognition-card" elevation="0">
           <v-card-text class="pa-8 pa-4 pa-md-8">
-            <h2 class="text-h6 text-h5-md font-weight-bold text-white mb-6 text-center">Reconocimiento Facial</h2>
+            <h2 class="text-h6 text-h5-md font-weight-bold text-white mb-1 text-center">Reconocimiento Facial</h2>
             
             <v-row>
               <!-- Columna izquierda: Cámara -->
@@ -29,6 +86,22 @@
                     <v-icon size="64" color="grey-lighten-1">mdi-camera</v-icon>
                     <p class="text-body-2 text-grey-lighten-1 mt-2">Activa la cámara para capturar tu rostro</p>
                     
+                    <!-- Mensaje de error si existe -->
+                    <div v-if="error" class="camera-error-message mt-3">
+                      <v-alert
+                        type="error"
+                        variant="tonal"
+                        density="compact"
+                        class="text-center"
+                        max-width="300"
+                      >
+                        <template v-slot:prepend>
+                          <v-icon>mdi-alert-circle</v-icon>
+                        </template>
+                        {{ error }}
+                      </v-alert>
+                    </div>
+                    
                     <!-- Botón para activar cámara -->
                     <v-btn
                       @click="startCamera"
@@ -41,19 +114,47 @@
                       <v-icon left class="mr-2">mdi-camera</v-icon>
                        Activar Cámara
                     </v-btn>
+                    
+                    <!-- Botón de reinicio si hay error -->
+                    <v-btn
+                      v-if="error"
+                      @click="resetCamera"
+                      color="secondary"
+                      size="small"
+                      variant="outlined"
+                      class="mt-2"
+                      :loading="loading"
+                    >
+                      <v-icon left size="16" class="mr-1">mdi-refresh</v-icon>
+                      Reintentar
+                    </v-btn>
                   </div>
                   
                   <!-- Estado activo: Overlay de la cámara -->
                   <div v-else class="camera-overlay">
-                    <v-btn
-                      icon
-                      color="red"
-                      size="small"
-                      class="close-camera-btn"
-                      @click.stop="stopCamera"
-                    >
-                      <v-icon>mdi-close</v-icon>
-                    </v-btn>
+                    <div class="camera-controls">
+                      <v-btn
+                        icon
+                        color="red"
+                        size="small"
+                        class="close-camera-btn"
+                        @click.stop="stopCamera"
+                        title="Cerrar cámara"
+                      >
+                        <v-icon>mdi-close</v-icon>
+                      </v-btn>
+                      
+                      <v-btn
+                        icon
+                        color="blue"
+                        size="small"
+                        class="reset-camera-btn"
+                        @click.stop="resetCamera"
+                        title="Reiniciar cámara"
+                      >
+                        <v-icon>mdi-refresh</v-icon>
+                      </v-btn>
+                    </div>
                   </div>
                 </div>
               </v-col>
@@ -75,6 +176,8 @@
                     hide-details="auto"
                     density="compact"
                     density-md="default"
+                    @input="resetInactivityTimer"
+                    @focus="resetInactivityTimer"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-account</v-icon>
@@ -94,6 +197,8 @@
                     hide-details="auto"
                     density="compact"
                     density-md="default"
+                    @input="resetInactivityTimer"
+                    @focus="resetInactivityTimer"
                   >
                     <template v-slot:prepend-inner>
                       <v-icon color="primary">mdi-lock</v-icon>
@@ -112,6 +217,20 @@
                     </template>
                   </v-text-field>
 
+                  <!-- Enlace para recuperar contraseña -->
+                  <div class="text-center mb-4">
+                    <v-btn
+                      variant="text"
+                      color="primary"
+                      size="small"
+                      class="forgot-password-link"
+                      @click="goToForgotPassword"
+                    >
+                      <v-icon left size="16" class="mr-1">mdi-help-circle</v-icon>
+                      ¿Olvidaste la contraseña?
+                    </v-btn>
+                  </div>
+
                   <v-btn
                     type="submit"
                     color="primary"
@@ -128,42 +247,7 @@
                   </v-btn>
                 </v-form>
 
-                <!-- Mensajes de estado -->
-                <v-alert
-                  v-if="error"
-                  type="error"
-                  variant="tonal"
-                  class="mb-4"
-                  closable
-                  @click:close="error = ''"
-                >
-                  {{ error }}
-                </v-alert>
-
-                <v-alert
-                  v-if="success"
-                  type="success"
-                  variant="tonal"
-                  class="mb-4"
-                >
-                  {{ success }}
-                </v-alert>
-
-                <!-- Estado de ubicación -->
-                <v-alert
-                  v-if="locationStatus"
-                  type="info"
-                  variant="tonal"
-                  class="mb-4"
-                  :icon="gettingLocation ? 'mdi-loading mdi-spin' : 'mdi-map-marker'"
-                >
-                  <div class="d-flex align-center">
-                    <span v-if="gettingLocation" class="mr-2">
-                      <v-progress-circular indeterminate size="16" color="info"></v-progress-circular>
-                    </span>
-                    {{ locationStatus }}
-                  </div>
-                </v-alert>
+                <!-- Los mensajes ahora se muestran como overlays flotantes -->
 
                 <!-- Instrucciones -->
                 <v-card
@@ -222,19 +306,61 @@ export default {
     const locationStatus = ref('') // Estado de la ubicación
     const gettingLocation = ref(false) // Estado de obtención de ubicación
     
+    // Variables para controlar el estado de validación de los campos
+    const fieldsInSuccessMode = ref(false) // Indica si los campos están en modo éxito
+    const inactivityTimer = ref(null) // Timer para volver al estado normal
+    
     // Variables de la cámara
     const isCameraActive = ref(false)
     const videoElement = ref(null)
     const stream = ref(null)
 
-    // Reglas de validación
+    // Reglas de validación dinámicas
     const rules = {
-      required: v => !!v || 'Este campo es requerido'
+      required: v => {
+        // Si estamos en modo éxito, no mostrar validación roja
+        if (fieldsInSuccessMode.value) {
+          return true
+        }
+        return !!v || 'Este campo es requerido'
+      }
     }
 
     // Función para alternar visibilidad de contraseña
     const togglePassword = () => {
       showPassword.value = !showPassword.value
+    }
+
+    // Función para activar modo éxito en los campos
+    const activateSuccessMode = () => {
+      fieldsInSuccessMode.value = true
+      console.log('✅ Campos activados en modo éxito (sin validación roja)')
+      
+      // Limpiar timer anterior si existe
+      if (inactivityTimer.value) {
+        clearTimeout(inactivityTimer.value)
+      }
+      
+      // Configurar timer de 5 segundos para volver al estado normal
+      inactivityTimer.value = setTimeout(() => {
+        fieldsInSuccessMode.value = false
+        console.log('🔄 Campos regresaron al estado normal después de 5 segundos de inactividad')
+      }, 5000)
+    }
+
+    // Función para resetear el timer de inactividad
+    const resetInactivityTimer = () => {
+      if (inactivityTimer.value) {
+        clearTimeout(inactivityTimer.value)
+      }
+      
+      // Solo resetear si estamos en modo éxito
+      if (fieldsInSuccessMode.value) {
+        inactivityTimer.value = setTimeout(() => {
+          fieldsInSuccessMode.value = false
+          console.log('🔄 Campos regresaron al estado normal después de 5 segundos de inactividad')
+        }, 5000)
+      }
     }
 
     // Función principal de reconocimiento
@@ -286,6 +412,12 @@ export default {
           location = await getCurrentLocation()
           console.log('✅ Ubicación obtenida:', location)
           gettingLocation.value = false
+          
+          // Auto-ocultar notificación de ubicación después de 6 segundos
+          setTimeout(() => {
+            locationStatus.value = ''
+          }, 6000)
+          
         } catch (locationError) {
           console.error('❌ Error obteniendo ubicación:', locationError)
           gettingLocation.value = false
@@ -339,6 +471,9 @@ export default {
             success.value = `¡Asistencia registrada exitosamente! Rostro verificado con ${Math.round(result.confidence * 100)}% de confianza`
           }
           
+          // Activar modo éxito en los campos (sin validación roja)
+          activateSuccessMode()
+          
           // Limpiar formulario
           form.username = ''
           form.password = ''
@@ -346,17 +481,20 @@ export default {
           // Detener cámara
           await stopCamera()
           
+          // Auto-ocultar notificación de éxito después de 8 segundos
           setTimeout(() => {
             success.value = ''
-          }, 5000)
+          }, 8000)
         } else {
           // Manejar errores del backend con mensajes personalizados
           if (result.action_type === 'completo') {
             // Caso especial: ya tiene entrada y salida (no es realmente un error)
             success.value = `ℹ️ ${result.message}`
+            // Activar modo éxito en los campos para este caso también
+            activateSuccessMode()
             setTimeout(() => {
               success.value = ''
-            }, 5000)
+            }, 8000)
           } else {
             // Otros errores reales
             error.value = result.message || 'Error en el reconocimiento facial'
@@ -375,9 +513,11 @@ export default {
           if (backendResponse.action_type === 'completo') {
             // Caso especial: ya tiene entrada y salida (no es realmente un error)
             success.value = `ℹ️ ${backendResponse.message}`
+            // Activar modo éxito en los campos para este caso también
+            activateSuccessMode()
             setTimeout(() => {
               success.value = ''
-            }, 5000)
+            }, 8000)
           } else if (backendResponse.error_type === 'location_out_of_range') {
             // Error de ubicación fuera del área
             error.value = `📍 ${backendResponse.message}`
@@ -431,6 +571,13 @@ export default {
         
         console.log('📹 Elemento de video encontrado:', videoElement.value)
         
+        // IMPORTANTE: Hacer visible el video ANTES de acceder a la cámara
+        // Esto evita el error "Starting videoinput failed"
+        videoElement.value.style.display = 'block'
+        
+        // Pequeña pausa para asegurar que el DOM se actualice
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
         // Obtener acceso a la cámara
         stream.value = await navigator.mediaDevices.getUserMedia({ 
           video: { 
@@ -448,7 +595,7 @@ export default {
         // Esperar a que el video esté listo
         await new Promise((resolve) => {
           videoElement.value.onloadedmetadata = () => {
-            console.log('�� Video metadata cargado')
+            console.log('📹 Video metadata cargado')
             resolve()
           }
         })
@@ -457,9 +604,19 @@ export default {
         isCameraActive.value = true
         console.log('🎯 Cámara activada exitosamente')
         
+        // Limpiar errores previos si la cámara se activó correctamente
+        if (error.value) {
+          error.value = ''
+        }
+        
       } catch (err) {
         console.error('❌ Error iniciando cámara:', err)
         error.value = 'Error al acceder a la cámara: ' + err.message
+        
+        // Ocultar el video en caso de error
+        if (videoElement.value) {
+          videoElement.value.style.display = 'none'
+        }
         
         // Mostrar errores específicos
         if (err.name === 'NotAllowedError') {
@@ -468,6 +625,8 @@ export default {
           error.value = 'No se encontró ninguna cámara en tu dispositivo.'
         } else if (err.name === 'NotReadableError') {
           error.value = 'La cámara está siendo usada por otra aplicación.'
+        } else if (err.name === 'DOMException' && err.message.includes('Starting videoinput failed')) {
+          error.value = 'Error al iniciar la entrada de video. Intenta recargar la página.'
         }
       }
     }
@@ -486,6 +645,8 @@ export default {
         
         if (videoElement.value) {
           videoElement.value.srcObject = null
+          // Ocultar el video después de detener la cámara
+          videoElement.value.style.display = 'none'
         }
         
         isCameraActive.value = false
@@ -493,6 +654,33 @@ export default {
         
       } catch (err) {
         console.error('❌ Error deteniendo cámara:', err)
+        // Asegurar que el estado se resetee incluso si hay error
+        isCameraActive.value = false
+        if (videoElement.value) {
+          videoElement.value.style.display = 'none'
+        }
+      }
+    }
+
+    // Función para reiniciar la cámara en caso de problemas
+    const resetCamera = async () => {
+      try {
+        console.log('🔄 Reiniciando cámara...')
+        
+        // Detener cámara actual
+        await stopCamera()
+        
+        // Pequeña pausa para asegurar limpieza
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Intentar iniciar de nuevo
+        await startCamera()
+        
+        console.log('✅ Cámara reiniciada exitosamente')
+        
+      } catch (err) {
+        console.error('❌ Error reiniciando cámara:', err)
+        error.value = 'Error al reiniciar la cámara: ' + err.message
       }
     }
 
@@ -652,10 +840,28 @@ export default {
       }, 500)
     })
 
+    // Lifecycle: Cleanup al desmontar
     onUnmounted(() => {
-      document.body.classList.remove('recognition-page')
-      stopCamera()
+      // Limpiar timer de inactividad
+      if (inactivityTimer.value) {
+        clearTimeout(inactivityTimer.value)
+      }
+      
+      // Limpiar cámara
+      if (stream.value) {
+        stream.value.getTracks().forEach(track => track.stop())
+      }
+      if (videoElement.value) {
+        videoElement.value.style.display = 'none'
+        videoElement.value.srcObject = null
+      }
+      isCameraActive.value = false
     })
+
+    // Función para ir a recuperar contraseña
+    const goToForgotPassword = () => {
+      router.push('/employee/forgot-password')
+    }
 
     return {
       // Variables del formulario
@@ -666,25 +872,28 @@ export default {
       success,
       locationStatus,
       gettingLocation,
-      rules,
       
       // Variables de la cámara
       isCameraActive,
       videoElement,
       
-      // Funciones del formulario
+      // Variables de validación
+      fieldsInSuccessMode,
+      
+      // Reglas de validación
+      rules,
+      
+      // Métodos
       togglePassword,
       handleRecognition,
-      
-      // Funciones de la cámara
       startCamera,
       stopCamera,
+      resetCamera,
+      goToForgotPassword,
       
-      // Funciones adicionales
-      capturePhotoFromCamera,
-      getEmployeeCredentials,
-      verifyFaceAndMarkAttendance,
-      getCurrentLocation
+      // Funciones de validación
+      activateSuccessMode,
+      resetInactivityTimer
     }
   }
 }
@@ -813,7 +1022,7 @@ export default {
   border-radius: 16px;
   max-width: 700px;
   width: 100%;
-  margin-top: 60px;
+  margin-top: 10px;
   transition: all 0.3s ease;
 }
 
@@ -821,35 +1030,35 @@ export default {
 @media (max-width: 1200px) {
   .recognition-card {
     max-width: 600px;
-    margin-top: 50px;
+    margin-top: 25px;
   }
 }
 
 @media (max-width: 1000px) {
   .recognition-card {
     max-width: 550px;
-    margin-top: 45px;
+    margin-top: 20px;
   }
 }
 
 @media (max-width: 900px) {
   .recognition-card {
     max-width: 500px;
-    margin-top: 40px;
+    margin-top: 15px;
   }
 }
 
 @media (max-width: 800px) {
   .recognition-card {
     max-width: 450px;
-    margin-top: 35px;
+    margin-top: 10px;
   }
 }
 
 @media (max-width: 768px) {
   .recognition-card {
     max-width: 95%;
-    margin-top: 40px;
+    margin-top: 15px;
     margin-left: 2.5%;
     margin-right: 2.5%;
   }
@@ -858,7 +1067,7 @@ export default {
 @media (max-width: 600px) {
   .recognition-card {
     max-width: 98%;
-    margin-top: 20px;
+    margin-top: 10px;
     margin-left: 1%;
     margin-right: 1%;
   }
@@ -930,6 +1139,21 @@ export default {
   padding: 1rem;
 }
 
+.camera-error-message {
+  width: 100%;
+  max-width: 300px;
+  margin-top: 10px;
+}
+
+.camera-error-message .v-alert {
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.camera-error-message .v-alert__content {
+  padding: 8px 12px;
+}
+
 .activate-camera-btn {
   background: linear-gradient(135deg, #3b82f6 0%, #00d4ff 100%) !important;
   font-weight: bold;
@@ -957,6 +1181,31 @@ export default {
   right: 10px;
   pointer-events: auto;
   background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Controles de la cámara */
+.camera-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.reset-camera-btn {
+  background: rgba(0, 0, 0, 0.7) !important;
+  transition: all 0.3s ease;
+}
+
+.reset-camera-btn:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+  transform: scale(1.1);
+}
+
+.close-camera-btn:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+  transform: scale(1.1);
 }
 
 /* Responsive para el área de cámara */
@@ -1245,6 +1494,173 @@ export default {
   
   .text-caption-md {
     font-size: 0.65rem !important;
+  }
+}
+
+/* Estilos para el enlace de recuperar contraseña */
+.forgot-password-link {
+  font-size: 0.875rem !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease !important;
+}
+
+.forgot-password-link:hover {
+  color: #00d4ff !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Responsive para el enlace de recuperar contraseña */
+@media (max-width: 600px) {
+  .forgot-password-link {
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Estilos para el botón de verificación de radio */
+.verify-radius-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+}
+
+/* Estilos para campos en modo éxito */
+.recognition-form .v-text-field.v-input--density-compact.v-text-field--variant-outlined.v-field--focused.v-field--variant-outlined.v-field--focused .v-field__outline {
+  border-color: #4ade80 !important; /* Verde para indicar éxito */
+}
+
+.recognition-form .v-text-field.v-input--density-compact.v-text-field--variant-outlined.v-field--variant-outlined .v-field__outline {
+  border-color: #4ade80 !important; /* Verde para indicar éxito cuando están en modo éxito */
+}
+
+/* Transición suave para el cambio de color */
+.recognition-form .v-text-field .v-field__outline {
+  transition: border-color 0.3s ease;
+}
+
+/* Sistema de notificaciones flotantes */
+.notifications-overlay {
+  position: fixed;
+  top: 80px; /* Debajo del AppBar */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  pointer-events: none; /* Permite que los clics pasen a través del overlay */
+}
+
+.floating-notification {
+  pointer-events: auto; /* Restaura los clics en la notificación */
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white !important;
+}
+
+.floating-notification * {
+  color: white !important;
+}
+
+.floating-notification .v-alert__content,
+.floating-notification .v-alert__title,
+.floating-notification .v-alert__body {
+  color: white !important;
+}
+
+.floating-notification .v-icon,
+.floating-notification .v-btn__content .v-icon {
+  color: white !important;
+}
+
+.floating-notification .v-progress-circular {
+  color: white !important;
+}
+
+/* Asegurar que los botones de cerrar sean visibles */
+.floating-notification .v-btn--icon {
+  color: white !important;
+}
+
+.floating-notification .v-btn--icon:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Estilos específicos para cada tipo de notificación */
+.error-notification {
+  background: #dc2626 !important; /* Rojo sólido más visible */
+  border-color: #b91c1c !important;
+}
+
+.success-notification {
+  background: #16a34a !important; /* Verde sólido más visible */
+  border-color: #15803d !important;
+}
+
+.location-notification {
+  background: #2563eb !important; /* Azul sólido más visible */
+  border-color: #1d4ed8 !important;
+}
+
+/* Asegurar que los mensajes de error específicos sean visibles */
+.error-notification .v-alert__content,
+.error-notification .v-alert__body {
+  font-weight: 500 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Mejorar la legibilidad del texto en todas las notificaciones */
+.floating-notification .v-alert__content {
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Animaciones de entrada y salida */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-down-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.slide-down-enter-to,
+.slide-down-leave-from {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Responsive para notificaciones */
+@media (max-width: 600px) {
+  .notifications-overlay {
+    top: 70px;
+    left: 20px;
+    right: 20px;
+    transform: none;
+  }
+  
+  .floating-notification {
+    max-width: none !important;
+    width: 100%;
+  }
+  
+  .slide-down-enter-from,
+  .slide-down-leave-to {
+    transform: translateY(-20px);
+  }
+  
+  .slide-down-enter-to,
+  .slide-down-leave-from {
+    transform: translateY(0);
   }
 }
 </style>

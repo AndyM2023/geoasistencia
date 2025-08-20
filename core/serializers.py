@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
 from .models import User, Employee, Area, Attendance
 from .models import PasswordResetToken
+from .services.employee_welcome_service import EmployeeWelcomeService
+import os
 
 User = get_user_model()
 
@@ -97,24 +99,55 @@ class EmployeeSerializer(serializers.ModelSerializer):
         required=False
     )
     # Campos para crear usuario
-    first_name = serializers.CharField(write_only=True, required=False)
-    last_name = serializers.CharField(write_only=True, required=False)
-    email = serializers.EmailField(write_only=True, required=False)
-    cedula = serializers.CharField(write_only=True, required=False)
+    first_name = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=50)
+    last_name = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=50)
+    email = serializers.EmailField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=254)
+    cedula = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=20)
+    
+    # Campo para la foto del empleado
+    photo = serializers.ImageField(required=False, allow_null=True)
+    
+    # Campo para indicar que se debe eliminar la foto
+    delete_photo = serializers.BooleanField(required=False, write_only=True)
+    
+    # Validación personalizada para position
+    def validate_position(self, value):
+        """Validar que el position sea una opción válida"""
+        valid_positions = [
+            'desarrollador', 'disenador', 'secretario', 'gerente', 'analista',
+            'ingeniero', 'contador', 'recursos_humanos', 'marketing', 'ventas',
+            'soporte', 'administrativo', 'operativo', 'otro'
+        ]
+        
+        if value not in valid_positions:
+            raise serializers.ValidationError(
+                f'"{value}" no es una opción válida. Opciones disponibles: {", ".join(valid_positions)}'
+            )
+        return value
     
     # Campo para leer la cédula del usuario
     cedula_display = serializers.CharField(source='user.cedula', read_only=True)
     
     area_name = serializers.CharField(source='area.name', read_only=True)
-    full_name = serializers.ReadOnlyField()
-    email_display = serializers.ReadOnlyField(source='email')
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    email_display = serializers.CharField(source='user.email', read_only=True)
+    
+    # Campo para la URL de la foto
+    photo_url = serializers.SerializerMethodField()
+    
+    def get_photo_url(self, obj):
+        """Obtener la URL completa de la foto del empleado"""
+        if obj.photo and hasattr(obj.photo, 'url'):
+            # En desarrollo, devolver URL relativa que se puede usar directamente
+            return obj.photo.url
+        return None
     
     class Meta:
         model = Employee
         fields = [
             'id', 'user', 'user_id', 'employee_id', 'cedula', 'cedula_display', 'position', 'area', 'area_name',
-            'hire_date', 'photo', 'full_name', 'email_display', 'created_at', 'updated_at',
-            'first_name', 'last_name', 'email'  # Campos para crear usuario
+            'hire_date', 'photo', 'photo_url', 'full_name', 'email_display', 'created_at', 'updated_at',
+            'first_name', 'last_name', 'email', 'delete_photo'  # Campos para crear usuario
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'full_name', 'email_display', 'area_name', 'cedula_display']
     
@@ -126,22 +159,28 @@ class EmployeeSerializer(serializers.ModelSerializer):
         email = validated_data.pop('email', '')
         cedula = validated_data.pop('cedula', '')
         
+        # Remover campos que no pertenecen al modelo Employee
+        validated_data.pop('delete_photo', None)  # Campo solo para update, no para create
+        
         # Si no se proporciona user_id, crear un nuevo usuario
         if 'user' not in validated_data:
-            # Generar username automático: primera letra del nombre + apellido completo
+            # Generar username automático: inicial del primer nombre + primer apellido + inicial del segundo apellido
             if first_name and last_name:
-                # Tomar primera letra del primer nombre y apellido completo
+                # Limpiar y separar nombres y apellidos
                 first_name_clean = first_name.strip().split()[0] if first_name.strip() else ''
-                last_name_clean = last_name.strip().replace(' ', '') if last_name.strip() else ''
+                apellidos = last_name.strip().split()
+                primer_apellido = apellidos[0] if apellidos else ''
+                segundo_apellido = apellidos[1] if len(apellidos) > 1 else ''
                 
-                if first_name_clean and last_name_clean:
-                    username = f"{first_name_clean[0].lower()}{last_name_clean.lower()}"
+                if first_name_clean and primer_apellido:
+                    # Formato: inicial del primer nombre + primer apellido + inicial del segundo apellido
+                    username = f"{first_name_clean[0].lower()}{primer_apellido.lower()}{segundo_apellido[0].lower() if segundo_apellido else ''}"
                 else:
                     username = f"user_{User.objects.count() + 1}"
             else:
                 username = f"user_{User.objects.count() + 1}"
             
-            # Asegurar username único
+            # Asegurar username único con manejo de colisiones
             counter = 1
             original_username = username
             while User.objects.filter(username=username).exists():
@@ -168,18 +207,22 @@ class EmployeeSerializer(serializers.ModelSerializer):
             print(f"   - Contraseña: {password}")
             print(f"   - Nombre: {first_name} {last_name}")
             print(f"   - Cédula: {cedula}")
+            print(f"   - Formato aplicado: inicial del primer nombre + primer apellido + inicial del segundo apellido")
         
         # Asegurar que hire_date esté presente
         if 'hire_date' not in validated_data:
             from django.utils import timezone
             validated_data['hire_date'] = timezone.now().date()
         
-        # CRÍTICO: Asignar la cédula al empleado
-        if cedula:
-            validated_data['cedula'] = cedula
+        # NO asignar la cédula al empleado - solo al usuario
+        # La cédula ya se asignó al usuario en la línea anterior
         
         # Crear empleado
         employee = Employee.objects.create(**validated_data)
+        
+        # NO enviar email aquí - se enviará después del registro facial
+        print(f"✅ Empleado creado exitosamente: {employee.full_name}")
+        
         return employee
     
     def update(self, instance, validated_data):
@@ -189,41 +232,108 @@ class EmployeeSerializer(serializers.ModelSerializer):
         print(f"   - Instance user: {instance.user.username}")
         print(f"   - Validated data: {validated_data}")
         
-        # Extraer datos del usuario
-        first_name = validated_data.pop('first_name', '')
-        last_name = validated_data.pop('last_name', '')
-        email = validated_data.pop('email', '')
-        cedula = validated_data.pop('cedula', '')
-        
-        print(f"   - Campos extraídos del usuario:")
-        print(f"     - first_name: '{first_name}'")
-        print(f"     - last_name: '{last_name}'")
-        print(f"     - email: '{email}'")
-        print(f"     - cedula: '{cedula}'")
-        
-        # Actualizar usuario si se proporcionan datos
-        if first_name or last_name or email or cedula:
-            user = instance.user
-            if first_name:
-                user.first_name = first_name
-            if last_name:
-                user.last_name = last_name
-            if email:
-                user.email = email
-            if cedula:
-                user.cedula = cedula
-            user.save()
-            print(f"✅ Usuario actualizado: {user.username}")
-        
-        # Actualizar empleado
-        print(f"   - Campos restantes para empleado: {list(validated_data.keys())}")
-        for attr, value in validated_data.items():
-            print(f"     - {attr}: {value}")
-            setattr(instance, attr, value)
-        
-        instance.save()
-        print(f"✅ Empleado actualizado: {instance.id}")
-        return instance
+        try:
+            # Extraer datos del usuario de forma segura
+            first_name = validated_data.pop('first_name', None)
+            last_name = validated_data.pop('last_name', None)
+            email = validated_data.pop('email', None)
+            cedula = validated_data.pop('cedula', None)
+            
+            # Extraer la foto si está presente
+            photo = validated_data.pop('photo', None)
+            
+            # Verificar si se debe eliminar la foto
+            delete_photo = validated_data.pop('delete_photo', False)
+            
+            print(f"   - Campos extraídos del usuario:")
+            print(f"     - first_name: '{first_name}' (tipo: {type(first_name)})")
+            print(f"     - last_name: '{last_name}' (tipo: {type(last_name)})")
+            print(f"     - email: '{email}' (tipo: {type(email)})")
+            print(f"     - cedula: '{cedula}' (tipo: {type(cedula)})")
+            print(f"     - photo: {type(photo)} - {'Presente' if photo else 'No presente'}")
+            print(f"     - delete_photo: {delete_photo}")
+            
+            # Actualizar usuario solo si se proporcionan datos válidos
+            if any([first_name is not None, last_name is not None, email is not None, cedula is not None]):
+                user = instance.user
+                if first_name is not None:
+                    user.first_name = first_name
+                if last_name is not None:
+                    user.last_name = last_name
+                if email is not None:
+                    # Verificar que el email no esté duplicado
+                    if email != user.email:  # Solo verificar si cambió
+                        try:
+                            from core.models import User
+                            existing_user = User.objects.filter(email=email).exclude(id=user.id).first()
+                            if existing_user:
+                                print(f"❌ Email duplicado: {email} ya existe para usuario {existing_user.username}")
+                                raise serializers.ValidationError({
+                                    'email': f'El email {email} ya está registrado para otro usuario'
+                                })
+                            print(f"✅ Email válido: {email}")
+                        except Exception as e:
+                            print(f"❌ Error verificando email: {e}")
+                            raise
+                    user.email = email
+                if cedula is not None:
+                    # Verificar que la cédula no esté duplicada
+                    if cedula != user.cedula:  # Solo verificar si cambió
+                        try:
+                            from core.models import User
+                            existing_user = User.objects.filter(cedula=cedula).exclude(id=user.id).first()
+                            if existing_user:
+                                print(f"❌ Cédula duplicada: {cedula} ya existe para usuario {existing_user.username}")
+                                raise serializers.ValidationError({
+                                    'cedula': f'La cédula {cedula} ya está registrada para otro usuario'
+                                })
+                            print(f"✅ Cédula válida: {cedula}")
+                        except Exception as e:
+                            print(f"❌ Error verificando cédula: {e}")
+                            raise
+                    user.cedula = cedula
+                user.save()
+                print(f"✅ Usuario actualizado: {user.username}")
+            
+            # Actualizar empleado
+            print(f"   - Campos restantes para empleado: {list(validated_data.keys())}")
+            for attr, value in validated_data.items():
+                print(f"     - {attr}: {value}")
+                setattr(instance, attr, value)
+            
+            # Actualizar foto si se proporciona
+            if photo is not None:
+                print(f"   - Actualizando foto del empleado")
+                instance.photo = photo
+            elif delete_photo:
+                print(f"   - Eliminando foto del empleado")
+                # Eliminar la foto existente del sistema de archivos
+                if instance.photo:
+                    try:
+                        # Eliminar el archivo físico del sistema
+                        if os.path.exists(instance.photo.path):
+                            os.remove(instance.photo.path)
+                            print(f"   - Archivo físico eliminado: {instance.photo.path}")
+                        # Limpiar el campo del modelo
+                        instance.photo = None
+                        print(f"   - Campo photo establecido a None")
+                    except Exception as e:
+                        print(f"   - Error eliminando archivo físico: {e}")
+                        # Aún así, limpiar el campo del modelo
+                        instance.photo = None
+                else:
+                    print(f"   - No había foto para eliminar")
+                    instance.photo = None
+            
+            instance.save()
+            print(f"✅ Empleado actualizado: {instance.id}")
+            return instance
+            
+        except Exception as e:
+            print(f"❌ Error en update: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
 
 class AttendanceSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Attendance"""
@@ -317,3 +427,18 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             return value
         except PasswordResetToken.DoesNotExist:
             raise serializers.ValidationError("Token inválido.")
+
+
+class EmployeePasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer para solicitar recuperación de contraseña de empleados"""
+    email = serializers.EmailField()
+    
+    def validate_email(self, value):
+        """Validar que el email existe y pertenece a un empleado"""
+        try:
+            user = User.objects.get(email=value, role='employee', is_active=True)
+            return value
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                "No se encontró una cuenta de empleado activa con este email."
+            )

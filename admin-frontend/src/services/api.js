@@ -43,13 +43,65 @@ api.interceptors.response.use(
   (error) => {
     console.error('❌ API Error:', error.config?.method?.toUpperCase(), error.config?.url, error.response?.status)
     
-    if (error.response?.status === 401) {
-      // Token expirado, solo limpiar - dejar que Vue Router maneje la redirección
-      localStorage.removeItem('token')
-      localStorage.removeItem('refreshToken')
+    // Mostrar detalles del error para debugging
+    if (error.response) {
+      console.error('📊 Error Response Details:')
+      console.error('   - Status:', error.response.status)
+      console.error('   - Status Text:', error.response.statusText)
+      console.error('   - Headers:', error.response.headers)
+      console.error('   - Data:', error.response.data)
       
-      // Emitir evento personalizado para que el auth store lo maneje
-      window.dispatchEvent(new CustomEvent('auth:logout'))
+      // Si es un error 400, mostrar más detalles
+      if (error.response.status === 400) {
+        console.error('🔍 400 Bad Request Details:')
+        console.error('   - Request URL:', error.config?.url)
+        console.error('   - Request Method:', error.config?.method)
+        console.error('   - Request Data:', error.config?.data)
+        console.error('   - Request Headers:', error.config?.headers)
+        
+        // Intentar parsear el error como JSON
+        if (error.response.data) {
+          try {
+            const errorData = typeof error.response.data === 'string' ? JSON.parse(error.response.data) : error.response.data
+            console.error('   - Parsed Error Data:', errorData)
+            
+            // Si hay errores de validación específicos, mostrarlos
+            if (errorData && typeof errorData === 'object') {
+              Object.keys(errorData).forEach(key => {
+                console.error(`   - Field Error [${key}]:`, errorData[key])
+              })
+            }
+          } catch (e) {
+            console.error('   - Raw Error Data (could not parse):', error.response.data)
+          }
+        }
+      }
+    }
+    
+    if (error.response?.status === 401) {
+      // Verificar si ya estamos en proceso de logout para evitar ciclos
+      const isLoggingOut = localStorage.getItem('isLoggingOut')
+      
+      if (!isLoggingOut) {
+        console.log('🔒 Error 401 detectado, iniciando proceso de logout...')
+        
+        // Marcar que estamos en proceso de logout
+        localStorage.setItem('isLoggingOut', 'true')
+        
+        // Token expirado, solo limpiar - dejar que Vue Router maneje la redirección
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        
+        // Emitir evento personalizado para que el auth store lo maneje
+        window.dispatchEvent(new CustomEvent('auth:logout'))
+        
+        // Limpiar la marca después de un delay
+        setTimeout(() => {
+          localStorage.removeItem('isLoggingOut')
+        }, 1000)
+      } else {
+        console.log('🔄 Ya estamos en proceso de logout, ignorando error 401 adicional')
+      }
     }
     return Promise.reject(error)
   }

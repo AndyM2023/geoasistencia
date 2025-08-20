@@ -311,3 +311,4 @@ Para problemas o preguntas sobre la implementación:
 
 **Nota**: Este sistema está diseñado específicamente para administradores del sistema Geoasistencia. Los empleados regulares no pueden usar esta funcionalidad.
 
+

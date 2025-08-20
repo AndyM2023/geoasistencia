@@ -98,7 +98,9 @@
                   v-if="employee.photo_url" 
                   :image="employee.photo_url" 
                   size="80"
-                  class="employee-photo"
+                  class="employee-photo clickable-photo"
+                  @click="openPhotoModal(employee)"
+                  title="Haz clic para ver la foto completa"
                 ></v-avatar>
                 <v-avatar 
                   v-else 
@@ -116,6 +118,7 @@
                 <p class="text-grey-400 mb-1">{{ positions.find(p => p.value === employee.position)?.title || employee.position }}</p>
                 <p class="text-grey-500 text-sm">{{ employee.area_name }}</p>
                 <p class="text-blue-400 text-sm font-weight-medium">{{ employee.email_display }}</p>
+                <p class="text-grey-600 text-xs mt-2">Cédula: {{ employee.cedula_display || employee.user?.cedula || 'N/A' }}</p>
               </v-card-text>
               
               <!-- Acciones -->
@@ -167,18 +170,18 @@
                 <v-text-field
                   v-model="employeeForm.first_name"
                   name="first_name"
-                  label="Nombre"
+                   label="Nombres"
                   variant="outlined"
                   color="blue-400"
-                  maxlength="50"
+                   maxlength="20"
                   :rules="[
                     v => !!v || 'El nombre es requerido',
-                    v => !/\d/.test(v) || 'El nombre no puede contener números',
-                    v => v.length >= 2 || 'El nombre debe tener al menos 2 caracteres',
-                    v => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(v) || 'Solo se permiten letras y espacios'
+                     v => v.length > 20 ? 'El nombre no puede exceder 20 caracteres' : true,
+                     v => !/^[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+$/.test(v) ? 'El nombre solo puede contener letras' : true
                   ]"
                   required
-                  @input="validateNameField"
+                   @input="(value) => filterLettersOnly(value, 'first_name')"
+                   @keydown="blockInvalidCharacters($event, 'first_name')"
                 ></v-text-field>
               </v-col>
               
@@ -186,30 +189,35 @@
                 <v-text-field
                   v-model="employeeForm.last_name"
                   name="last_name"
-                  label="Apellido"
+                   label="Apellidos"
                   variant="outlined"
                   color="blue-400"
-                  maxlength="50"
+                   maxlength="30"
                   :rules="[
                     v => !!v || 'El apellido es requerido',
-                    v => !/\d/.test(v) || 'El apellido no puede contener números',
-                    v => v.length >= 2 || 'El apellido debe tener al menos 2 caracteres',
-                    v => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(v) || 'Solo se permiten letras y espacios'
+                     v => v.length > 30 ? 'Los apellidos no pueden exceder 30 caracteres' : true,
+                     v => !/^[A-Za-zÁáÉéÍíÓóÚúÑñ\s]+$/.test(v) ? 'Los apellidos solo pueden contener letras y espacios' : true
                   ]"
                   required
-                  @input="validateNameField"
+                   @input="(value) => filterLettersOnly(value, 'last_name')"
+                   @keydown="blockInvalidCharacters($event, 'last_name')"
                 ></v-text-field>
               </v-col>
               
               <v-col cols="12">
                 <v-text-field
                   v-model="employeeForm.email"
-                  label="Email"
+                   label="Correo Electrónico"
                   type="email"
                   variant="outlined"
                   color="blue-400"
-                  :rules="[v => !!v || 'El email es requerido', v => /.+@.+\..+/.test(v) || 'Email inválido']"
+                   :rules="[
+                     v => !!v || 'El email es requerido',
+                     v => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v) || 'Debe ser un email válido'
+                   ]"
                   required
+                   @input="filterEmail"
+                   @keydown="blockInvalidEmailCharacters"
                 ></v-text-field>
               </v-col>
               
@@ -221,14 +229,17 @@
                     color="blue-400"
                     :rules="[
                       v => !!v || 'La cédula es requerida',
-                      v => /^\d{7,10}$/.test(v) || 'La cédula debe tener entre 7 y 10 dígitos',
+                      v => /^\d{10}$/.test(v) || 'La cédula debe tener exactamente 10 dígitos',
+                      v => validateEcuadorianCedula(v) || 'Cédula ecuatoriana inválida',
                       v => !existingCedulas.includes(v) || 'Esta cédula ya está registrada'
                     ]"
                     :required="!editingEmployee"
                     :disabled="editingEmployee"
                     :hint="editingEmployee ? 'La cédula no se puede modificar' : 'Se usará como contraseña del usuario'"
                     persistent-hint
-                    @input="validateCedula"
+                     @input="filterNumbersOnly"
+                     @keydown="blockNonNumericCharacters"
+                     @paste="blockCedulaPaste"
                   ></v-text-field>
                   
                   
@@ -245,7 +256,9 @@
                   label="Cargo"
                   variant="outlined"
                   color="blue-400"
-                  :rules="[v => !!v || 'El cargo es requerido']"
+                  :rules="[
+                    v => !!v || 'El cargo es requerido'
+                  ]"
                   required
                   placeholder="Selecciona un cargo"
                 ></v-select>
@@ -260,21 +273,148 @@
                   label="Área"
                   variant="outlined"
                   color="blue-400"
-                  :rules="[v => !!v || 'El área es requerida']"
+                  :rules="[
+                    v => !!v || 'El área es requerida',
+                    v => v !== null || 'Debe seleccionar un área válida'
+                  ]"
                   required
+                  placeholder="Selecciona un área"
                 ></v-select>
               </v-col>
             </v-row>
 
-            <!-- Sección de Registro Facial - SOLO para edición -->
-            <v-row v-if="editingEmployee">
+              <!-- Campo de Foto del Empleado (siempre visible) -->
+              <v-row>
+                <!-- aquí iría el contenido de master -->
+              </v-row>
+
+              <!-- Sección de Registro Facial - SOLO para edición -->
+              <v-row v-if="editingEmployee">
+                <!-- aquí iría el contenido de Registrov2 -->
+              </v-row>
+
               <v-col cols="12">
                 <v-divider class="mb-4"></v-divider>
-                <h3 class="text-white mb-4">🎯 Registro Facial</h3>
+                <h3 class="text-white mb-4">📸 Foto del Empleado</h3>
               </v-col>
             </v-row>
 
             <v-row v-if="editingEmployee">
+              <v-col cols="12">
+                <v-card class="bg-dark-surface border border-blue-500/20">
+                  <v-card-title class="text-sm text-blue-400">📷 Foto de Perfil</v-card-title>
+                  <v-card-text>
+                    <!-- Vista previa de la foto actual -->
+                    <div v-if="(employeeForm.photo && employeeForm.photo !== 'DELETE_PHOTO') || (editingEmployee && editingEmployee.photo && employeeForm.photo !== 'DELETE_PHOTO')" class="text-center mb-4">
+                      <v-avatar size="120" class="mb-3">
+                        <v-img 
+                          v-if="getPhotoUrl(employeeForm.photo) && employeeForm.photo !== 'DELETE_PHOTO'" 
+                          :src="getPhotoUrl(employeeForm.photo)" 
+                          cover
+                          class="employee-photo-preview"
+                        ></v-img>
+                        <v-img 
+                          v-else-if="editingEmployee && editingEmployee.photo && employeeForm.photo !== 'DELETE_PHOTO'" 
+                          :src="editingEmployee.photo" 
+                          cover
+                          class="employee-photo-preview"
+                        ></v-img>
+                      </v-avatar>
+                      <p class="text-grey-300 text-sm">Foto actual</p>
+                      
+                      <!-- 🔍 DEBUG: Mostrar estado de la foto -->
+                      <p class="text-blue-400 text-xs mt-1">
+                        Estado: {{ employeeForm.photo === 'DELETE_PHOTO' ? 'Marcada para eliminar' : 'Normal' }}
+                      </p>
+                    </div>
+
+                    <!-- Indicador de foto marcada para eliminar -->
+                    <div v-if="editingEmployee && editingEmployee.photo && employeeForm.photo === 'DELETE_PHOTO'" class="text-center mb-4">
+                      <v-avatar size="120" class="mb-3 position-relative">
+                        <v-img 
+                          :src="editingEmployee.photo" 
+                          cover
+                          class="employee-photo-preview"
+                          style="filter: grayscale(100%) brightness(0.5);"
+                        ></v-img>
+                        <div class="photo-delete-overlay">
+                          <v-icon color="red-400" size="48">mdi-delete</v-icon>
+                        </div>
+                      </v-avatar>
+                      <p class="text-red-400 text-sm font-weight-bold">Foto marcada para eliminar</p>
+                      <p class="text-grey-400 text-xs">Haz clic en "Guardar" para confirmar</p>
+                    </div>
+
+                    <!-- Opciones para agregar/editar foto -->
+                    <div class="d-flex gap-3 justify-center flex-wrap">
+                      <!-- Subir archivo -->
+                      <v-btn
+                        @click="$refs.fileInput.click()"
+                        color="blue-400"
+                        variant="outlined"
+                        prepend-icon="mdi-upload"
+                        size="large"
+                      >
+                        📁 Subir Archivo
+                      </v-btn>
+
+                      <!-- Tomar foto con cámara -->
+                      <v-btn
+                        @click="showPhotoCapture = true"
+                        color="green-400"
+                        variant="outlined"
+                        prepend-icon="mdi-camera"
+                        size="large"
+                      >
+                        📷 Tomar Foto
+                      </v-btn>
+
+                      <!-- Eliminar foto -->
+                      <v-btn
+                        v-if="shouldShowDeletePhotoButton()"
+                        @click="removePhoto"
+                        color="red-400"
+                        variant="outlined"
+                        prepend-icon="mdi-delete"
+                        size="large"
+                        :disabled="employeeForm.photo === 'DELETE_PHOTO'"
+                      >
+                        {{ employeeForm.photo === 'DELETE_PHOTO' ? '🔄 Deshacer eliminación' : '🗑️ Eliminar' }}
+                      </v-btn>
+                    </div>
+
+                    <!-- Input de archivo oculto -->
+                    <input
+                      ref="fileInput"
+                      type="file"
+                      accept="image/*"
+                      style="display: none"
+                      @change="onFileSelected"
+                    />
+
+                    <!-- Información de ayuda -->
+                    <div class="mt-4 text-center">
+                      <p class="text-blue-400 text-xs mb-1">
+                        📋 Formatos soportados: JPG, PNG, GIF
+                      </p>
+                      <p class="text-grey-400 text-xs">
+                        📏 Tamaño máximo: 5MB | 📐 Resolución recomendada: 400x400px
+                      </p>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+
+                         <!-- Sección de Registro Facial - Solo visible después de crear el empleado -->
+             <v-row v-if="editingEmployee && editingEmployee.id">
+              <v-col cols="12">
+                <v-divider class="mb-4"></v-divider>
+                <h3 class="text-white mb-4"> Registro Facial</h3>
+              </v-col>
+            </v-row>
+
+             <v-row v-if="editingEmployee && editingEmployee.id">
               <v-col cols="12">
                 <v-card class="bg-dark-surface border border-blue-500/20">
                   <v-card-title class="text-sm text-blue-400">📷 Registro Facial</v-card-title>
@@ -286,16 +426,12 @@
                         color="blue-400"
                         size="large"
                         prepend-icon="mdi-camera"
-                        :disabled="!employeeForm.first_name || !employeeForm.last_name"
                         block
                       >
-                        🎯 Iniciar Registro Facial
+                        Iniciar Registro Facial
                       </v-btn>
                       
-                      <p class="text-grey-400 text-sm mt-2">
-                        💡 Completa el nombre y apellido para habilitar el registro facial
-                      </p>
-                      <p class="text-blue-400 text-xs mt-1">
+                       <p class="text-blue-400 text-xs mt-2">
                                                  📸 Se capturarán 15 fotos para máxima velocidad
                       </p>
                       <p class="text-green-400 text-xs mt-1">
@@ -380,19 +516,6 @@
                         </v-btn>
                       </div>
                     </div>
-                    
-                    
-                    
-                    <!-- Ayuda si faltan datos -->
-                    <div v-if="!employeeForm.first_name || !employeeForm.last_name" class="mt-4">
-                      <v-alert
-                        type="info"
-                        variant="tonal"
-                        density="compact"
-                      >
-                        💡 Completa el nombre y apellido para habilitar la captura facial
-                      </v-alert>
-                    </div>
                   </v-card-text>
                 </v-card>
               </v-col>
@@ -474,6 +597,47 @@
       </v-card>
     </v-dialog>
 
+    <!-- Modal para mostrar foto expandida -->
+    <v-dialog v-model="showPhotoModal" max-width="600px" persistent>
+      <v-card class="bg-dark-surface border border-blue-500/20">
+        <v-card-title class="text-white d-flex justify-space-between align-center">
+          <span>📸 Foto</span>
+          <v-btn 
+            icon="mdi-close" 
+            variant="text" 
+            color="white" 
+            @click="closePhotoModal"
+            size="small"
+          ></v-btn>
+        </v-card-title>
+        
+        <v-card-text class="text-center pa-6">
+          <div v-if="selectedEmployeePhoto">
+            <!-- Solo la foto expandida -->
+            <v-img 
+              :src="selectedEmployeePhoto.photo_url" 
+              :alt="`Foto de ${selectedEmployeePhoto.full_name}`"
+              max-height="500"
+              contain
+              class="expanded-photo"
+              style="border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);"
+            ></v-img>
+          </div>
+        </v-card-text>
+        
+        <v-card-actions class="justify-center pa-4">
+          <v-btn 
+            color="blue-400" 
+            variant="outlined" 
+            @click="closePhotoModal"
+            prepend-icon="mdi-close"
+          >
+            Cerrar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Componente de registro facial -->
     <FaceRegistration
       v-if="showFaceRegistration"
@@ -484,6 +648,106 @@
       @registro-error="onRegistroError"
       @close="showFaceRegistration = false"
     />
+
+    <!-- Componente de captura de foto -->
+    <v-dialog v-model="showPhotoCapture" max-width="500px" persistent>
+      <v-card class="bg-dark-surface border border-blue-500/20">
+        <v-card-title class="text-white">
+          📷 Capturar Foto del Empleado
+        </v-card-title>
+        
+        <v-card-text>
+          <div class="text-center">
+            <!-- Vista previa de la cámara -->
+            <div v-if="!capturedPhoto" class="camera-preview mb-4">
+              <video
+                ref="video"
+                autoplay
+                playsinline
+                class="camera-video"
+                style="width: 100%; max-width: 400px; height: 300px; background: #000; border-radius: 8px;"
+              ></video>
+              
+              <div class="mt-3">
+                <v-btn
+                  @click="startCamera"
+                  color="blue-400"
+                  prepend-icon="mdi-camera"
+                  size="large"
+                  :loading="cameraLoading"
+                >
+                  Iniciar Cámara
+                </v-btn>
+              </div>
+            </div>
+
+            <!-- Vista previa de la foto capturada -->
+            <div v-if="capturedPhoto" class="captured-photo-preview mb-4">
+              <v-avatar size="200" class="mb-3">
+                <v-img :src="capturedPhoto" cover></v-img>
+              </v-avatar>
+              <p class="text-grey-300">Foto capturada</p>
+            </div>
+
+            <!-- Controles de la cámara -->
+            <div v-if="!capturedPhoto && cameraActive" class="camera-controls">
+              <v-btn
+                @click="capturePhoto"
+                color="green-400"
+                prepend-icon="mdi-camera"
+                size="large"
+                class="mx-2"
+              >
+                📸 Capturar
+              </v-btn>
+              
+              <v-btn
+                @click="stopCamera"
+                color="red-400"
+                variant="outlined"
+                size="large"
+                class="mx-2"
+              >
+                ⏹️ Detener
+              </v-btn>
+            </div>
+
+            <!-- Controles después de capturar -->
+            <div v-if="capturedPhoto" class="capture-controls">
+              <v-btn
+                @click="acceptPhoto"
+                color="green-400"
+                prepend-icon="mdi-check"
+                size="large"
+                class="mx-2"
+              >
+                ✅ Aceptar
+              </v-btn>
+              
+              <v-btn
+                @click="retakePhoto"
+                color="orange-400"
+                variant="outlined"
+                size="large"
+                class="mx-2"
+              >
+                🔄 Retomar
+              </v-btn>
+            </div>
+          </div>
+        </v-card-text>
+        
+        <v-card-actions class="justify-end pa-4">
+          <v-btn 
+            color="grey-600" 
+            variant="outlined" 
+            @click="closePhotoCapture"
+          >
+            Cancelar
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Snackbar para mensajes -->
     <v-snackbar
@@ -532,8 +796,20 @@ export default {
     const form = ref(null)
     const dialogReady = ref(false)
     
+    // Estado para captura de foto
+    const showPhotoCapture = ref(false)
+    const capturedPhoto = ref(null)
+    const cameraActive = ref(false)
+    const cameraLoading = ref(false)
+    const video = ref(null)
+    const stream = ref(null)
+    
     const editingEmployee = ref(null)
     const employeeToDelete = ref(null)
+    
+    // Estado para modal de foto expandida
+    const showPhotoModal = ref(false)
+    const selectedEmployeePhoto = ref(null)
     
     const employees = ref([])
     const areas = ref([])
@@ -575,8 +851,9 @@ export default {
       last_name: '',
       email: '',
       cedula: '',
-      position: 'otro', // Usar valor por defecto
-      area: null
+      position: 'desarrollador', // Usar valor por defecto más apropiado
+      area: null,
+      photo: null // Nuevo campo para la foto
     })
     
     const positions = [
@@ -598,6 +875,7 @@ export default {
     
     const headers = [
       { title: 'Nombre Completo', key: 'full_name', sortable: true },
+      { title: 'Cédula', key: 'cedula_display', sortable: true },
       { title: 'Email', key: 'email_display', sortable: true },
       { title: 'Cargo', key: 'position', sortable: true },
       { title: 'Área', key: 'area_name', sortable: true },
@@ -611,6 +889,8 @@ export default {
       const searchTerm = search.value.toLowerCase()
       return employees.value.filter(employee => 
         employee.full_name?.toLowerCase().includes(searchTerm) ||
+        employee.cedula_display?.toLowerCase().includes(searchTerm) ||
+        employee.user?.cedula?.toLowerCase().includes(searchTerm) ||
         employee.email_display?.toLowerCase().includes(searchTerm) ||
         // Buscar en el título del cargo (más legible para el usuario)
         positions.find(p => p.value === employee.position)?.title?.toLowerCase().includes(searchTerm) ||
@@ -619,6 +899,15 @@ export default {
     })
     
          const loadEmployees = async () => {
+       // Verificar autenticación antes de cargar
+       const token = localStorage.getItem('token')
+       const isLoggingOut = localStorage.getItem('isLoggingOut')
+       
+       if (!token || isLoggingOut) {
+         console.log('🔄 loadEmployees: Saltando carga - sin autenticación o logout en progreso')
+         return
+       }
+       
        loading.value = true
        try {
          // CARGAR DESDE API REAL
@@ -627,17 +916,30 @@ export default {
          // Necesitamos acceder a results que es el array de empleados
          employees.value = employeesData.results || employeesData
          
-         // 🔍 DEBUG: Verificar qué datos vienen del backend
-         console.log('🔍 loadEmployees - Datos recibidos del backend:')
-         if (employees.value.length > 0) {
-           const firstEmployee = employees.value[0]
-           console.log('   - Primer empleado position:', firstEmployee.position)
-           console.log('   - Primer empleado position type:', typeof firstEmployee.position)
-           console.log('   - Primer empleado completo:', JSON.stringify(firstEmployee, null, 2))
-         }
+                   // 🔍 DEBUG: Verificar qué datos vienen del backend
+          console.log('🔍 loadEmployees - Datos recibidos del backend:')
+          if (employees.value.length > 0) {
+            const firstEmployee = employees.value[0]
+            console.log('   - Primer empleado position:', firstEmployee.position)
+            console.log('   - Primer empleado position type:', typeof firstEmployee.position)
+            console.log('   - Primer empleado completo:', JSON.stringify(firstEmployee, null, 2))
+            
+            // 🔍 DEBUG: Verificar fotos de todos los empleados
+            console.log('🔍 Verificando fotos de empleados:')
+            employees.value.forEach((emp, index) => {
+              console.log(`   - Empleado ${index + 1}: ${emp.full_name}`)
+              console.log(`     - Foto: ${emp.photo || 'Sin foto'}`)
+              console.log(`     - Photo URL: ${emp.photo_url || 'Sin URL'}`)
+              console.log(`     - Tipo de foto: ${typeof emp.photo}`)
+            })
+          }
        } catch (error) {
          console.error('Error cargando empleados:', error)
-         showMessage('Error cargando empleados', 'error')
+         
+         // Si es error 401, no mostrar mensaje de error al usuario
+         if (error.response?.status !== 401) {
+           showMessage('Error cargando empleados', 'error')
+         }
        } finally {
          loading.value = false
        }
@@ -672,8 +974,9 @@ export default {
          last_name: '',
          email: '',
          cedula: '',
-         position: 'otro',
-         area: null
+         position: 'desarrollador',
+         area: null,
+         photo: null // Resetear foto
        }
        
        // Resetear estado facial
@@ -714,15 +1017,20 @@ export default {
          console.log('🔍 editEmployee - Cédula display:', employee.cedula_display)
          console.log('🔍 editEmployee - Tipo de cédula empleado:', typeof employee.cedula)
        
-       editingEmployee.value = employee
+                editingEmployee.value = employee
                 employeeForm.value = {
            first_name: employee.user.first_name,
            last_name: employee.user.last_name,
            email: employee.user.email,
            cedula: employee.cedula_display || employee.cedula || employee.user.cedula || '', // Usar cedula_display del backend
-           position: employee.position || 'otro', // Usar valor por defecto si no hay cargo
-           area: employee.area
+           position: employee.position || 'desarrollador', // Usar valor por defecto más apropiado
+           area: employee.area?.id || employee.area, // Asegurar que se envíe solo el ID del área
+           photo: null // Inicialmente no hay cambios en la foto
          }
+         
+         // 🔍 DEBUG: Verificar estado de la foto
+         console.log('🔍 editEmployee - Foto del empleado:', employee.photo)
+         console.log('🔍 editEmployee - Estado inicial del formulario:', employeeForm.value.photo)
        
        console.log('🔍 editEmployee - Formulario preparado:', JSON.stringify(employeeForm.value, null, 2))
        console.log('🔍 editEmployee - Área del empleado:', employee.area)
@@ -771,6 +1079,19 @@ export default {
       }
     }
     
+    // Funciones para el modal de foto expandida
+    const openPhotoModal = (employee) => {
+      console.log('📸 Abriendo modal de foto para:', employee.full_name)
+      selectedEmployeePhoto.value = employee
+      showPhotoModal.value = true
+    }
+    
+    const closePhotoModal = () => {
+      console.log('🚪 Cerrando modal de foto')
+      showPhotoModal.value = false
+      selectedEmployeePhoto.value = null
+    }
+    
          const saveEmployee = async () => {
        if (!form.value?.validate()) return
        
@@ -782,13 +1103,36 @@ export default {
          console.log('📤 Datos del formulario a enviar:', JSON.stringify(employeeForm.value, null, 2))
          console.log('👤 Empleado editando:', JSON.stringify(editingEmployee.value, null, 2))
          
+         // Validación adicional del position
+         if (employeeForm.value.position) {
+           const validPositions = [
+             'desarrollador', 'disenador', 'secretario', 'gerente', 'analista',
+             'ingeniero', 'contador', 'recursos_humanos', 'marketing', 'ventas',
+             'soporte', 'administrativo', 'operativo', 'otro'
+           ]
+           
+           if (!validPositions.includes(employeeForm.value.position)) {
+             console.error(`❌ Position inválido en el formulario: "${employeeForm.value.position}"`)
+             showMessage(`Cargo inválido: "${employeeForm.value.position}". Debe seleccionar una opción válida.`, 'error')
+             return
+           }
+         }
+         
          if (editingEmployee.value) {
            // Actualizar empleado existente
            console.log('🔄 Actualizando empleado ID:', editingEmployee.value.id)
            console.log('📋 Datos de actualización:', JSON.stringify(employeeForm.value, null, 2))
            
+           // Verificar si se está eliminando una foto
+           const isDeletingPhoto = employeeForm.value.photo === 'DELETE_PHOTO'
+           
            savedEmployee = await employeeService.update(editingEmployee.value.id, employeeForm.value)
-           showMessage('Empleado actualizado correctamente')
+           
+           if (isDeletingPhoto) {
+             showMessage('Empleado actualizado correctamente. Foto eliminada.', 'success')
+           } else {
+             showMessage('Empleado actualizado correctamente', 'success')
+           }
          } else {
            // Crear nuevo empleado
            console.log('➕ Creando nuevo empleado')
@@ -805,27 +1149,46 @@ export default {
            }
          }
         
-        await loadEmployees() // Recargar lista
-        showDialog.value = false
-        dialogReady.value = false // Resetear estado del diálogo
-        
-        // 🔄 ACTUALIZAR LISTA INMEDIATAMENTE después de cerrar diálogo
-        try {
-          await loadEmployees()
-          console.log('✅ Lista de empleados actualizada después de cerrar diálogo')
-        } catch (error) {
-          console.error('❌ Error actualizando lista después de cerrar diálogo:', error)
-        }
-        editingEmployee.value = null
-        employeeForm.value = {
-          first_name: '',
-          last_name: '',
-          email: '',
-          cedula: '',
-          position: 'otro', // Usar valor por defecto
-          area: null
-        }
-        resetFaceRegistration() // Resetear estado facial
+                 // 🔄 ACTUALIZAR LISTA INMEDIATAMENTE después de guardar
+         try {
+           await loadEmployees()
+           console.log('✅ Lista de empleados actualizada después de guardar')
+           
+           // 🔍 DEBUG: Verificar que la foto se haya eliminado
+           if (isDeletingPhoto) {
+             console.log('🔍 Verificando eliminación de foto...')
+             // Buscar el empleado actualizado en la lista
+             const updatedEmployee = employees.value.find(emp => emp.id === editingEmployee.value.id)
+             if (updatedEmployee) {
+               console.log('🔍 Empleado encontrado en lista actualizada:', updatedEmployee)
+               console.log('🔍 Foto del empleado después de actualizar:', updatedEmployee.photo)
+               if (updatedEmployee.photo) {
+                 console.log('⚠️ ADVERTENCIA: La foto aún aparece en la lista actualizada')
+               } else {
+                 console.log('✅ Foto eliminada correctamente de la lista')
+               }
+             }
+           }
+         } catch (error) {
+           console.error('❌ Error actualizando lista después de guardar:', error)
+         }
+         
+         // Cerrar diálogo y resetear estado
+         showDialog.value = false
+         dialogReady.value = false // Resetear estado del diálogo
+         
+         // Resetear estado de edición
+         editingEmployee.value = null
+         employeeForm.value = {
+           first_name: '',
+           last_name: '',
+           email: '',
+           cedula: '',
+           position: 'desarrollador', // Usar valor por defecto
+           area: null,
+           photo: null // Resetear foto
+         }
+         resetFaceRegistration() // Resetear estado facial
       } catch (error) {
         console.error('Error guardando empleado:', error)
         showMessage('Error guardando empleado', 'error')
@@ -905,9 +1268,9 @@ export default {
       faceRegistration.value.statusText = 'Procesando rostros y generando embeddings...'
       
       try {
-        console.log('🎯 Iniciando procesamiento facial...')
-        console.log('📸 Fotos a procesar:', faceRegistration.value.capturedPhotos.length)
-        console.log('👤 Empleado ID:', editingEmployee.value.id)
+        console.log('Iniciando procesamiento facial...')
+        console.log('Fotos a procesar:', faceRegistration.value.capturedPhotos.length)
+        console.log('Empleado ID:', editingEmployee.value.id)
         
         // ✅ NO procesar fotos aquí - ya se procesan en FaceRegistration.vue
         // Solo simular el tiempo de procesamiento para mostrar el estado
@@ -1003,76 +1366,400 @@ export default {
       }
     }
 
-         // ✅ VALIDACIÓN: Función para validar campos de nombre y apellido
-     const validateNameField = (event) => {
-       const value = event.target.value;
-       const fieldName = event.target.name;
-       
-       // Remover números y caracteres especiales no permitidos
-       let cleanValue = value.replace(/[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, '');
-       
-       // Remover espacios múltiples y espacios al inicio/final
-       cleanValue = cleanValue.replace(/\s+/g, ' ').trim();
-       
-       // Si el valor original contenía caracteres no permitidos, actualizar el campo
-       if (value !== cleanValue) {
-         // Actualizar el campo correspondiente
-         if (fieldName === 'first_name') {
-           employeeForm.value.first_name = cleanValue;
-         } else if (fieldName === 'last_name') {
-           employeeForm.value.last_name = cleanValue;
-         }
-         
-         // Mostrar mensaje informativo
-         showMessage('Solo se permiten letras y espacios en nombres y apellidos', 'warning');
-         
-         // Forzar la validación del formulario
-         if (form.value) {
-           form.value.validate();
-         }
-       }
-       
-       // Validar que no quede solo espacios o esté vacío después de la limpieza
-       if (cleanValue === '' || cleanValue.trim() === '') {
-         if (fieldName === 'first_name') {
-           employeeForm.value.first_name = '';
-         } else if (fieldName === 'last_name') {
-           employeeForm.value.last_name = '';
-         }
-         
-         showMessage('El campo no puede estar vacío', 'error');
-         return;
-       }
-       
-       // Validar que el nombre/apellido tenga al menos 2 caracteres
-       if (cleanValue.length > 0 && cleanValue.length < 2) {
-         showMessage('El nombre y apellido deben tener al menos 2 caracteres', 'warning');
-       }
-     }
-     
-     // ✅ VALIDACIÓN: Función para validar cédula
-     const validateCedula = (event) => {
-       const value = event.target.value;
-       
-       // Solo permitir números
-       let cleanValue = value.replace(/\D/g, '');
-       
-       // Si el valor original contenía caracteres no numéricos, actualizar el campo
-       if (value !== cleanValue) {
-         employeeForm.value.cedula = cleanValue;
-         showMessage('La cédula solo puede contener números', 'warning');
+                   // ✅ VALIDACIÓN: Función para validar cédula ecuatoriana
+      const validateEcuadorianCedula = (cedula) => {
+        if (cedula.length !== 10) return false
+        
+        // Verificar que todos sean dígitos
+        if (!/^\d+$/.test(cedula)) return false
+        
+        // Verificar que no sea una cédula de ceros
+        if (cedula === '0000000000') return false
+        
+        // Algoritmo de validación ecuatoriana
+        let suma = 0
+        const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
+        
+        for (let i = 0; i < 9; i++) {
+          let producto = parseInt(cedula[i]) * coeficientes[i]
+          if (producto >= 10) {
+            producto = Math.floor(producto / 10) + (producto % 10)
+          }
+          suma += producto
+        }
+        
+        const digitoVerificador = parseInt(cedula[9])
+        const modulo = suma % 10
+        const resultado = modulo === 0 ? 0 : 10 - modulo
+        
+        return resultado === digitoVerificador
+      }
+
+      // ✅ FUNCIÓN: Filtrar solo letras y espacios (para nombre y apellidos)
+      const filterLettersOnly = (value, fieldName) => {
+        // Asegurar que value sea una cadena de texto
+        if (typeof value !== 'string') {
+          console.warn(`filterLettersOnly: valor no es string, tipo: ${typeof value}`, value)
+          return ''
+        }
+        
+        // Remover números y caracteres especiales, mantener solo letras, espacios y acentos
+        const filtered = value.replace(/[^A-Za-zÁáÉéÍíÓóÚúÑñ\s]/g, '')
+        
+        // Actualizar el valor del campo con solo caracteres permitidos
+        employeeForm.value[fieldName] = filtered
+        
+        return filtered
+      }
+
+      // ✅ FUNCIÓN: Filtrar email (permitir solo caracteres válidos para email)
+      const filterEmail = (value) => {
+        // Asegurar que value sea una cadena de texto
+        if (typeof value !== 'string') {
+          console.warn(`filterEmail: valor no es string, tipo: ${typeof value}`, value)
+          return ''
+        }
+        
+        // Permitir letras, números, puntos, guiones bajos, guiones medios, arrobas y puntos
+        const filtered = value.replace(/[^a-zA-Z0-9._%+-@]/g, '')
+        
+        // Actualizar el valor del campo
+        employeeForm.value.email = filtered
+        
+        return filtered
+      }
+
+      // ✅ FUNCIÓN: Filtrar solo números (para cédula)
+      const filterNumbersOnly = (value) => {
+        // Asegurar que value sea una cadena de texto
+        if (typeof value !== 'string') {
+          console.warn(`filterNumbersOnly: valor no es string, tipo: ${typeof value}`, value)
+          return ''
+        }
+        
+        // Remover todo excepto números
+        const filtered = value.replace(/\D/g, '')
+        
+        // BLOQUEO TOTAL: Si ya tiene 10 dígitos, no permitir más entrada
+        if (filtered.length > 10) {
+          // Mantener solo los primeros 10 dígitos
+          employeeForm.value.cedula = filtered.slice(0, 10)
+          return filtered.slice(0, 10)
        }
        
        // Limitar a 10 dígitos máximo
-       if (cleanValue.length > 10) {
-         employeeForm.value.cedula = cleanValue.substring(0, 10);
-         showMessage('La cédula no puede tener más de 10 dígitos', 'warning');
-       }
-       
-       // Forzar la validación del formulario
-       if (form.value) {
-         form.value.validate();
-       }
+        employeeForm.value.cedula = filtered.slice(0, 10)
+        
+        return filtered.slice(0, 10)
+      }
+
+      // ✅ FUNCIÓN: Bloquear caracteres no permitidos en nombre y apellidos
+      const blockInvalidCharacters = (event, fieldName) => {
+        const key = event.key
+        const allowedKeys = [
+          'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+          'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+        ]
+        
+        // Permitir teclas de navegación y control
+        if (allowedKeys.includes(key)) {
+          return true
+        }
+        
+        // Permitir solo letras, espacios y acentos
+        const allowedPattern = /^[A-Za-zÁáÉéÍíÓóÚúÑñ\s]$/
+        
+        if (!allowedPattern.test(key)) {
+          // Prevenir la entrada del carácter
+          event.preventDefault()
+          return false
+        }
+        
+        return true
+      }
+
+      // ✅ FUNCIÓN: Bloquear solo números en cédula
+      const blockNonNumericCharacters = (event) => {
+        const key = event.key
+        const allowedKeys = [
+          'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+          'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+        ]
+        
+        // Permitir teclas de navegación y control
+        if (allowedKeys.includes(key)) {
+          return true
+        }
+        
+        // BLOQUEO TOTAL: Si ya tiene 10 dígitos, solo permitir Backspace y Delete
+        if (employeeForm.value.cedula.length >= 10 && key !== 'Backspace' && key !== 'Delete') {
+          // Prevenir la entrada del carácter
+          event.preventDefault()
+          return false
+        }
+        
+        // Permitir solo números
+        const allowedPattern = /^[0-9]$/
+        
+        if (!allowedPattern.test(key)) {
+          // Prevenir la entrada del carácter
+          event.preventDefault()
+          return false
+        }
+        
+        return true
+      }
+
+      // ✅ FUNCIÓN: Bloquear caracteres no válidos en email
+      const blockInvalidEmailCharacters = (event) => {
+        const key = event.key
+        const allowedKeys = [
+          'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+          'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+        ]
+        
+        // Permitir teclas de navegación y control
+        if (allowedKeys.includes(key)) {
+          return true
+        }
+        
+        // Permitir letras, números, puntos, guiones, arrobas y símbolos válidos para email
+        const allowedPattern = /^[a-zA-Z0-9._%+-@]$/
+        
+        if (!allowedPattern.test(key)) {
+          // Prevenir la entrada del carácter
+          event.preventDefault()
+          return false
+        }
+        
+        return true
+      }
+
+      // ✅ FUNCIÓN: Bloquear pegado de texto que exceda 10 dígitos en cédula
+      const blockCedulaPaste = (event) => {
+        // Obtener el texto del portapapeles
+        const clipboardData = event.clipboardData || window.clipboardData
+        const pastedText = clipboardData.getData('text')
+        
+        // Si el texto pegado contiene caracteres no numéricos, bloquear
+        if (!/^\d+$/.test(pastedText)) {
+          event.preventDefault()
+          return false
+        }
+        
+        // Si al pegar excedería los 10 dígitos, bloquear
+        const currentLength = employeeForm.value.cedula.length
+        if (currentLength + pastedText.length > 10) {
+          event.preventDefault()
+          return false
+        }
+        
+        return true
+     }
+
+    // ✅ FUNCIÓN: Manejar la selección de archivo para la foto
+    const onFileSelected = (event) => {
+      const file = event.target.files[0]
+      if (file) {
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+          showMessage('Solo se permiten archivos de imagen', 'error')
+          return
+        }
+        
+        // Validar tamaño (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          showMessage('El archivo es demasiado grande. Máximo 5MB', 'error')
+          return
+        }
+        
+        // Guardar el archivo directamente
+        employeeForm.value.photo = file
+        console.log('📸 Archivo seleccionado:', file.name, file.size, file.type)
+      }
+    }
+
+    // ✅ FUNCIÓN: Eliminar la foto actual
+    const removePhoto = () => {
+      console.log('🔍 removePhoto - Estado actual:')
+      console.log('   - editingEmployee.value?.photo:', editingEmployee.value?.photo)
+      console.log('   - employeeForm.value.photo:', employeeForm.value.photo)
+      
+      // Si ya está marcada para eliminar, permitir deshacer
+      if (employeeForm.value.photo === 'DELETE_PHOTO') {
+        // Deshacer la eliminación
+        if (editingEmployee.value && editingEmployee.value.photo) {
+          // Restaurar la foto original del empleado
+          employeeForm.value.photo = null // Volver al estado inicial
+          console.log('🔄 Eliminación de foto deshecha')
+          showMessage('Eliminación de foto cancelada', 'info')
+        } else {
+          // Limpiar la foto
+          employeeForm.value.photo = null
+          console.log('🔄 Eliminación de foto deshecha')
+          showMessage('Eliminación de foto cancelada', 'info')
+        }
+      } else if (editingEmployee.value && editingEmployee.value.photo) {
+        // Marcar que se debe eliminar la foto existente
+        employeeForm.value.photo = 'DELETE_PHOTO'
+        console.log('🗑️ Foto existente marcada para eliminación')
+        showMessage('Foto marcada para eliminar. Haz clic en "Guardar" para confirmar.', 'warning')
+      } else {
+        // Si es una foto nueva, simplemente limpiar
+        employeeForm.value.photo = null
+        console.log('🗑️ Foto nueva eliminada')
+        showMessage('Foto eliminada del formulario', 'info')
+      }
+      
+      console.log('🔍 removePhoto - Estado después de la acción:')
+      console.log('   - employeeForm.value.photo:', employeeForm.value.photo)
+    }
+    
+    // ✅ FUNCIÓN: Convertir base64 a archivo
+    const base64ToFile = (base64String, filename = 'photo.jpg') => {
+      // Remover el prefijo data:image/...;base64, si existe
+      const base64Data = base64String.includes(',') ? base64String.split(',')[1] : base64String
+      
+      // Convertir base64 a blob
+      const byteCharacters = atob(base64Data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      
+      // Crear archivo
+      const blob = new Blob([byteArray], { type: 'image/jpeg' })
+      const file = new File([blob], filename, { type: 'image/jpeg' })
+      
+      return file
+    }
+    
+    // ✅ FUNCIÓN: Obtener URL de la foto para vista previa
+    const getPhotoUrl = (photo) => {
+      if (!photo) return null
+      
+      if (photo instanceof File) {
+        // Si es un archivo, crear URL temporal
+        return URL.createObjectURL(photo)
+      } else if (typeof photo === 'string' && photo.startsWith('data:')) {
+        // Si es base64, usar directamente
+        return photo
+      } else if (typeof photo === 'string') {
+        // Si es una URL, usar directamente
+        return photo
+      }
+      
+      return null
+    }
+
+    // ✅ FUNCIÓN: Verificar si se debe mostrar el botón de eliminar foto
+    const shouldShowDeletePhotoButton = () => {
+      // Mostrar si hay una foto nueva seleccionada
+      if (employeeForm.value.photo && employeeForm.value.photo !== 'DELETE_PHOTO' && employeeForm.value.photo instanceof File) {
+        return true
+      }
+      
+      // Mostrar si hay una foto existente del empleado (no marcada para eliminar)
+      if (editingEmployee.value && editingEmployee.value.photo && employeeForm.value.photo !== 'DELETE_PHOTO') {
+        return true
+      }
+      
+      // Mostrar si la foto está marcada para eliminar (para permitir deshacer)
+      if (editingEmployee.value && editingEmployee.value.photo && employeeForm.value.photo === 'DELETE_PHOTO') {
+        return true
+      }
+      
+      // 🔍 DEBUG: Log del estado para debugging
+      console.log('🔍 shouldShowDeletePhotoButton:')
+      console.log('   - editingEmployee.value?.photo:', editingEmployee.value?.photo)
+      console.log('   - employeeForm.value.photo:', employeeForm.value.photo)
+      console.log('   - Resultado:', false)
+      
+      return false
+    }
+    
+    // ✅ FUNCIÓN: Iniciar la cámara
+    const startCamera = async () => {
+      try {
+        cameraLoading.value = true
+        stream.value = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 640 }, 
+            height: { ideal: 480 },
+            facingMode: 'user' // Cámara frontal
+          } 
+        })
+        
+        if (video.value) {
+          video.value.srcObject = stream.value
+          cameraActive.value = true
+          console.log('📹 Cámara iniciada')
+        }
+      } catch (error) {
+        console.error('❌ Error al iniciar cámara:', error)
+        mensaje.value = {
+          show: true,
+          text: 'Error al acceder a la cámara. Verifica los permisos.',
+          type: 'error'
+        }
+      } finally {
+        cameraLoading.value = false
+      }
+    }
+    
+    // ✅ FUNCIÓN: Detener la cámara
+    const stopCamera = () => {
+      if (stream.value) {
+        stream.value.getTracks().forEach(track => track.stop())
+        stream.value = null
+      }
+      cameraActive.value = false
+      console.log('⏹️ Cámara detenida')
+    }
+    
+    // ✅ FUNCIÓN: Capturar foto
+    const capturePhoto = () => {
+      if (video.value && cameraActive.value) {
+        const canvas = document.createElement('canvas')
+        const context = canvas.getContext('2d')
+        
+        canvas.width = video.value.videoWidth
+        canvas.height = video.value.videoHeight
+        
+        context.drawImage(video.value, 0, 0)
+        
+        capturedPhoto.value = canvas.toDataURL('image/jpeg', 0.8)
+        console.log('📸 Foto capturada')
+        
+        // Detener cámara después de capturar
+        stopCamera()
+      }
+    }
+    
+    // ✅ FUNCIÓN: Aceptar foto capturada
+    const acceptPhoto = () => {
+      if (capturedPhoto.value) {
+        // Convertir base64 a archivo
+        const photoFile = base64ToFile(capturedPhoto.value, `photo_${Date.now()}.jpg`)
+        employeeForm.value.photo = photoFile
+        console.log('✅ Foto aceptada y convertida a archivo:', photoFile.name, photoFile.size)
+      }
+      closePhotoCapture()
+    }
+    
+    // ✅ FUNCIÓN: Retomar foto
+    const retakePhoto = () => {
+      capturedPhoto.value = null
+      console.log('🔄 Retomando foto')
+    }
+    
+    // ✅ FUNCIÓN: Cerrar captura de foto
+    const closePhotoCapture = () => {
+      showPhotoCapture.value = false
+      capturedPhoto.value = null
+      stopCamera()
+      console.log('🚪 Captura de foto cerrada')
      }
 
     // ✅ Función para abrir registro facial directamente desde la lista
@@ -1105,25 +1792,51 @@ export default {
       loadAreas()
       
       // 🚀 IMPLEMENTAR POLLING AUTOMÁTICO
-      // Actualizar lista de empleados cada 30 segundos
+      // Actualizar lista de empleados cada 30 segundos SOLO si hay autenticación válida
       const pollingInterval = setInterval(async () => {
+        // Verificar si hay autenticación válida antes de hacer polling
+        const token = localStorage.getItem('token')
+        const isLoggingOut = localStorage.getItem('isLoggingOut')
+        
+        if (!token || isLoggingOut) {
+          console.log('🔄 Polling automático: Saltando actualización - sin autenticación o logout en progreso')
+          return
+        }
+        
         console.log('🔄 Polling automático: actualizando lista de empleados...')
         try {
           await loadEmployees()
           console.log('✅ Lista de empleados actualizada automáticamente')
         } catch (error) {
           console.error('❌ Error en polling automático:', error)
+          
+          // Si hay error 401, detener el polling
+          if (error.response?.status === 401) {
+            console.log('🔒 Error 401 en polling, deteniendo actualizaciones automáticas')
+            clearInterval(pollingInterval)
+          }
         }
       }, 30000) // 30 segundos
       
       // Limpiar intervalo cuando el componente se desmonte
       onUnmounted(() => {
-        clearInterval(pollingInterval)
-        console.log('🧹 Polling automático detenido')
+        // Limpiar intervalos si existen
+        if (window.employeeRefreshInterval) {
+          clearInterval(window.employeeRefreshInterval)
+        }
+        
+        // Detener cámara si está activa
+        if (stream.value) {
+          stopCamera()
+        }
       })
     })
     
     return {
+      // Referencias
+      form,
+      video,
+      // Estado reactivo
       search,
       loading,
       saving,
@@ -1132,12 +1845,18 @@ export default {
       showDeleteDialog,
       showFaceRegistration,
       valid,
-      form,
       dialogReady,
       editingEmployee,
-      employeeToDelete,
+      showPhotoCapture,
+      capturedPhoto,
+      cameraActive,
+      cameraLoading,
+      //Estado para modal de foto expandida
+      showPhotoModal,
+      selectedEmployeePhoto,
+      // Datos
       employees,
-             areas,
+      areas,
        employeeForm,
        positions,
        existingCedulas,
@@ -1146,7 +1865,7 @@ export default {
       viewMode,
       filteredEmployees,
       loadEmployees,
-             loadAreas,
+      loadAreas,
        onDialogOpened,
        openNewEmployeeDialog,
        editEmployee,
@@ -1165,9 +1884,32 @@ export default {
       trainFaceModel,
       resetFaceRegistration,
       checkFaceRegistrationStatus,
-                    // Funciones de validación
-        validateNameField,
-        validateCedula
+// Funciones de validación
+       validateNameField,
+       validateCedula,
+       validateEcuadorianCedula,
+       filterLettersOnly,
+       filterEmail,
+       filterNumbersOnly,
+       blockInvalidCharacters,
+       blockNonNumericCharacters,
+       blockInvalidEmailCharacters,
+       blockCedulaPaste,
+      // Funciones para la foto
+      onFileSelected,
+      removePhoto,
+      startCamera,
+      stopCamera,
+      capturePhoto,
+      acceptPhoto,
+      retakePhoto,
+      closePhotoCapture,
+      base64ToFile,
+      getPhotoUrl,
+      shouldShowDeletePhotoButton,
+      // Funciones para el modal de foto expandida
+      openPhotoModal,
+      closePhotoModal
     }
   }
 }
@@ -1184,5 +1926,81 @@ export default {
 
 .custom-snackbar .v-snackbar__actions {
   margin-left: 16px;
+}
+
+/* Estilos para la foto del empleado */
+.employee-photo-container {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.employee-photo {
+  border: 3px solid #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.employee-photo-placeholder {
+  border: 3px solid #60a5fa;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+}
+
+.employee-photo-preview {
+  border: 3px solid #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Estilos para la captura de foto */
+.camera-preview {
+  margin-bottom: 20px;
+}
+
+.camera-video {
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.camera-controls {
+  margin-top: 20px;
+}
+
+.capture-controls {
+  margin-top: 20px;
+}
+
+.captured-photo-preview {
+  margin-bottom: 20px;
+}
+
+/* Estilos para las tarjetas de empleados */
+.employee-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.employee-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.cards-container {
+  margin-top: 20px;
+}
+
+/* Estilos para fotos clickeables */
+.clickable-photo {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable-photo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+/* Estilos para el modal de foto expandida */
+.expanded-photo {
+  border: 3px solid #3b82f6;
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.3);
 }
 </style>
