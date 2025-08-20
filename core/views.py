@@ -11,10 +11,12 @@ from .models import User, Employee, Area, Attendance, FaceProfile, PasswordReset
 from .serializers import (
     UserSerializer, EmployeeSerializer, AreaSerializer, AttendanceSerializer,
     LoginSerializer, DashboardStatsSerializer, AttendanceReportSerializer,
-    PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+    PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
+    EmployeePasswordResetRequestSerializer
 )
 from .services.face_service_singleton import face_service_singleton
 from .services.password_reset_service import PasswordResetService
+from .services.employee_welcome_service import EmployeeWelcomeService
 
 from rest_framework.views import APIView
 from django.contrib.auth import update_session_auth_hash
@@ -429,7 +431,30 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             print(f"   - Result completo: {result}")
             
             if result.get('success'):
-                print("✅ Registro facial exitoso, enviando respuesta 201")
+                print("✅ Registro facial exitoso")
+                
+                # Enviar email de bienvenida con credenciales
+                try:
+                    # Obtener credenciales del usuario
+                    username = employee.user.username
+                    password = None
+                    
+                    # Intentar obtener la contraseña (si está disponible)
+                    if hasattr(employee.user, 'cedula') and employee.user.cedula:
+                        # Usar la cédula como contraseña por defecto
+                        password = employee.user.cedula
+                    else:
+                        password = f"pass{employee.user.id}"
+                    
+                    # Enviar email de bienvenida completo
+                    EmployeeWelcomeService.send_welcome_email(employee, username, password)
+                    print(f"✅ Email de bienvenida enviado a {employee.user.email}")
+                    
+                except Exception as email_error:
+                    print(f"⚠️ ADVERTENCIA: No se pudo enviar email de bienvenida: {email_error}")
+                    # No fallar el registro facial si el email falla
+                
+                print("📧 Enviando respuesta 201")
                 return Response({
                     'success': True,
                     'message': result['message'],
@@ -1161,4 +1186,127 @@ class PasswordResetViewSet(viewsets.ViewSet):
             logger.error(f"Error validando token: {str(e)}")
             return Response({
                 'error': 'Error validando token'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class EmployeePasswordResetViewSet(viewsets.ViewSet):
+    """ViewSet para recuperación de contraseña de empleados"""
+    permission_classes = [permissions.AllowAny]
+    
+    @action(detail=False, methods=['post'])
+    def request_reset(self, request):
+        """Solicitar recuperación de contraseña para empleados"""
+        try:
+            serializer = EmployeePasswordResetRequestSerializer(data=request.data)
+            if serializer.is_valid():
+                email = serializer.validated_data['email']
+                
+                # Buscar usuario empleado
+                user = User.objects.get(email=email, role='employee', is_active=True)
+                
+                # Crear token de recuperación
+                from .services.employee_password_reset_service import EmployeePasswordResetService
+                token = EmployeePasswordResetService.create_reset_token(user)
+                
+                # Enviar email
+                EmployeePasswordResetService.send_reset_email(user, token)
+                
+                return Response({
+                    'message': 'Se ha enviado un email con instrucciones para recuperar tu contraseña.',
+                    'email': email
+                }, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except User.DoesNotExist:
+            return Response({
+                'error': 'No se encontró una cuenta de empleado activa con este email.'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error en employee request_reset: {str(e)}")
+            return Response({
+                'error': 'Ocurrió un error al procesar tu solicitud. Por favor intenta de nuevo.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def confirm_reset(self, request):
+        """Confirmar y cambiar la contraseña del empleado"""
+        try:
+            serializer = PasswordResetConfirmSerializer(data=request.data)
+            if serializer.is_valid():
+                token_string = serializer.validated_data['token']
+                new_password = serializer.validated_data['new_password']
+                
+                # Resetear contraseña
+                from .services.employee_password_reset_service import EmployeePasswordResetService
+                EmployeePasswordResetService.reset_password(token_string, new_password)
+                
+                return Response({
+                    'message': 'Tu contraseña ha sido cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.'
+                }, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except ValueError as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error en employee confirm_reset: {str(e)}")
+            return Response({
+                'error': 'Ocurrió un error al cambiar tu contraseña. Por favor intenta de nuevo.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def validate_token(self, request):
+        """Validar un token de recuperación de empleado"""
+        try:
+            token_string = request.query_params.get('token')
+            if not token_string:
+                return Response({
+                    'error': 'Token requerido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            from .services.employee_password_reset_service import EmployeePasswordResetService
+            token = EmployeePasswordResetService.validate_token(token_string)
+            if token:
+                return Response({
+                    'valid': True,
+                    'user_email': token.user.email,
+                    'expires_at': token.expires_at
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'valid': False,
+                    'error': 'Token inválido o expirado'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error validando token de empleado: {str(e)}")
+            return Response({
+                'error': 'Error validando token'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def verify_email(self, request):
+        """Verificar si un email pertenece a un empleado"""
+        try:
+            serializer = EmployeePasswordResetRequestSerializer(data=request.data)
+            if serializer.is_valid():
+                email = serializer.validated_data['email']
+                
+                from .services.employee_password_reset_service import EmployeePasswordResetService
+                result = EmployeePasswordResetService.verify_employee_email(email)
+                
+                return Response({
+                    'is_employee': result['is_employee'],
+                    'email': email
+                }, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error verificando email de empleado: {str(e)}")
+            return Response({
+                'error': 'Error verificando email'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

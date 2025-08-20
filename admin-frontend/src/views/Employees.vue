@@ -313,6 +313,28 @@
                         ></v-img>
                       </v-avatar>
                       <p class="text-grey-300 text-sm">Foto actual</p>
+                      
+                      <!-- 🔍 DEBUG: Mostrar estado de la foto -->
+                      <p class="text-blue-400 text-xs mt-1">
+                        Estado: {{ employeeForm.photo === 'DELETE_PHOTO' ? 'Marcada para eliminar' : 'Normal' }}
+                      </p>
+                    </div>
+
+                    <!-- Indicador de foto marcada para eliminar -->
+                    <div v-if="editingEmployee && editingEmployee.photo && employeeForm.photo === 'DELETE_PHOTO'" class="text-center mb-4">
+                      <v-avatar size="120" class="mb-3 position-relative">
+                        <v-img 
+                          :src="editingEmployee.photo" 
+                          cover
+                          class="employee-photo-preview"
+                          style="filter: grayscale(100%) brightness(0.5);"
+                        ></v-img>
+                        <div class="photo-delete-overlay">
+                          <v-icon color="red-400" size="48">mdi-delete</v-icon>
+                        </div>
+                      </v-avatar>
+                      <p class="text-red-400 text-sm font-weight-bold">Foto marcada para eliminar</p>
+                      <p class="text-grey-400 text-xs">Haz clic en "Guardar" para confirmar</p>
                     </div>
 
                     <!-- Opciones para agregar/editar foto -->
@@ -341,14 +363,15 @@
 
                       <!-- Eliminar foto -->
                       <v-btn
-                        v-if="(employeeForm.photo && employeeForm.photo !== 'DELETE_PHOTO') || (editingEmployee && editingEmployee.photo && employeeForm.photo !== 'DELETE_PHOTO')"
+                        v-if="shouldShowDeletePhotoButton()"
                         @click="removePhoto"
                         color="red-400"
                         variant="outlined"
                         prepend-icon="mdi-delete"
                         size="large"
+                        :disabled="employeeForm.photo === 'DELETE_PHOTO'"
                       >
-                        🗑️ Eliminar
+                        {{ employeeForm.photo === 'DELETE_PHOTO' ? '🔄 Deshacer eliminación' : '🗑️ Eliminar' }}
                       </v-btn>
                     </div>
 
@@ -853,6 +876,15 @@ export default {
     })
     
          const loadEmployees = async () => {
+       // Verificar autenticación antes de cargar
+       const token = localStorage.getItem('token')
+       const isLoggingOut = localStorage.getItem('isLoggingOut')
+       
+       if (!token || isLoggingOut) {
+         console.log('🔄 loadEmployees: Saltando carga - sin autenticación o logout en progreso')
+         return
+       }
+       
        loading.value = true
        try {
          // CARGAR DESDE API REAL
@@ -861,17 +893,30 @@ export default {
          // Necesitamos acceder a results que es el array de empleados
          employees.value = employeesData.results || employeesData
          
-         // 🔍 DEBUG: Verificar qué datos vienen del backend
-         console.log('🔍 loadEmployees - Datos recibidos del backend:')
-         if (employees.value.length > 0) {
-           const firstEmployee = employees.value[0]
-           console.log('   - Primer empleado position:', firstEmployee.position)
-           console.log('   - Primer empleado position type:', typeof firstEmployee.position)
-           console.log('   - Primer empleado completo:', JSON.stringify(firstEmployee, null, 2))
-         }
+                   // 🔍 DEBUG: Verificar qué datos vienen del backend
+          console.log('🔍 loadEmployees - Datos recibidos del backend:')
+          if (employees.value.length > 0) {
+            const firstEmployee = employees.value[0]
+            console.log('   - Primer empleado position:', firstEmployee.position)
+            console.log('   - Primer empleado position type:', typeof firstEmployee.position)
+            console.log('   - Primer empleado completo:', JSON.stringify(firstEmployee, null, 2))
+            
+            // 🔍 DEBUG: Verificar fotos de todos los empleados
+            console.log('🔍 Verificando fotos de empleados:')
+            employees.value.forEach((emp, index) => {
+              console.log(`   - Empleado ${index + 1}: ${emp.full_name}`)
+              console.log(`     - Foto: ${emp.photo || 'Sin foto'}`)
+              console.log(`     - Photo URL: ${emp.photo_url || 'Sin URL'}`)
+              console.log(`     - Tipo de foto: ${typeof emp.photo}`)
+            })
+          }
        } catch (error) {
          console.error('Error cargando empleados:', error)
-         showMessage('Error cargando empleados', 'error')
+         
+         // Si es error 401, no mostrar mensaje de error al usuario
+         if (error.response?.status !== 401) {
+           showMessage('Error cargando empleados', 'error')
+         }
        } finally {
          loading.value = false
        }
@@ -957,8 +1002,12 @@ export default {
            cedula: employee.cedula_display || employee.cedula || employee.user.cedula || '', // Usar cedula_display del backend
            position: employee.position || 'desarrollador', // Usar valor por defecto más apropiado
            area: employee.area?.id || employee.area, // Asegurar que se envíe solo el ID del área
-           photo: null // No enviar foto existente en actualización, solo en creación
+           photo: null // Inicialmente no hay cambios en la foto
          }
+         
+         // 🔍 DEBUG: Verificar estado de la foto
+         console.log('🔍 editEmployee - Foto del empleado:', employee.photo)
+         console.log('🔍 editEmployee - Estado inicial del formulario:', employeeForm.value.photo)
        
        console.log('🔍 editEmployee - Formulario preparado:', JSON.stringify(employeeForm.value, null, 2))
        console.log('🔍 editEmployee - Área del empleado:', employee.area)
@@ -1051,8 +1100,16 @@ export default {
            console.log('🔄 Actualizando empleado ID:', editingEmployee.value.id)
            console.log('📋 Datos de actualización:', JSON.stringify(employeeForm.value, null, 2))
            
+           // Verificar si se está eliminando una foto
+           const isDeletingPhoto = employeeForm.value.photo === 'DELETE_PHOTO'
+           
            savedEmployee = await employeeService.update(editingEmployee.value.id, employeeForm.value)
-           showMessage('Empleado actualizado correctamente')
+           
+           if (isDeletingPhoto) {
+             showMessage('Empleado actualizado correctamente. Foto eliminada.', 'success')
+           } else {
+             showMessage('Empleado actualizado correctamente', 'success')
+           }
          } else {
            // Crear nuevo empleado
            console.log('➕ Creando nuevo empleado')
@@ -1069,28 +1126,46 @@ export default {
            }
          }
         
-        await loadEmployees() // Recargar lista
-        showDialog.value = false
-        dialogReady.value = false // Resetear estado del diálogo
-        
-        // 🔄 ACTUALIZAR LISTA INMEDIATAMENTE después de cerrar diálogo
-        try {
-          await loadEmployees()
-          console.log('✅ Lista de empleados actualizada después de cerrar diálogo')
-        } catch (error) {
-          console.error('❌ Error actualizando lista después de cerrar diálogo:', error)
-        }
-        editingEmployee.value = null
-        employeeForm.value = {
-          first_name: '',
-          last_name: '',
-          email: '',
-          cedula: '',
-          position: 'desarrollador', // Usar valor por defecto
-          area: null,
-          photo: null // Resetear foto
-        }
-        resetFaceRegistration() // Resetear estado facial
+                 // 🔄 ACTUALIZAR LISTA INMEDIATAMENTE después de guardar
+         try {
+           await loadEmployees()
+           console.log('✅ Lista de empleados actualizada después de guardar')
+           
+           // 🔍 DEBUG: Verificar que la foto se haya eliminado
+           if (isDeletingPhoto) {
+             console.log('🔍 Verificando eliminación de foto...')
+             // Buscar el empleado actualizado en la lista
+             const updatedEmployee = employees.value.find(emp => emp.id === editingEmployee.value.id)
+             if (updatedEmployee) {
+               console.log('🔍 Empleado encontrado en lista actualizada:', updatedEmployee)
+               console.log('🔍 Foto del empleado después de actualizar:', updatedEmployee.photo)
+               if (updatedEmployee.photo) {
+                 console.log('⚠️ ADVERTENCIA: La foto aún aparece en la lista actualizada')
+               } else {
+                 console.log('✅ Foto eliminada correctamente de la lista')
+               }
+             }
+           }
+         } catch (error) {
+           console.error('❌ Error actualizando lista después de guardar:', error)
+         }
+         
+         // Cerrar diálogo y resetear estado
+         showDialog.value = false
+         dialogReady.value = false // Resetear estado del diálogo
+         
+         // Resetear estado de edición
+         editingEmployee.value = null
+         employeeForm.value = {
+           first_name: '',
+           last_name: '',
+           email: '',
+           cedula: '',
+           position: 'desarrollador', // Usar valor por defecto
+           area: null,
+           photo: null // Resetear foto
+         }
+         resetFaceRegistration() // Resetear estado facial
       } catch (error) {
         console.error('Error guardando empleado:', error)
         showMessage('Error guardando empleado', 'error')
@@ -1480,16 +1555,38 @@ export default {
 
     // ✅ FUNCIÓN: Eliminar la foto actual
     const removePhoto = () => {
-      // Si estamos editando un empleado con foto existente, marcar para eliminación
-      if (editingEmployee.value && editingEmployee.value.photo) {
+      console.log('🔍 removePhoto - Estado actual:')
+      console.log('   - editingEmployee.value?.photo:', editingEmployee.value?.photo)
+      console.log('   - employeeForm.value.photo:', employeeForm.value.photo)
+      
+      // Si ya está marcada para eliminar, permitir deshacer
+      if (employeeForm.value.photo === 'DELETE_PHOTO') {
+        // Deshacer la eliminación
+        if (editingEmployee.value && editingEmployee.value.photo) {
+          // Restaurar la foto original del empleado
+          employeeForm.value.photo = null // Volver al estado inicial
+          console.log('🔄 Eliminación de foto deshecha')
+          showMessage('Eliminación de foto cancelada', 'info')
+        } else {
+          // Limpiar la foto
+          employeeForm.value.photo = null
+          console.log('🔄 Eliminación de foto deshecha')
+          showMessage('Eliminación de foto cancelada', 'info')
+        }
+      } else if (editingEmployee.value && editingEmployee.value.photo) {
         // Marcar que se debe eliminar la foto existente
         employeeForm.value.photo = 'DELETE_PHOTO'
         console.log('🗑️ Foto existente marcada para eliminación')
+        showMessage('Foto marcada para eliminar. Haz clic en "Guardar" para confirmar.', 'warning')
       } else {
         // Si es una foto nueva, simplemente limpiar
         employeeForm.value.photo = null
         console.log('🗑️ Foto nueva eliminada')
+        showMessage('Foto eliminada del formulario', 'info')
       }
+      
+      console.log('🔍 removePhoto - Estado después de la acción:')
+      console.log('   - employeeForm.value.photo:', employeeForm.value.photo)
     }
     
     // ✅ FUNCIÓN: Convertir base64 a archivo
@@ -1528,6 +1625,32 @@ export default {
       }
       
       return null
+    }
+
+    // ✅ FUNCIÓN: Verificar si se debe mostrar el botón de eliminar foto
+    const shouldShowDeletePhotoButton = () => {
+      // Mostrar si hay una foto nueva seleccionada
+      if (employeeForm.value.photo && employeeForm.value.photo !== 'DELETE_PHOTO' && employeeForm.value.photo instanceof File) {
+        return true
+      }
+      
+      // Mostrar si hay una foto existente del empleado (no marcada para eliminar)
+      if (editingEmployee.value && editingEmployee.value.photo && employeeForm.value.photo !== 'DELETE_PHOTO') {
+        return true
+      }
+      
+      // Mostrar si la foto está marcada para eliminar (para permitir deshacer)
+      if (editingEmployee.value && editingEmployee.value.photo && employeeForm.value.photo === 'DELETE_PHOTO') {
+        return true
+      }
+      
+      // 🔍 DEBUG: Log del estado para debugging
+      console.log('🔍 shouldShowDeletePhotoButton:')
+      console.log('   - editingEmployee.value?.photo:', editingEmployee.value?.photo)
+      console.log('   - employeeForm.value.photo:', employeeForm.value.photo)
+      console.log('   - Resultado:', false)
+      
+      return false
     }
     
     // ✅ FUNCIÓN: Iniciar la cámara
@@ -1618,14 +1741,29 @@ export default {
       loadAreas()
       
       // 🚀 IMPLEMENTAR POLLING AUTOMÁTICO
-      // Actualizar lista de empleados cada 30 segundos
+      // Actualizar lista de empleados cada 30 segundos SOLO si hay autenticación válida
       const pollingInterval = setInterval(async () => {
+        // Verificar si hay autenticación válida antes de hacer polling
+        const token = localStorage.getItem('token')
+        const isLoggingOut = localStorage.getItem('isLoggingOut')
+        
+        if (!token || isLoggingOut) {
+          console.log('🔄 Polling automático: Saltando actualización - sin autenticación o logout en progreso')
+          return
+        }
+        
         console.log('🔄 Polling automático: actualizando lista de empleados...')
         try {
           await loadEmployees()
           console.log('✅ Lista de empleados actualizada automáticamente')
         } catch (error) {
           console.error('❌ Error en polling automático:', error)
+          
+          // Si hay error 401, detener el polling
+          if (error.response?.status === 401) {
+            console.log('🔒 Error 401 en polling, deteniendo actualizaciones automáticas')
+            clearInterval(pollingInterval)
+          }
         }
       }, 30000) // 30 segundos
       
@@ -1717,6 +1855,7 @@ export default {
       closePhotoCapture,
       base64ToFile,
       getPhotoUrl,
+      shouldShowDeletePhotoButton,
       
       // Funciones para el modal de foto expandida
       openPhotoModal,

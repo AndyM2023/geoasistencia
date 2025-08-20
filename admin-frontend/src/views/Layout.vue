@@ -1,11 +1,17 @@
 <template>
   <v-app>
-    <div v-if="!isAuthenticated" class="d-flex justify-center align-center" style="height: 100vh;">
-      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
+    <!-- ❌ NO AUTENTICADO (solo si ya se inicializó pero no hay usuario) -->
+    <div v-if="authStore.isInitialized && !isAuthenticated" class="d-flex flex-column justify-center align-center" style="height: 100vh;">
+      <v-icon color="red-400" size="64" class="mb-4">mdi-lock-alert</v-icon>
+      <h3 class="text-white mb-2">Acceso denegado</h3>
+      <p class="text-grey-300 text-center">Redirigiendo al login...</p>
+      <v-progress-circular indeterminate color="red-400" size="32" class="mt-4"></v-progress-circular>
     </div>
+    
+    <!-- ✅ AUTENTICADO Y LISTO -->
     <template v-else>
       <AppBar v-model:drawer="drawer" />
-      <SideNav v-model="drawer" :menu-items="menuItems" />
+      <SideNav v-model:drawer="drawer" :menu-items="menuItems" />
       <v-main class="bg-dark-background">
         <v-container fluid class="pa-6">
           <router-view />
@@ -37,8 +43,12 @@ export default {
     const drawer = ref(lgAndUp.value)
     const isAuthenticated = computed(() => authStore.isAuthenticated)
     
-    // Actualizar drawer cuando cambie el tamaño de pantalla
+    // Configurar drawer al montar el componente
     onMounted(() => {
+      console.log('🚀 Layout - Componente montado')
+      console.log(`   - Estado de autenticación: isInitialized=${authStore.isInitialized}, isAuthenticated=${authStore.isAuthenticated}`)
+      
+      // Configurar drawer
       drawer.value = lgAndUp.value
     })
     
@@ -46,6 +56,18 @@ export default {
     watch(mdAndDown, (isMobile) => {
       if (isMobile) {
         drawer.value = false
+      }
+    })
+    
+    // 🔍 WATCHER PARA DEBUGGING
+    watch(() => authStore.isInitialized, (newVal) => {
+      console.log(`🔄 Layout - isInitialized cambió a: ${newVal}`)
+    })
+    
+    watch(() => authStore.isAuthenticated, (newVal) => {
+      console.log(`🔄 Layout - isAuthenticated cambió a: ${newVal}`)
+      if (newVal && authStore.user) {
+        console.log(`👤 Layout - Usuario autenticado: ${authStore.user.username}`)
       }
     })
     
@@ -75,7 +97,8 @@ export default {
     return {
       drawer,
       menuItems,
-      isAuthenticated
+      isAuthenticated,
+      authStore
     }
   }
 }

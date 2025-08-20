@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a {{ app_name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #3b82f6;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+        }
+        .welcome-message {
+            margin: 25px 0;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .credentials-section {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .credentials-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .credential-box {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .credential-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .credential-value {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+        .important-notice {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .important-notice h3 {
+            color: #92400e;
+            margin-top: 0;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .important-notice h3::before {
+            content: "⚠️";
+            margin-right: 10px;
+        }
+        .instructions {
+            background-color: #f0f9ff;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .instructions h3 {
+            color: #1e40af;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+            color: #1e40af;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .support-info {
+            background-color: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header con el mismo estilo del admin -->
+        <div class="header">
+            <div class="logo">{{ app_name }}</div>
+            <p class="subtitle">Sistema de Gestión de Asistencia</p>
+        </div>
+
+        <!-- Mensaje de bienvenida -->
+        <div class="welcome-message">
+            <p><strong>Hola {{ employee.full_name }},</strong></p>
+            <p>¡Bienvenido a {{ app_name }}! Tu cuenta ha sido creada exitosamente y tu registro facial ha sido completado.</p>
+        </div>
+
+        <!-- Credenciales de Acceso -->
+        <div class="credentials-section">
+            <h2 class="credentials-title">🔐 Tus Credenciales de Acceso</h2>
+            <p style="margin-bottom: 20px; opacity: 0.9;">
+                Guarda esta información en un lugar seguro. Necesitarás estas credenciales para acceder al sistema.
+            </p>
+            
+            <div class="credential-box">
+                <div class="credential-label">Usuario:</div>
+                <div class="credential-value">{{ username }}</div>
+            </div>
+            
+            <div class="credential-box">
+                <div class="credential-label">Contraseña:</div>
+                <div class="credential-value">{{ password }}</div>
+            </div>
+        </div>
+
+        <!-- Instrucciones de uso -->
+        <div class="instructions">
+            <h3>📋 Instrucciones para Marcar Asistencia</h3>
+            <ul>
+                <li><strong>Accede al sistema</strong> usando las credenciales proporcionadas</li>
+                <li><strong>Ubícate en tu área de trabajo</strong> para poder marcar entrada y salida</li>
+                <li><strong>Marca tu entrada</strong> al llegar al trabajo</li>
+                <li><strong>Marca tu salida</strong> al terminar tu jornada</li>
+                <li><strong>El sistema verificará tu rostro</strong> para confirmar tu identidad</li>
+            </ul>
+        </div>
+
+        <!-- Nota importante -->
+        <div class="important-notice">
+            <h3>Importante</h3>
+            <p>Si no solicitaste esta cuenta, contacta inmediatamente al administrador del sistema. Tu seguridad es nuestra prioridad.</p>
+        </div>
+
+        <!-- Información de soporte -->
+        <div class="support-info">
+            <p style="margin: 0;">
+                <strong>¿Necesitas ayuda?</strong><br>
+                Contacta al administrador del sistema.
+            </p>
+        </div>
+
+        <!-- Footer con el mismo estilo del admin -->
+        <div class="footer">
+            <p>Este es un email automático, por favor no respondas a este mensaje.</p>
+            <p>Si tienes alguna pregunta, contacta al administrador del sistema.</p>
+            <p>© 2024 {{ app_name }}. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>
