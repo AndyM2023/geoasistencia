@@ -102,6 +102,12 @@ export default {
         
         console.log('🚀 AuthInitializer - Iniciando proceso de inicialización...')
         
+        // Verificar si ya estamos en proceso de logout
+        if (localStorage.getItem('isLoggingOut')) {
+          console.log('🔄 AuthInitializer - Logout en progreso, esperando...')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+        
         // Paso 1: Verificar sesión guardada
         currentStep.value = 1
         console.log('✅ Paso 1: Verificando sesión guardada')
@@ -127,7 +133,13 @@ export default {
         
       } catch (err) {
         console.error('❌ AuthInitializer - Error durante inicialización:', err)
-        error.value = err.message || 'Error desconocido durante la inicialización'
+        
+        // Solo mostrar error si no es un logout intencional
+        if (!localStorage.getItem('isLoggingOut')) {
+          error.value = err.message || 'Error desconocido durante la inicialización'
+        } else {
+          console.log('ℹ️ AuthInitializer - Error durante logout intencional, no mostrando mensaje')
+        }
       }
     }
     

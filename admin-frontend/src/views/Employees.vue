@@ -876,6 +876,15 @@ export default {
     })
     
          const loadEmployees = async () => {
+       // Verificar autenticación antes de cargar
+       const token = localStorage.getItem('token')
+       const isLoggingOut = localStorage.getItem('isLoggingOut')
+       
+       if (!token || isLoggingOut) {
+         console.log('🔄 loadEmployees: Saltando carga - sin autenticación o logout en progreso')
+         return
+       }
+       
        loading.value = true
        try {
          // CARGAR DESDE API REAL
@@ -903,7 +912,11 @@ export default {
           }
        } catch (error) {
          console.error('Error cargando empleados:', error)
-         showMessage('Error cargando empleados', 'error')
+         
+         // Si es error 401, no mostrar mensaje de error al usuario
+         if (error.response?.status !== 401) {
+           showMessage('Error cargando empleados', 'error')
+         }
        } finally {
          loading.value = false
        }
@@ -1728,14 +1741,29 @@ export default {
       loadAreas()
       
       // 🚀 IMPLEMENTAR POLLING AUTOMÁTICO
-      // Actualizar lista de empleados cada 30 segundos
+      // Actualizar lista de empleados cada 30 segundos SOLO si hay autenticación válida
       const pollingInterval = setInterval(async () => {
+        // Verificar si hay autenticación válida antes de hacer polling
+        const token = localStorage.getItem('token')
+        const isLoggingOut = localStorage.getItem('isLoggingOut')
+        
+        if (!token || isLoggingOut) {
+          console.log('🔄 Polling automático: Saltando actualización - sin autenticación o logout en progreso')
+          return
+        }
+        
         console.log('🔄 Polling automático: actualizando lista de empleados...')
         try {
           await loadEmployees()
           console.log('✅ Lista de empleados actualizada automáticamente')
         } catch (error) {
           console.error('❌ Error en polling automático:', error)
+          
+          // Si hay error 401, detener el polling
+          if (error.response?.status === 401) {
+            console.log('🔒 Error 401 en polling, deteniendo actualizaciones automáticas')
+            clearInterval(pollingInterval)
+          }
         }
       }, 30000) // 30 segundos
       

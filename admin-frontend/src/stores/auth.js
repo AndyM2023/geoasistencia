@@ -134,6 +134,15 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('🚪 Auth Store - Ejecutando logout...')
     console.log(`   - Estado antes: isAuthenticated=${isAuthenticated.value}, user=${user.value?.username || 'No hay usuario'}`)
     
+    // Verificar si ya estamos en proceso de logout
+    if (localStorage.getItem('isLoggingOut')) {
+      console.log('🔄 Auth Store - Logout ya en progreso, saltando...')
+      return
+    }
+    
+    // Marcar que estamos en proceso de logout
+    localStorage.setItem('isLoggingOut', 'true')
+    
     // Limpiar estado
     token.value = null
     user.value = null
@@ -143,6 +152,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('user_data')
+    
+    // Limpiar la marca de logout después de un delay
+    setTimeout(() => {
+      localStorage.removeItem('isLoggingOut')
+    }, 1000)
     
     console.log('✅ Auth Store - Logout completado, estado limpiado')
   }

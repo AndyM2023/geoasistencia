@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="areas-container">
     <v-row class="mt-2 areas-header">
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
@@ -264,32 +264,64 @@
                      <label class="radius-label text-white mb-0">Radio del Área (metros)</label>
                      
                      <!-- Valor del radio al lado del label -->
-                     <v-chip color="info" variant="tonal" size="small" class="radius-chip">
+                     <v-chip color="info" variant="tonal" size="small" class="radius-chip text-center">
                        {{ mapRadius }}m
                      </v-chip>
                    </div>
                    
-                   <div class="d-flex align-center gap-3">
-                     <v-slider
-                       v-model="mapRadius"
-                       :min="10"
-                       :max="500"
-                       :step="10"
-                       color="info"
-                       thumb-color="info"
-                       track-color="info-lighten-3"
-                       thumb-label="always"
-                       prepend-icon="mdi-radius"
-                       class="radius-slider-compact custom-slider"
-                       hide-details
-                     ></v-slider>
-                     
-                     <!-- Chip de ubicación seleccionada al lado del deslizador -->
-                     <v-chip v-if="selectedLocation" color="blue-400" variant="tonal" size="small" class="location-chip">
-                       <v-icon left>mdi-map-marker</v-icon>
-                       Ubicación seleccionada
-                     </v-chip>
-                   </div>
+                   <div class="d-flex gap-4">
+                      <!-- Columna izquierda: Barra deslizadora y chip -->
+                      <div class="d-flex flex-column gap-3">
+                        <!-- Barra deslizadora arriba -->
+                        <v-slider
+                          v-model="mapRadius"
+                          :min="10"
+                          :max="500"
+                          :step="10"
+                          color="info"
+                          thumb-color="info"
+                          track-color="info-lighten-3"
+                          thumb-label="always"
+                          prepend-icon="mdi-radius"
+                          class="radius-slider-compact custom-slider"
+                          hide-details
+                        ></v-slider>
+                        
+                        <!-- Chip de ubicación seleccionada abajo -->
+                        <v-chip v-if="selectedLocation" color="blue-400" variant="tonal" size="small" class="location-chip">
+                          <v-icon left>mdi-map-marker</v-icon>
+                          Ubicación seleccionada
+                        </v-chip>
+                      </div>
+                      
+                      <!-- Columna derecha: Botón y mensaje -->
+                      <div v-if="selectedLocation" class="d-flex flex-column align-center justify-center text-center">
+                        <v-btn
+                          size="x-small"
+                          color="green-400"
+                          variant="outlined"
+                          icon="mdi-crosshairs-gps"
+                          @click="useCurrentLocation"
+                          :loading="isLocating"
+                          :disabled="isLocating"
+                          class="use-current-location-btn"
+                          title="Usar ubicación actual"
+                        ></v-btn>
+                        
+                        <!-- Mensaje informativo en líneas separadas -->
+                        <div class="mt-2 text-center">
+                          <p class="text-caption text-grey-400 text-center mb-1">
+                            Cambia la ubicación
+                          </p>
+                          <p class="text-caption text-grey-400 text-center mb-1">
+                            seleccionada por tu
+                          </p>
+                          <p class="text-caption text-grey-400 text-center mb-0">
+                            ubicación GPS actual
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                  </div>
                  
                  <!-- Chips de estado -->
@@ -894,6 +926,54 @@ export default {
       console.log('❌ Selección de mapa cancelada')
     }
     
+    // Función para usar la ubicación actual del usuario
+    const useCurrentLocation = async () => {
+      try {
+        console.log('📍 Cambiando a ubicación actual del usuario...')
+        isLocating.value = true
+        
+        // Obtener ubicación actual del usuario
+        await getCurrentLocation({
+          radius: mapRadius.value,
+          title: 'Tu ubicación actual'
+        })
+        
+        // Si se obtuvo la ubicación exitosamente, actualizar el formulario
+        if (selectedLocation.value) {
+          areaForm.value.latitude = selectedLocation.value.lat
+          areaForm.value.longitude = selectedLocation.value.lng
+          areaForm.value.radius = mapRadius.value
+          
+          // Actualizar también el radio del mapa si es necesario
+          if (mapRadius.value !== selectedLocation.value.radius) {
+            mapRadius.value = selectedLocation.value.radius || mapRadius.value
+          }
+          
+          console.log('✅ Ubicación actual aplicada:', selectedLocation.value)
+          console.log('📋 Formulario actualizado con ubicación actual')
+          console.log('📏 Radio actualizado:', mapRadius.value)
+          
+          // Si estamos editando, actualizar también las coordenadas de referencia
+          if (editingArea.value) {
+            editingArea.value.savedCoordinates = {
+              lat: selectedLocation.value.lat,
+              lng: selectedLocation.value.lng
+            }
+            console.log('🔄 Coordenadas de referencia actualizadas con ubicación actual')
+          }
+          
+          // Mostrar mensaje de éxito
+          showMessage('Ubicación actual aplicada correctamente', 'success')
+        }
+        
+      } catch (error) {
+        console.error('❌ Error obteniendo ubicación actual:', error)
+        showMessage('Error obteniendo ubicación actual: ' + error.message, 'error')
+      } finally {
+        isLocating.value = false
+      }
+    }
+    
              const saveArea = async () => {
       console.log('🔍 Iniciando saveArea...')
       console.log('📝 Datos del formulario:', areaForm.value)
@@ -1104,6 +1184,7 @@ export default {
       showMapSelectorModal,
       confirmMapSelection,
       cancelMapSelection,
+      useCurrentLocation,
       onSearchInput,
       clearMap,
       refreshMap,
@@ -1116,11 +1197,58 @@ export default {
 </script>
 
 <style scoped>
+/* Contenedor principal sin scroll */
+.areas-container {
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Eliminar scroll en el modal del mapa */
+.v-dialog .v-card {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+.v-dialog .v-card-text {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Eliminar scroll en contenedores específicos */
+.map-controls {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Estilos globales para eliminar scroll */
+:deep(.v-data-table) {
+  overflow: visible !important;
+}
+
+:deep(.v-data-table__wrapper) {
+  overflow: visible !important;
+}
+
+:deep(.v-card) {
+  overflow: visible !important;
+}
+
+:deep(.v-card-text) {
+  overflow: visible !important;
+}
+
+/* Asegurar que no haya scroll en el body cuando se abre el modal */
+:deep(body) {
+  overflow: visible !important;
+}
+
 .map-container {
   background: rgba(30, 41, 59, 0.8);
   border-radius: 12px;
   padding: 12px;
   border: 1px solid rgba(59, 130, 246, 0.2);
+  overflow: visible !important;
 }
 
 .map-search {
@@ -1173,6 +1301,17 @@ export default {
   min-width: 200px !important;
 }
 
+/* Ajustar el slider compacto para el nuevo layout */
+.radius-slider-compact :deep(.v-slider) {
+  width: 100%;
+  min-width: 180px;
+}
+
+.radius-slider-compact :deep(.v-slider__track) {
+  width: 100% !important;
+  min-width: 180px !important;
+}
+
 .radius-slider :deep(.v-slider__thumb) {
   background-color: #f97316 !important;
   border: 3px solid #ffffff !important;
@@ -1210,6 +1349,96 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   margin: 0 !important;
   padding: 4px 8px !important;
+}
+
+/* Estilos para el botón de ubicación actual */
+.use-current-location-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  transition: all 0.3s ease !important;
+  margin: 0 auto !important;
+  display: block !important;
+}
+
+.use-current-location-btn:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4) !important;
+}
+
+.use-current-location-btn .v-icon {
+  font-size: 16px !important;
+}
+
+/* Centrar perfectamente la columna derecha */
+.d-flex.flex-column.align-center.justify-center.text-center {
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  width: 100% !important;
+}
+
+/* Centrar el contenedor del mensaje */
+.mt-2.text-center {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+/* Estilos para el mensaje informativo */
+.text-caption.text-grey-400 {
+  font-size: 8px !important;
+  line-height: 1.0 !important;
+  margin: 0 !important;
+  opacity: 0.7 !important;
+  white-space: nowrap !important;
+  max-width: 90px !important;
+  word-wrap: break-word !important;
+  hyphens: auto !important;
+  text-align: center !important;
+}
+
+/* Ajustar el espaciado del mensaje */
+.text-caption.text-grey-400.mb-1 {
+  margin-bottom: 1px !important;
+}
+
+.text-caption.text-grey-400.mb-0 {
+  margin-bottom: 0 !important;
+}
+
+/* Asegurar que el slider y los elementos se alineen correctamente */
+.d-flex.gap-4 {
+  align-items: flex-start !important;
+  gap: 24px !important;
+}
+
+/* Estilos para el chip de ubicación */
+.location-chip {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  margin-top: 0 !important;
+}
+
+/* Estilos para el chip de radio */
+.radius-chip {
+  font-size: 11px !important;
+  height: 20px !important;
+  padding: 0 6px !important;
+  margin: 0 !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.radius-chip .v-chip__content {
+  text-align: center !important;
+  width: 100% !important;
+  justify-content: center !important;
 }
 
 /* Responsive para móviles */

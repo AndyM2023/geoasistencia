@@ -79,12 +79,29 @@ api.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
-      // Token expirado, solo limpiar - dejar que Vue Router maneje la redirección
-      localStorage.removeItem('token')
-      localStorage.removeItem('refreshToken')
+      // Verificar si ya estamos en proceso de logout para evitar ciclos
+      const isLoggingOut = localStorage.getItem('isLoggingOut')
       
-      // Emitir evento personalizado para que el auth store lo maneje
-      window.dispatchEvent(new CustomEvent('auth:logout'))
+      if (!isLoggingOut) {
+        console.log('🔒 Error 401 detectado, iniciando proceso de logout...')
+        
+        // Marcar que estamos en proceso de logout
+        localStorage.setItem('isLoggingOut', 'true')
+        
+        // Token expirado, solo limpiar - dejar que Vue Router maneje la redirección
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        
+        // Emitir evento personalizado para que el auth store lo maneje
+        window.dispatchEvent(new CustomEvent('auth:logout'))
+        
+        // Limpiar la marca después de un delay
+        setTimeout(() => {
+          localStorage.removeItem('isLoggingOut')
+        }, 1000)
+      } else {
+        console.log('🔄 Ya estamos en proceso de logout, ignorando error 401 adicional')
+      }
     }
     return Promise.reject(error)
   }
