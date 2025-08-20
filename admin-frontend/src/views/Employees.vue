@@ -283,15 +283,23 @@
               </v-col>
             </v-row>
 
-            <!-- Campo de Foto del Empleado -->
-            <v-row>
+              <!-- Campo de Foto del Empleado (siempre visible) -->
+              <v-row>
+                <!-- aquí iría el contenido de master -->
+              </v-row>
+
+              <!-- Sección de Registro Facial - SOLO para edición -->
+              <v-row v-if="editingEmployee">
+                <!-- aquí iría el contenido de Registrov2 -->
+              </v-row>
+
               <v-col cols="12">
                 <v-divider class="mb-4"></v-divider>
                 <h3 class="text-white mb-4">📸 Foto del Empleado</h3>
               </v-col>
             </v-row>
 
-            <v-row>
+            <v-row v-if="editingEmployee">
               <v-col cols="12">
                 <v-card class="bg-dark-surface border border-blue-500/20">
                   <v-card-title class="text-sm text-blue-400">📷 Foto de Perfil</v-card-title>
@@ -510,6 +518,21 @@
                     </div>
                   </v-card-text>
                 </v-card>
+              </v-col>
+            </v-row>
+
+            <!-- Mensaje informativo para nuevos empleados -->
+            <v-row v-if="!editingEmployee">
+              <v-col cols="12">
+                <v-divider class="mb-4"></v-divider>
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="compact"
+                  class="text-center"
+                >
+                  💡 <strong>Registro Facial:</strong> Una vez creado el empleado, podrás registrar su rostro desde la lista de empleados
+                </v-alert>
               </v-col>
             </v-row>
           </v-form>
@@ -1211,10 +1234,9 @@ export default {
       // Mostrar mensaje de éxito
       showMessage('Registro facial completado exitosamente')
       
-      // Cerrar el diálogo principal después del registro facial
-      showDialog.value = false
-      dialogReady.value = false
-      editingEmployee.value = null
+      // ✅ NO cerrar automáticamente el diálogo principal
+      // Solo cerrar el registro facial, mantener el diálogo de empleado abierto
+      // para que el usuario pueda seguir editando si lo desea
       resetFaceRegistration()
     }
     
@@ -1300,20 +1322,24 @@ export default {
         // Llamar al servicio para verificar el estado
         const response = await faceService.getFaceStatus(employeeId)
         
-        if (response.has_profile && response.is_trained) {
-          // El empleado ya tiene rostro registrado
+        console.log('🔍 Respuesta del servicio facial:', response)
+        
+        // ✅ LÓGICA SIMPLE: Solo verificar si existe perfil completo
+        if (response.has_profile && response.is_trained && response.has_physical_files) {
+          // El empleado tiene rostro registrado Y archivos físicos existen
           faceRegistration.value = {
             isCapturing: false,
             isTraining: false,
             status: 'trained',
             statusText: 'Rostro ya registrado',
-            photosCount: response.photos_count || 0,
+            photosCount: response.physical_photos_count || response.photos_count || 0,
             confidence: 90,
             capturedPhotos: null
           }
-          console.log('✅ Empleado ya tiene rostro registrado:', response)
+          console.log('✅ Empleado tiene rostro registrado COMPLETO:', response)
+          
         } else {
-          // El empleado no tiene rostro registrado
+          // El empleado no tiene rostro registrado o está incompleto
           faceRegistration.value = {
             isCapturing: false,
             isTraining: false,
@@ -1323,7 +1349,7 @@ export default {
             confidence: 90,
             capturedPhotos: null
           }
-          console.log('❌ Empleado no tiene rostro registrado')
+          console.log('❌ Empleado no tiene rostro registrado completo')
         }
       } catch (error) {
         console.error('Error verificando estado facial:', error)
@@ -1735,6 +1761,31 @@ export default {
       stopCamera()
       console.log('🚪 Captura de foto cerrada')
      }
+
+    // ✅ Función para abrir registro facial directamente desde la lista
+    const openFaceRegistration = (employee) => {
+      console.log('🎯 Abriendo registro facial para empleado:', employee)
+      
+      // Establecer el empleado como en edición para mostrar la sección facial
+      editingEmployee.value = employee
+      
+      // Preparar el formulario con los datos del empleado
+      employeeForm.value = {
+        first_name: employee.user.first_name,
+        last_name: employee.user.last_name,
+        email: employee.user.email,
+        cedula: employee.cedula_display || employee.cedula || employee.user.cedula || '',
+        position: employee.position || 'otro',
+        area: employee.area
+      }
+      
+      // Verificar estado facial del empleado
+      checkFaceRegistrationStatus(employee.id)
+      
+      // Abrir el diálogo
+      showDialog.value = true
+    }
+    
     
     onMounted(() => {
       loadEmployees()
@@ -1785,7 +1836,6 @@ export default {
       // Referencias
       form,
       video,
-      
       // Estado reactivo
       search,
       loading,
@@ -1801,14 +1851,12 @@ export default {
       capturedPhoto,
       cameraActive,
       cameraLoading,
-      
-      // Estado para modal de foto expandida
+      //Estado para modal de foto expandida
       showPhotoModal,
       selectedEmployeePhoto,
-      
       // Datos
       employees,
-             areas,
+      areas,
        employeeForm,
        positions,
        existingCedulas,
@@ -1817,7 +1865,7 @@ export default {
       viewMode,
       filteredEmployees,
       loadEmployees,
-             loadAreas,
+      loadAreas,
        onDialogOpened,
        openNewEmployeeDialog,
        editEmployee,
@@ -1825,6 +1873,7 @@ export default {
       confirmDelete,
       activateEmployee,
       saveEmployee,
+      openFaceRegistration,
       // Funciones de registro facial
       faceRegistration,
       onPhotoCaptured,
@@ -1835,7 +1884,9 @@ export default {
       trainFaceModel,
       resetFaceRegistration,
       checkFaceRegistrationStatus,
-             // Funciones de validación
+// Funciones de validación
+       validateNameField,
+       validateCedula,
        validateEcuadorianCedula,
        filterLettersOnly,
        filterEmail,
@@ -1856,7 +1907,6 @@ export default {
       base64ToFile,
       getPhotoUrl,
       shouldShowDeletePhotoButton,
-      
       // Funciones para el modal de foto expandida
       openPhotoModal,
       closePhotoModal

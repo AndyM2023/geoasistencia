@@ -197,7 +197,7 @@ class FacialRecognition:
         
         Args:
             person_id: ID único de la persona
-            person_name: Nombre de la persona
+            person_name: Nombre de la persona (ya no se usa para el nombre de carpeta)
             image: Imagen que contiene rostros
             max_faces: Máximo número de rostros a guardar
             
@@ -205,12 +205,19 @@ class FacialRecognition:
             Diccionario con información del registro
         """
         try:
-            # Crear nombre de carpeta
-            folder_name = f"{person_id}{person_name.replace(' ', '')}"
+            # ✅ NUEVA LÓGICA: SOLO USAR ID (más robusto)
+            # Ya no usamos el nombre para evitar problemas de sincronización
+            folder_name = f"{person_id}"
             folder_path = os.path.join(self.face_dir, folder_name)
+            
+            print(f"🎯 NUEVA ESTRATEGIA: Carpeta solo con ID '{folder_name}' para máxima robustez")
+            print(f"📝 Nombre del empleado: {person_name} (solo informativo)")
             
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
+                print(f"📁 Carpeta creada: {folder_path}")
+            else:
+                print(f"📁 Carpeta existente: {folder_path}")
             
             # Detectar rostros
             faces = self.detect_faces(image)

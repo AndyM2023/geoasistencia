@@ -537,6 +537,8 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+
+
 class AreaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de áreas"""
     queryset = Area.objects.all()
