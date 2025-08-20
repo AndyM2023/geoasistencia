@@ -15,6 +15,7 @@ from .serializers import (
 )
 from .services.face_service_singleton import face_service_singleton
 from .services.password_reset_service import PasswordResetService
+from .services.employee_welcome_service import EmployeeWelcomeService
 
 from rest_framework.views import APIView
 from django.contrib.auth import update_session_auth_hash
@@ -429,7 +430,30 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             print(f"   - Result completo: {result}")
             
             if result.get('success'):
-                print("✅ Registro facial exitoso, enviando respuesta 201")
+                print("✅ Registro facial exitoso")
+                
+                # Enviar email de bienvenida con credenciales
+                try:
+                    # Obtener credenciales del usuario
+                    username = employee.user.username
+                    password = None
+                    
+                    # Intentar obtener la contraseña (si está disponible)
+                    if hasattr(employee.user, 'cedula') and employee.user.cedula:
+                        # Usar la cédula como contraseña por defecto
+                        password = employee.user.cedula
+                    else:
+                        password = f"pass{employee.user.id}"
+                    
+                    # Enviar email de bienvenida completo
+                    EmployeeWelcomeService.send_welcome_email(employee, username, password)
+                    print(f"✅ Email de bienvenida enviado a {employee.user.email}")
+                    
+                except Exception as email_error:
+                    print(f"⚠️ ADVERTENCIA: No se pudo enviar email de bienvenida: {email_error}")
+                    # No fallar el registro facial si el email falla
+                
+                print("📧 Enviando respuesta 201")
                 return Response({
                     'success': True,
                     'message': result['message'],

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
 from .models import User, Employee, Area, Attendance
 from .models import PasswordResetToken
+from .services.employee_welcome_service import EmployeeWelcomeService
 import os
 
 User = get_user_model()
@@ -158,6 +159,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
         email = validated_data.pop('email', '')
         cedula = validated_data.pop('cedula', '')
         
+        # Remover campos que no pertenecen al modelo Employee
+        validated_data.pop('delete_photo', None)  # Campo solo para update, no para create
+        
         # Si no se proporciona user_id, crear un nuevo usuario
         if 'user' not in validated_data:
             # Generar username automático: inicial del primer nombre + primer apellido + inicial del segundo apellido
@@ -215,6 +219,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
         
         # Crear empleado
         employee = Employee.objects.create(**validated_data)
+        
+        # NO enviar email aquí - se enviará después del registro facial
+        print(f"✅ Empleado creado exitosamente: {employee.full_name}")
+        
         return employee
     
     def update(self, instance, validated_data):
