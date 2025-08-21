@@ -145,78 +145,6 @@ class Area(models.Model):
         self.clean()
         super().save(*args, **kwargs)
 
-class AreaSchedule(models.Model):
-    """Horario de trabajo para un área específica"""
-    area = models.OneToOneField(Area, on_delete=models.CASCADE, related_name='schedule')
-    
-    # Horarios de lunes a viernes
-    monday_start = models.TimeField(verbose_name='Lunes - Hora de Entrada')
-    monday_end = models.TimeField(verbose_name='Lunes - Hora de Salida')
-    monday_active = models.BooleanField(default=True, verbose_name='Lunes Activo')
-    
-    tuesday_start = models.TimeField(verbose_name='Martes - Hora de Entrada')
-    tuesday_end = models.TimeField(verbose_name='Martes - Hora de Salida')
-    tuesday_active = models.BooleanField(default=True, verbose_name='Martes Activo')
-    
-    wednesday_start = models.TimeField(verbose_name='Miércoles - Hora de Entrada')
-    wednesday_end = models.TimeField(verbose_name='Miércoles - Hora de Salida')
-    wednesday_active = models.BooleanField(default=True, verbose_name='Miércoles Activo')
-    
-    thursday_start = models.TimeField(verbose_name='Jueves - Hora de Entrada')
-    thursday_end = models.TimeField(verbose_name='Jueves - Hora de Salida')
-    thursday_active = models.BooleanField(default=True, verbose_name='Jueves Activo')
-    
-    friday_start = models.TimeField(verbose_name='Viernes - Hora de Entrada')
-    friday_end = models.TimeField(verbose_name='Viernes - Hora de Salida')
-    friday_active = models.BooleanField(default=True, verbose_name='Viernes Activo')
-    
-    # Horarios de fin de semana (opcional)
-    saturday_start = models.TimeField(null=True, blank=True, verbose_name='Sábado - Hora de Entrada')
-    saturday_end = models.TimeField(null=True, blank=True, verbose_name='Sábado - Hora de Salida')
-    saturday_active = models.BooleanField(default=False, verbose_name='Sábado Activo')
-    
-    sunday_start = models.TimeField(null=True, blank=True, verbose_name='Domingo - Hora de Entrada')
-    sunday_end = models.TimeField(null=True, blank=True, verbose_name='Domingo - Hora de Salida')
-    sunday_active = models.BooleanField(default=False, verbose_name='Domingo Activo')
-    
-    # Configuraciones adicionales
-    grace_period_minutes = models.PositiveIntegerField(
-        default=15, 
-        verbose_name='Tolerancia (minutos)',
-        help_text='Minutos de tolerancia antes de considerar llegada tarde'
-    )
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name = 'Horario del Área'
-        verbose_name_plural = 'Horarios de las Áreas'
-    
-    def __str__(self):
-        return f"Horario - {self.area.name}"
-    
-    def get_expected_times(self, date):
-        """Obtiene las horas esperadas de entrada y salida para una fecha específica"""
-        weekday = date.weekday()  # 0=Lunes, 6=Domingo
-        
-        if weekday == 0 and self.monday_active:
-            return self.monday_start, self.monday_end
-        elif weekday == 1 and self.tuesday_active:
-            return self.tuesday_start, self.tuesday_end
-        elif weekday == 2 and self.wednesday_active:
-            return self.wednesday_start, self.wednesday_end
-        elif weekday == 3 and self.thursday_active:
-            return self.thursday_start, self.thursday_end
-        elif weekday == 4 and self.friday_active:
-            return self.friday_start, self.friday_end
-        elif weekday == 5 and self.saturday_active:
-            return self.saturday_start, self.saturday_end
-        elif weekday == 6 and self.sunday_active:
-            return self.sunday_start, self.sunday_end
-        
-        return None, None
-
 class Employee(models.Model):
     """Empleado del sistema"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
@@ -402,11 +330,6 @@ class Attendance(models.Model):
         verbose_name='Longitud de Entrada'
     )
     face_verified = models.BooleanField(default=False, verbose_name='Rostro Verificado')
-    
-    # Nuevos campos para control de horarios
-    expected_check_in = models.TimeField(null=True, blank=True, verbose_name='Hora Esperada de Entrada')
-    expected_check_out = models.TimeField(null=True, blank=True, verbose_name='Hora Esperada de Salida')
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -432,20 +355,10 @@ class Attendance(models.Model):
     
     @property
     def is_late(self):
-        """Verifica si llegó tarde según el horario del área"""
-        if self.check_in and self.expected_check_in:
-            from datetime import datetime, time
-            # Obtener tolerancia del área si existe horario configurado
-            grace_period = 15  # Tolerancia por defecto
-            if hasattr(self.area, 'schedule'):
-                grace_period = self.area.schedule.grace_period_minutes
-            
-            # Calcular hora límite con tolerancia
-            limit_time = datetime.combine(self.date, self.expected_check_in)
-            limit_time = limit_time + timedelta(minutes=grace_period)
-            
-            check_in_datetime = datetime.combine(self.date, self.check_in)
-            return check_in_datetime > limit_time
+        """Verifica si llegó tarde (después de las 8:30 AM)"""
+        if self.check_in:
+            from datetime import time
+            return self.check_in > time(8, 30)
         return False
 
 class PasswordResetToken(models.Model):

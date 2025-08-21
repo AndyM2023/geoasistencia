@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Employee, Area, AreaSchedule, Attendance
+from .models import User, Employee, Area, Attendance
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -36,47 +36,6 @@ class AreaAdmin(admin.ModelAdmin):
         ('Información Básica', {'fields': ('name', 'description', 'status')}),
         ('Ubicación', {'fields': ('latitude', 'longitude', 'radius')}),
     )
-
-@admin.register(AreaSchedule)
-class AreaScheduleAdmin(admin.ModelAdmin):
-    """Admin para el modelo AreaSchedule"""
-    list_display = ('area', 'grace_period_minutes', 'weekdays_active', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('area__name',)
-    ordering = ('area__name',)
-    
-    fieldsets = (
-        ('Área', {'fields': ('area',)}),
-        ('Horarios de Lunes a Viernes', {
-            'fields': (
-                ('monday_start', 'monday_end', 'monday_active'),
-                ('tuesday_start', 'tuesday_end', 'tuesday_active'),
-                ('wednesday_start', 'wednesday_end', 'wednesday_active'),
-                ('thursday_start', 'thursday_end', 'thursday_active'),
-                ('friday_start', 'friday_end', 'friday_active'),
-            )
-        }),
-        ('Horarios de Fin de Semana', {
-            'fields': (
-                ('saturday_start', 'saturday_end', 'saturday_active'),
-                ('sunday_start', 'sunday_end', 'sunday_active'),
-            )
-        }),
-        ('Configuración', {'fields': ('grace_period_minutes',)}),
-    )
-    
-    def weekdays_active(self, obj):
-        """Muestra los días activos de forma resumida"""
-        active_days = []
-        if obj.monday_active: active_days.append('Lun')
-        if obj.tuesday_active: active_days.append('Mar')
-        if obj.wednesday_active: active_days.append('Mié')
-        if obj.thursday_active: active_days.append('Jue')
-        if obj.friday_active: active_days.append('Vie')
-        if obj.saturday_active: active_days.append('Sáb')
-        if obj.sunday_active: active_days.append('Dom')
-        return ', '.join(active_days) if active_days else 'Ninguno'
-    weekdays_active.short_description = 'Días Activos'
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
@@ -119,7 +78,7 @@ class EmployeeAdmin(admin.ModelAdmin):
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
     """Admin para el modelo Attendance"""
-    list_display = ('employee_name', 'date', 'check_in', 'check_out', 'expected_times', 'status', 'area', 'face_verified', 'hours_worked', 'is_late_display')
+    list_display = ('employee_name', 'date', 'check_in', 'check_out', 'status', 'area', 'face_verified', 'hours_worked')
     list_filter = ('status', 'date', 'area', 'face_verified')
     search_fields = ('employee__user__first_name', 'employee__user__last_name', 'employee__employee_id')
     ordering = ('-date', '-check_in')
@@ -127,8 +86,7 @@ class AttendanceAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Información de Asistencia', {'fields': ('employee', 'date', 'status')}),
-        ('Horarios Reales', {'fields': ('check_in', 'check_out')}),
-        ('Horarios Esperados', {'fields': ('expected_check_in', 'expected_check_out')}),
+        ('Horarios', {'fields': ('check_in', 'check_out')}),
         ('Ubicación', {'fields': ('area', 'latitude', 'longitude')}),
         ('Verificación', {'fields': ('face_verified',)}),
     )
@@ -137,22 +95,7 @@ class AttendanceAdmin(admin.ModelAdmin):
         return obj.employee.full_name
     employee_name.short_description = 'Empleado'
     
-    def expected_times(self, obj):
-        """Muestra los horarios esperados de forma resumida"""
-        if obj.expected_check_in and obj.expected_check_out:
-            return f"{obj.expected_check_in.strftime('%H:%M')} - {obj.expected_check_out.strftime('%H:%M')}"
-        return "--"
-    expected_times.short_description = 'Horario Esperado'
-    
-    def is_late_display(self, obj):
-        """Muestra si llegó tarde de forma visual"""
-        if obj.is_late:
-            return "🕐 Tarde"
-        elif obj.check_in and obj.expected_check_in:
-            return "✅ A tiempo"
-        return "--"
-    is_late_display.short_description = 'Estado'
-    
     def hours_worked(self, obj):
         hours = obj.hours_worked
         return f"{hours:.2f}h" if hours else "--"
+    hours_worked.short_description = 'Horas Trabajadas'
