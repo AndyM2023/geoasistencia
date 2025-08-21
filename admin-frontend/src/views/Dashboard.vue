@@ -83,6 +83,10 @@
               <div class="mt-3 text-grey-400">Cargando actividad...</div>
             </div>
             <v-list v-else density="compact" class="bg-transparent pa-0">
+              <!-- Debug: Mostrar cantidad de actividades -->
+              <div class="text-grey-400 text-caption pa-2 text-center">
+                {{ recentActivities.length }} actividades recientes
+              </div>
               <v-list-item
                 v-for="activity in recentActivities"
                 :key="activity.id"
@@ -151,7 +155,10 @@ export default {
         weeklyAttendanceData.value = weeklyAttendance.weeklyData || []
         
         const activity = await dashboardService.getRecentActivity()
+        console.log('📊 Actividades recibidas del backend:', activity.activities?.length || 0, 'actividades')
+        console.log('📋 Detalle de actividades:', activity.activities)
         recentActivities.value = activity.activities || []
+        console.log('✅ Actividades actualizadas en el frontend:', recentActivities.value.length, 'actividades')
         
       } catch (error) {
         console.error('Error cargando datos del dashboard:', error)
@@ -172,7 +179,7 @@ export default {
     
     // Polling interno para mantener datos actualizados
     const pollingInterval = ref(null)
-    const POLLING_INTERVAL_MS = 60000 // 1 minuto
+    const POLLING_INTERVAL_MS = 10000 // 10 segundos
     
     const startPolling = () => {
       if (pollingInterval.value) {

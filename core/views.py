@@ -254,12 +254,27 @@ class DashboardViewSet(viewsets.ViewSet):
         # Obtener actividades de las últimas 24 horas
         yesterday = timezone.now() - timedelta(days=1)
         
-        # Asistencias recientes
+        # Asistencias recientes (mostrar solo las 4 últimas para el dashboard)
+        # Primero intentar con las últimas 24 horas, si no hay suficientes, buscar más atrás
         recent_attendances = Attendance.objects.select_related(
             'employee__user', 'area'
         ).filter(
             created_at__gte=yesterday
-        ).order_by('-created_at')[:10]
+        ).order_by('-created_at')[:4]
+        
+        # Si no hay suficientes actividades en 24 horas, buscar en los últimos 7 días
+        if recent_attendances.count() < 4:
+            week_ago = timezone.now() - timedelta(days=7)
+            recent_attendances = Attendance.objects.select_related(
+                'employee__user', 'area'
+            ).filter(
+                created_at__gte=week_ago
+            ).order_by('-created_at')[:4]
+            print(f"🔍 Dashboard - Extendiendo búsqueda a 7 días, encontradas: {recent_attendances.count()}")
+        
+        # Debug: Log para verificar cantidad de asistencias
+        print(f"🔍 Dashboard - Asistencias encontradas: {recent_attendances.count()}")
+        print(f"🔍 Dashboard - Query SQL: {recent_attendances.query}")
         
         activities = []
         
@@ -311,22 +326,17 @@ class DashboardViewSet(viewsets.ViewSet):
                 'timestamp': attendance.created_at.isoformat()
             })
         
-        # Si no hay actividades recientes, crear algunas de ejemplo
+        # Debug: Log para verificar actividades finales
+        print(f"🔍 Dashboard - Actividades reales encontradas: {len(activities)}")
+        
+        # Si no hay actividades reales, devolver array vacío (no crear actividades de ejemplo)
         if not activities:
-            activities = [
-                {
-                    'id': 'demo-1',
-                    'type': 'demo',
-                    'title': 'Sistema iniciado correctamente',
-                    'time': 'Hace 1 hora',
-                    'icon': 'mdi-check-circle',
-                    'color': 'success',
-                    'status': 'Sistema',
-                    'employee': 'Sistema',
-                    'area': 'General',
-                    'timestamp': timezone.now().isoformat()
-                }
-            ]
+            print("⚠️ No hay actividades reales en las últimas 24 horas")
+            activities = []
+        
+        # Debug: Log final para verificar respuesta
+        print(f"🔍 Dashboard - Actividades finales devueltas: {len(activities)}")
+        print(f"🔍 Dashboard - Total en respuesta: {len(activities)}")
         
         return Response({
             'activities': activities,
