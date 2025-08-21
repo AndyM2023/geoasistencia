@@ -34,8 +34,25 @@ class AuthViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['post'])
     def login(self, request):
-        """Endpoint para login de usuarios"""
+        """Endpoint para login de usuarios - SOLO ADMINISTRADORES (Panel Admin)"""
         serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'token': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UserSerializer(user).data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['post'])
+    def employee_login(self, request):
+        """Endpoint para login de empleados - USADO EN RECONOCIMIENTO FACIAL"""
+        from .serializers import EmployeeLoginSerializer
+        
+        serializer = EmployeeLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)

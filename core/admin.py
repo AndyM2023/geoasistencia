@@ -40,14 +40,18 @@ class AreaAdmin(admin.ModelAdmin):
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
     """Admin para el modelo Employee"""
-    list_display = ('employee_id', 'full_name', 'email', 'position', 'area', 'hire_date', 'is_active')
-    list_filter = ('area', 'hire_date', 'user__is_active')
+    list_display = ('employee_id', 'full_name', 'email', 'position', 'has_admin_access', 'area', 'hire_date', 'is_active')
+    list_filter = ('area', 'hire_date', 'user__is_active', 'has_admin_access', 'position')
     search_fields = ('employee_id', 'user__first_name', 'user__last_name', 'user__email')
     ordering = ('user__first_name', 'user__last_name')
     
     fieldsets = (
         ('Información del Usuario', {'fields': ('user', 'employee_id')}),
         ('Información Laboral', {'fields': ('position', 'area', 'hire_date')}),
+        ('Acceso Administrativo', {
+            'fields': ('has_admin_access',),
+            'description': 'Controla si este empleado puede acceder al panel administrativo'
+        }),
         ('Foto', {'fields': ('photo',)}),
     )
     
@@ -63,6 +67,13 @@ class EmployeeAdmin(admin.ModelAdmin):
         return obj.user.is_active
     is_active.short_description = 'Activo'
     is_active.boolean = True
+    
+    def has_admin_access_display(self, obj):
+        """Mostrar el acceso administrativo de forma más clara"""
+        if obj.has_admin_access:
+            return "✅ SÍ"
+        return "❌ NO"
+    has_admin_access_display.short_description = 'Acceso Admin'
 
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):

@@ -233,9 +233,8 @@
                       v => validateEcuadorianCedula(v) || 'Cédula ecuatoriana inválida',
                       v => !existingCedulas.includes(v) || 'Esta cédula ya está registrada'
                     ]"
-                    :required="!editingEmployee"
-                    :disabled="editingEmployee"
-                    :hint="editingEmployee ? 'La cédula no se puede modificar' : 'Se usará como contraseña del usuario'"
+                    required
+                    :hint="'Ingresa el número de cédula de identidad'"
                     persistent-hint
                      @input="filterNumbersOnly"
                      @keydown="blockNonNumericCharacters"
