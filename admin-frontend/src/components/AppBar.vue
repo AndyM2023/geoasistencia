@@ -189,8 +189,10 @@ export default {
     })
 
     const toggleDrawer = () => {
-      console.log('toggleDrawer clicked, current drawer:', props.drawer)
-      emit('update:drawer', !props.drawer)
+      console.log('AppBar: toggleDrawer clicked, current drawer:', props.drawer)
+      const newValue = !props.drawer
+      console.log('AppBar: Emitting new drawer value:', newValue)
+      emit('update:drawer', newValue)
     }
 
     const logout = () => {

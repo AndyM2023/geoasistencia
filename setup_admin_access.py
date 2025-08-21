@@ -20,7 +20,16 @@ def setup_admin_access():
     print("=" * 80)
     
     # Cargos que automáticamente dan acceso administrativo
-    ADMIN_POSITIONS = ['gerente', 'administrativo', 'recursos_humanos', 'contador', 'analista']
+    ADMIN_POSITIONS = [
+        'gerente', 
+        'administrativo', 
+        'recursos_humanos', 
+        'contador', 
+        'analista',
+        'administrador_personal',  # Nuevo cargo administrativo
+        'asistente_rrhh',         # Nuevo cargo administrativo
+        'tecnico_rrhh'            # Nuevo cargo administrativo
+    ]
     
     # Contadores
     updated_count = 0

@@ -164,6 +164,10 @@ class Employee(models.Model):
         ('soporte', 'Soporte Técnico'),
         ('administrativo', 'Administrativo'),
         ('operativo', 'Operativo'),
+        # Nuevos cargos específicos del formulario
+        ('administrador_personal', 'Administrador de Personal'),
+        ('asistente_rrhh', 'Asistente de RR. HH.'),
+        ('tecnico_rrhh', 'Técnico de RR. HH.'),
         ('otro', 'Otro'),
     ]
     
@@ -218,7 +222,16 @@ class Employee(models.Model):
     @property
     def is_admin_position(self):
         """Verificar si el cargo es administrativo por defecto"""
-        return self.position in ['gerente', 'administrativo', 'recursos_humanos', 'contador', 'analista']
+        return self.position in [
+            'gerente', 
+            'administrativo', 
+            'recursos_humanos', 
+            'contador', 
+            'analista',
+            'administrador_personal',  # Nuevo cargo administrativo
+            'asistente_rrhh',         # Nuevo cargo administrativo
+            'tecnico_rrhh'            # Nuevo cargo administrativo
+        ]
     
     def get_position_display(self):
         """Obtener el nombre legible del cargo"""

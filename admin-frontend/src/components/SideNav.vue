@@ -1,14 +1,14 @@
 <template>
   <v-navigation-drawer
     v-model="internalDrawer"
-    app
-    class="bg-dark-surface"
-    width="280"
+    :location="$vuetify.display.mdAndDown ? 'left' : 'left'"
     :temporary="$vuetify.display.mdAndDown"
     :permanent="$vuetify.display.lgAndUp"
+    class="bg-dark-surface"
+    width="280"
+    overlay-color="rgba(0, 0, 0, 0.7)"
+    scrim="false"
   >
-  
-
     <!-- Menú de navegación -->
     <v-list class="pa-2">
       <v-list-item
@@ -70,14 +70,20 @@ export default {
     const { lgAndUp } = useDisplay()
     const internalDrawer = ref(props.modelValue)
 
+    // Debug: Log cuando cambia el valor
+    console.log('SideNav: modelValue changed to:', props.modelValue)
+
     watch(
       () => props.modelValue,
       (val) => {
+        console.log('SideNav: Updating internalDrawer to:', val)
         internalDrawer.value = val
-      }
+      },
+      { immediate: true }
     )
 
     watch(internalDrawer, (val) => {
+      console.log('SideNav: Emitting update:modelValue with:', val)
       emit('update:modelValue', val)
     })
 
@@ -85,6 +91,7 @@ export default {
     const handleNavClick = () => {
       // Cerrar el drawer en dispositivos móviles y tablets
       if (!lgAndUp.value) {
+        console.log('SideNav: Closing drawer on mobile navigation')
         setTimeout(() => {
           internalDrawer.value = false
         }, 150) // Pequeño delay para permitir la navegación
@@ -103,5 +110,15 @@ export default {
 /* Overlay mejorado para mejor UX */
 :deep(.v-overlay--active) {
   backdrop-filter: blur(2px);
+}
+
+/* Asegurar que el drawer sea visible */
+:deep(.v-navigation-drawer) {
+  z-index: 1000;
+}
+
+/* Estilos para el drawer temporal en móviles */
+:deep(.v-navigation-drawer--temporary) {
+  z-index: 1001;
 }
 </style>
