@@ -351,7 +351,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'employee_name', 'area_name', 'hours_worked']
 
 class LoginSerializer(serializers.Serializer):
-    """Serializer para autenticación"""
+    """Serializer para autenticación - SOLO ADMINISTRADORES (Panel Admin)"""
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
     
@@ -365,6 +365,40 @@ class LoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError('Credenciales inválidas.')
             if not user.is_active:
                 raise serializers.ValidationError('Usuario inactivo.')
+            
+            # 🔒 RESTRICCIÓN: Solo permitir login a administradores en el panel admin
+            if user.role != 'admin':
+                raise serializers.ValidationError(
+                    'Acceso denegado. Solo los administradores pueden acceder al panel de administración. '
+                    'Los empleados deben usar el reconocimiento facial desde la página principal.'
+                )
+            
+            attrs['user'] = user
+            return attrs
+        else:
+            raise serializers.ValidationError('Debe incluir "username" y "password".')
+
+class EmployeeLoginSerializer(serializers.Serializer):
+    """Serializer para autenticación de empleados - USADO EN RECONOCIMIENTO FACIAL"""
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+        
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if not user:
+                raise serializers.ValidationError('Credenciales inválidas.')
+            if not user.is_active:
+                raise serializers.ValidationError('Usuario inactivo.')
+            
+            # ✅ PERMITIR: Tanto empleados como administradores pueden usar el reconocimiento facial
+            # Los administradores también son empleados del sistema
+            if user.role not in ['admin', 'employee']:
+                raise serializers.ValidationError('Usuario con rol inválido.')
+            
             attrs['user'] = user
             return attrs
         else:

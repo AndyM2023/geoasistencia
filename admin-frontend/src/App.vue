@@ -3,6 +3,9 @@
     <!-- 🔐 INICIALIZADOR DE AUTENTICACIÓN GLOBAL -->
     <AuthInitializer />
     
+    <!-- 🔔 SISTEMA DE NOTIFICACIONES GLOBAL -->
+    <ToastNotification />
+    
     <!-- 🚀 CONTENIDO PRINCIPAL -->
     <router-view />
   </v-app>
@@ -10,11 +13,13 @@
 
 <script>
 import AuthInitializer from './components/AuthInitializer.vue'
+import ToastNotification from './components/notifications/ToastNotification.vue'
 
 export default {
   name: 'App',
   components: {
-    AuthInitializer
+    AuthInitializer,
+    ToastNotification
   }
 }
 </script>

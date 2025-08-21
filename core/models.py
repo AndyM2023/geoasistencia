@@ -15,7 +15,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
 
     cedula = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='ID Card Number')
-    position = models.CharField(max_length=100, blank=True, null=True, verbose_name='Position')
+    # position removido - se usa solo en Employee para evitar redundancia
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -26,6 +26,37 @@ class User(AbstractUser):
     
     def __str__(self):
         return f"{self.get_full_name()} ({self.role})"
+
+# class Position(models.Model):
+#     """Posición/Cargo del sistema - Tabla centralizada"""
+#     name = models.CharField(max_length=100, unique=True, verbose_name='Nombre de la Posición')
+#     description = models.TextField(blank=True, verbose_name='Descripción')
+#     has_admin_access = models.BooleanField(
+#         default=False, 
+#         verbose_name='Acceso Administrativo',
+#         help_text='¿Esta posición tiene acceso al panel administrativo?'
+#     )
+#     is_active = models.BooleanField(default=True, verbose_name='Activa')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+#     
+#     class Meta:
+#         verbose_name = 'Posición'
+#         verbose_name_plural = 'Posiciones'
+#     ordering = ['name']
+#     
+#     def __str__(self):
+#         admin_status = " (Admin)" if self.has_admin_access else ""
+#         return f"{self.name}{admin_status}"
+#     
+#     @property
+#     def is_admin_position(self):
+#         """Verificar si es una posición administrativa"""
+#         return self.has_admin_access
+#     
+#     def get_employees_count(self):
+#         """Número de empleados con esta posición"""
+#         return self.employees.count()
 
 class Area(models.Model):
     """Área de trabajo con coordenadas geográficas"""
@@ -142,6 +173,13 @@ class Employee(models.Model):
         default='otro',
         verbose_name='Cargo'
     )
+    
+    has_admin_access = models.BooleanField(
+        default=False,
+        verbose_name='Acceso Administrativo',
+        help_text='¿Este empleado tiene acceso al panel administrativo?'
+    )
+    
     area = models.ForeignKey(
         Area, 
         on_delete=models.SET_NULL, 
@@ -177,12 +215,17 @@ class Employee(models.Model):
     def email(self):
         return self.user.email
     
+    @property
+    def is_admin_position(self):
+        """Verificar si el cargo es administrativo por defecto"""
+        return self.position in ['gerente', 'administrativo', 'recursos_humanos', 'contador', 'analista']
+    
     def get_position_display(self):
         """Obtener el nombre legible del cargo"""
         return dict(self.POSITION_CHOICES).get(self.position, self.position)
     
     def save(self, *args, **kwargs):
-        """Generar employee_id automáticamente si no existe"""
+        """Generar employee_id automáticamente si no existe y configurar acceso administrativo por defecto"""
         if not self.employee_id:
             # Obtener el último número de empleado
             last_employee = Employee.objects.filter(
@@ -196,6 +239,10 @@ class Employee(models.Model):
             
             # Generar el nuevo employee_id numérico
             self.employee_id = new_number
+        
+        # Configurar acceso administrativo por defecto según el cargo
+        if not self.has_admin_access and self.is_admin_position:
+            self.has_admin_access = True
         
         super().save(*args, **kwargs)
 

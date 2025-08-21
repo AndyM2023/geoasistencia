@@ -1,62 +1,6 @@
 <template>
   <AppBar />
   
-  <!-- Sistema de notificaciones flotantes -->
-  <div class="notifications-overlay">
-    <!-- Notificación de error -->
-    <transition name="slide-down">
-      <v-alert
-        v-if="error"
-        type="error"
-        variant="tonal"
-        class="floating-notification error-notification"
-        closable
-        @click:close="error = ''"
-        max-width="400"
-      >
-        <template v-slot:prepend>
-          <v-icon>mdi-alert-circle</v-icon>
-        </template>
-        {{ error }}
-      </v-alert>
-    </transition>
-
-    <!-- Notificación de éxito -->
-    <transition name="slide-down">
-      <v-alert
-        v-if="success"
-        type="success"
-        variant="tonal"
-        class="floating-notification success-notification"
-        max-width="400"
-      >
-        <template v-slot:prepend>
-          <v-icon>mdi-check-circle</v-icon>
-        </template>
-        {{ success }}
-      </v-alert>
-    </transition>
-
-    <!-- Notificación de ubicación -->
-    <transition name="slide-down">
-      <v-alert
-        v-if="locationStatus"
-        type="info"
-        variant="tonal"
-        class="floating-notification location-notification"
-        max-width="400"
-        :icon="gettingLocation ? 'mdi-loading mdi-spin' : 'mdi-map-marker'"
-      >
-        <div class="d-flex align-center">
-          <span v-if="gettingLocation" class="mr-2">
-            <v-progress-circular indeterminate size="16" color="info"></v-progress-circular>
-          </span>
-          {{ locationStatus }}
-        </div>
-      </v-alert>
-    </transition>
-  </div>
-  
   <v-container fluid class="recognition-container pa-0">
     <!-- Imagen del lado izquierdo - Responsive -->
     <img src="/src/assets/left-image.png" alt="Imagen izquierda" class="side-image left-image d-none d-md-block">
@@ -283,6 +227,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppBar from '../components/AppBar.vue'
 import { attendanceService } from '../services/attendanceService'
+import { useNotifications } from '../composables/useNotifications'
 
 export default {
   name: 'Recognition',
@@ -291,6 +236,7 @@ export default {
   },
   setup() {
     const router = useRouter()
+    const { showSuccess, showError, showInfo, showLoading, showLocationError, showAttendanceSuccess, showCameraStatus, showLocationStatus } = useNotifications()
     
     // Variables del formulario
     const form = reactive({
@@ -301,20 +247,16 @@ export default {
     // Variables de estado
     const showPassword = ref(false)
     const loading = ref(false)
-    const error = ref('')
-    const success = ref('')
-    const locationStatus = ref('') // Estado de la ubicación
-    const gettingLocation = ref(false) // Estado de obtención de ubicación
-    
-    // Variables para controlar el estado de validación de los campos
-    const fieldsInSuccessMode = ref(false) // Indica si los campos están en modo éxito
-    const inactivityTimer = ref(null) // Timer para volver al estado normal
     
     // Variables de la cámara
     const isCameraActive = ref(false)
     const videoElement = ref(null)
     const stream = ref(null)
 
+    // Variables para controlar el estado de validación de los campos
+    const fieldsInSuccessMode = ref(false) // Indica si los campos están en modo éxito
+    const inactivityTimer = ref(null) // Timer para volver al estado normal
+    
     // Reglas de validación dinámicas
     const rules = {
       required: v => {
@@ -366,63 +308,65 @@ export default {
     // Función principal de reconocimiento
     const handleRecognition = async () => {
       loading.value = true
-      error.value = ''
-      success.value = ''
-      locationStatus.value = ''
-      gettingLocation.value = false
 
       try {
         // Validar campos
         if (!form.username || !form.password) {
-          error.value = 'Por favor completa todos los campos'
+          showError('Por favor completa todos los campos', {
+            title: 'Campos Requeridos',
+            icon: 'mdi-form-textbox'
+          })
           return
         }
 
         // Verificar que la cámara esté activa
         if (!isCameraActive.value) {
-          error.value = 'Primero debes activar la cámara para capturar tu rostro'
+          showError('Primero debes activar la cámara para capturar tu rostro', {
+            title: 'Cámara Requerida',
+            icon: 'mdi-camera-off'
+          })
           return
         }
 
         // Capturar foto de la cámara
         const photoBase64 = await capturePhotoFromCamera()
         if (!photoBase64) {
-          error.value = 'No se pudo capturar la foto. Intenta nuevamente.'
+          showError('No se pudo capturar la foto. Intenta nuevamente.', {
+            title: 'Error de Cámara',
+            icon: 'mdi-camera-off'
+          })
           return
         }
 
         // Obtener credenciales del empleado
         const employeeData = await getEmployeeCredentials(form.username, form.password)
         if (!employeeData) {
-          error.value = 'Credenciales inválidas'
+          showError('Credenciales inválidas', {
+            title: 'Error de Autenticación',
+            icon: 'mdi-account-lock'
+          })
           return
         }
 
-        console.log('�� Datos del empleado obtenidos:', employeeData)
+        console.log(' Datos del empleado obtenidos:', employeeData)
         console.log('🔍 Employee ID:', employeeData.employee_id)
         console.log('🔍 Area ID:', employeeData.area_id)
 
         // Obtener ubicación actual del usuario
         console.log('📍 Obteniendo ubicación del usuario...')
-        gettingLocation.value = true
-        locationStatus.value = '📍 Obteniendo tu ubicación GPS...'
+        showLocationStatus('getting')
         
         let location
         try {
           location = await getCurrentLocation()
           console.log('✅ Ubicación obtenida:', location)
-          gettingLocation.value = false
           
-          // Auto-ocultar notificación de ubicación después de 6 segundos
-          setTimeout(() => {
-            locationStatus.value = ''
-          }, 6000)
+          // Mostrar notificación de éxito de ubicación
+          showLocationStatus('success')
           
         } catch (locationError) {
           console.error('❌ Error obteniendo ubicación:', locationError)
-          gettingLocation.value = false
-          locationStatus.value = ''
-          error.value = locationError.message
+          showLocationStatus('error')
           return
         }
 
@@ -452,24 +396,8 @@ export default {
             console.log(`   - ${key}:`, result[key])
           })
           
-          // Mostrar mensaje específico según el tipo de acción
-          if (attendanceData.action_type === 'entrada') {
-            console.log('✅ Procesando ENTRADA')
-            const distanceInfo = result.location_info?.distance_meters ? 
-              ` (a ${result.location_info.distance_meters}m del centro del área)` : ''
-            success.value = `✅ ENTRADA registrada exitosamente para ${attendanceData.employee_name}${distanceInfo}`
-          } else if (attendanceData.action_type === 'salida') {
-            console.log('⏰ Procesando SALIDA')
-            const distanceInfo = result.location_info?.distance_meters ? 
-              ` (a ${result.location_info.distance_meters}m del centro del área)` : ''
-            success.value = `⏰ SALIDA registrada exitosamente para ${attendanceData.employee_name}${distanceInfo}`
-          } else if (attendanceData.action_type === 'completo') {
-            console.log('ℹ️ Procesando COMPLETO')
-            success.value = `ℹ️ ${attendanceData.employee_name} ya tiene entrada y salida registradas para hoy`
-          } else {
-            console.log('❓ ACTION_TYPE no reconocido, usando mensaje genérico')
-            success.value = `¡Asistencia registrada exitosamente! Rostro verificado con ${Math.round(result.confidence * 100)}% de confianza`
-          }
+          // Mostrar notificación de éxito usando el nuevo sistema
+          showAttendanceSuccess(attendanceData, result.location_info)
           
           // Activar modo éxito en los campos (sin validación roja)
           activateSuccessMode()
@@ -481,23 +409,19 @@ export default {
           // Detener cámara
           await stopCamera()
           
-          // Auto-ocultar notificación de éxito después de 8 segundos
-          setTimeout(() => {
-            success.value = ''
-          }, 8000)
         } else {
           // Manejar errores del backend con mensajes personalizados
           if (result.action_type === 'completo') {
             // Caso especial: ya tiene entrada y salida (no es realmente un error)
-            success.value = `ℹ️ ${result.message}`
+            showAttendanceSuccess(result, result.location_info)
             // Activar modo éxito en los campos para este caso también
             activateSuccessMode()
-            setTimeout(() => {
-              success.value = ''
-            }, 8000)
           } else {
             // Otros errores reales
-            error.value = result.message || 'Error en el reconocimiento facial'
+            showError(result.message || 'Error en el reconocimiento facial', {
+              title: 'Error de Reconocimiento',
+              icon: 'mdi-face-recognition-off'
+            })
           }
         }
         
@@ -512,15 +436,12 @@ export default {
           // Manejar casos especiales del backend
           if (backendResponse.action_type === 'completo') {
             // Caso especial: ya tiene entrada y salida (no es realmente un error)
-            success.value = `ℹ️ ${backendResponse.message}`
+            showAttendanceSuccess(backendResponse, backendResponse.location_info)
             // Activar modo éxito en los campos para este caso también
             activateSuccessMode()
-            setTimeout(() => {
-              success.value = ''
-            }, 8000)
           } else if (backendResponse.error_type === 'location_out_of_range') {
             // Error de ubicación fuera del área
-            error.value = `📍 ${backendResponse.message}`
+            showLocationError(backendResponse)
             console.log('📍 Error de ubicación:', {
               distance: backendResponse.distance_meters,
               areaRadius: backendResponse.area_radius,
@@ -528,26 +449,44 @@ export default {
             })
           } else if (backendResponse.error_type === 'location_not_available') {
             // Error de ubicación no disponible
-            error.value = `📍 ${backendResponse.message}`
+            showLocationError(backendResponse)
           } else if (backendResponse.error_type === 'wrong_area_assignment') {
             // Error de área incorrecta
-            error.value = `🏢 ${backendResponse.message}`
+            showError(backendResponse.message, {
+              title: '🏢 Área Incorrecta',
+              icon: 'mdi-office-building-off'
+            })
           } else if (backendResponse.error_type === 'area_inactive') {
             // Error de área inactiva
-            error.value = `🏢 ${backendResponse.message}`
+            showError(backendResponse.message, {
+              title: '🏢 Área Inactiva',
+              icon: 'mdi-office-building-off'
+            })
           } else if (backendResponse.error_type === 'invalid_coordinates') {
             // Error de coordenadas inválidas
-            error.value = `📍 ${backendResponse.message}`
+            showError(backendResponse.message, {
+              title: '📍 Coordenadas Inválidas',
+              icon: 'mdi-map-marker-alert'
+            })
           } else if (backendResponse.message) {
             // Otros mensajes personalizados del backend
-            error.value = backendResponse.message
+            showError(backendResponse.message, {
+              title: 'Error del Sistema',
+              icon: 'mdi-alert-circle'
+            })
           } else {
             // Error genérico si no hay mensaje personalizado
-            error.value = 'Error en el reconocimiento: ' + (err.message || 'Error desconocido')
+            showError('Error en el reconocimiento: ' + (err.message || 'Error desconocido'), {
+              title: 'Error Desconocido',
+              icon: 'mdi-help-circle'
+            })
           }
         } else {
           // Otros tipos de errores
-          error.value = 'Error en el reconocimiento: ' + (err.message || 'Error desconocido')
+          showError('Error en el reconocimiento: ' + (err.message || 'Error desconocido'), {
+            title: 'Error del Sistema',
+            icon: 'mdi-alert-circle'
+          })
         }
       } finally {
         loading.value = false
@@ -559,13 +498,13 @@ export default {
       try {
         console.log('🎬 Iniciando cámara...')
         
-        // Limpiar estado previo
-        error.value = ''
+        // Mostrar notificación de inicio de cámara
+        showCameraStatus('starting')
         
         // Verificar que el elemento de video exista
         if (!videoElement.value) {
           console.error('❌ Elemento de video no encontrado')
-          error.value = 'Error: Elemento de video no encontrado. Intenta recargar la página.'
+          showCameraStatus('error')
           return
         }
         
@@ -580,60 +519,64 @@ export default {
         
         // Obtener acceso a la cámara
         stream.value = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'user',
-            width: { ideal: 640 },
-            height: { ideal: 480 }
-          } 
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user'
+          },
+          audio: false
         })
         
-        console.log('✅ Stream de cámara obtenido:', stream.value)
-        
-        // Asignar el stream al video
+        // Asignar stream al elemento de video
         videoElement.value.srcObject = stream.value
-        
-        // Esperar a que el video esté listo
-        await new Promise((resolve) => {
-          videoElement.value.onloadedmetadata = () => {
-            console.log('📹 Video metadata cargado')
-            resolve()
-          }
-        })
-        
-        // Activar la cámara
         isCameraActive.value = true
-        console.log('🎯 Cámara activada exitosamente')
         
-        // Limpiar errores previos si la cámara se activó correctamente
-        if (error.value) {
-          error.value = ''
-        }
+        // Mostrar notificación de cámara activa
+        showCameraStatus('active')
+        
+        console.log('✅ Cámara iniciada exitosamente')
         
       } catch (err) {
         console.error('❌ Error iniciando cámara:', err)
-        error.value = 'Error al acceder a la cámara: ' + err.message
+        isCameraActive.value = false
         
-        // Ocultar el video en caso de error
+        // Ocultar video en caso de error
         if (videoElement.value) {
           videoElement.value.style.display = 'none'
         }
         
-        // Mostrar errores específicos
-        if (err.name === 'NotAllowedError') {
-          error.value = 'Permiso denegado para acceder a la cámara. Verifica los permisos del navegador.'
-        } else if (err.name === 'NotFoundError') {
-          error.value = 'No se encontró ninguna cámara en tu dispositivo.'
-        } else if (err.name === 'NotReadableError') {
-          error.value = 'La cámara está siendo usada por otra aplicación.'
-        } else if (err.name === 'DOMException' && err.message.includes('Starting videoinput failed')) {
-          error.value = 'Error al iniciar la entrada de video. Intenta recargar la página.'
+        // Mostrar error específico según el tipo
+        if (err.name === 'DOMException') {
+          if (err.message.includes('Starting videoinput failed')) {
+            showError('Error al acceder a la cámara. Asegúrate de que no esté siendo usada por otra aplicación.', {
+              title: 'Error de Cámara',
+              icon: 'mdi-camera-off',
+              details: 'La cámara puede estar ocupada o no estar disponible'
+            })
+          } else if (err.message.includes('Permission denied')) {
+            showError('Permiso denegado para acceder a la cámara. Por favor, permite el acceso a la cámara en tu navegador.', {
+              title: 'Permiso Denegado',
+              icon: 'mdi-camera-lock',
+              details: 'Haz clic en el ícono de la cámara en la barra de direcciones'
+            })
+          } else {
+            showError('Error al acceder a la cámara: ' + err.message, {
+              title: 'Error de Cámara',
+              icon: 'mdi-camera-off'
+            })
+          }
+        } else {
+          showError('Error inesperado al acceder a la cámara: ' + err.message, {
+            title: 'Error de Cámara',
+            icon: 'mdi-camera-off'
+          })
         }
       }
     }
 
     const stopCamera = async () => {
       try {
-        console.log('⏹️ Deteniendo cámara...')
+        console.log('🛑 Deteniendo cámara...')
         
         if (stream.value) {
           stream.value.getTracks().forEach(track => {
@@ -645,12 +588,11 @@ export default {
         
         if (videoElement.value) {
           videoElement.value.srcObject = null
-          // Ocultar el video después de detener la cámara
           videoElement.value.style.display = 'none'
         }
         
         isCameraActive.value = false
-        console.log('✅ Cámara detenida exitosamente')
+        console.log('✅ Cámara detenida correctamente')
         
       } catch (err) {
         console.error('❌ Error deteniendo cámara:', err)
@@ -662,26 +604,11 @@ export default {
       }
     }
 
-    // Función para reiniciar la cámara en caso de problemas
     const resetCamera = async () => {
-      try {
-        console.log('🔄 Reiniciando cámara...')
-        
-        // Detener cámara actual
-        await stopCamera()
-        
-        // Pequeña pausa para asegurar limpieza
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // Intentar iniciar de nuevo
-        await startCamera()
-        
-        console.log('✅ Cámara reiniciada exitosamente')
-        
-      } catch (err) {
-        console.error('❌ Error reiniciando cámara:', err)
-        error.value = 'Error al reiniciar la cámara: ' + err.message
-      }
+      console.log('🔄 Reiniciando cámara...')
+      await stopCamera()
+      await new Promise(resolve => setTimeout(resolve, 500)) // Pequeña pausa
+      await startCamera()
     }
 
     // Función para capturar foto de la cámara
@@ -786,7 +713,7 @@ export default {
               console.log(`   - Timestamp: ${new Date(position.timestamp).toLocaleString()}`)
               
               // Mostrar estado exitoso con coordenadas
-              locationStatus.value = `📍 Ubicación obtenida: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)} (Precisión: ${Math.round(position.coords.accuracy)}m)`
+              // locationStatus.value = `📍 Ubicación obtenida: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)} (Precisión: ${Math.round(position.coords.accuracy)}m)`
               
               resolve({
                 latitude: position.coords.latitude,
@@ -868,10 +795,6 @@ export default {
       form,
       showPassword,
       loading,
-      error,
-      success,
-      locationStatus,
-      gettingLocation,
       
       // Variables de la cámara
       isCameraActive,
@@ -1537,130 +1460,5 @@ export default {
 /* Transición suave para el cambio de color */
 .recognition-form .v-text-field .v-field__outline {
   transition: border-color 0.3s ease;
-}
-
-/* Sistema de notificaciones flotantes */
-.notifications-overlay {
-  position: fixed;
-  top: 80px; /* Debajo del AppBar */
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1001;
-  pointer-events: none; /* Permite que los clics pasen a través del overlay */
-}
-
-.floating-notification {
-  pointer-events: auto; /* Restaura los clics en la notificación */
-  margin-bottom: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white !important;
-}
-
-.floating-notification * {
-  color: white !important;
-}
-
-.floating-notification .v-alert__content,
-.floating-notification .v-alert__title,
-.floating-notification .v-alert__body {
-  color: white !important;
-}
-
-.floating-notification .v-icon,
-.floating-notification .v-btn__content .v-icon {
-  color: white !important;
-}
-
-.floating-notification .v-progress-circular {
-  color: white !important;
-}
-
-/* Asegurar que los botones de cerrar sean visibles */
-.floating-notification .v-btn--icon {
-  color: white !important;
-}
-
-.floating-notification .v-btn--icon:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Estilos específicos para cada tipo de notificación */
-.error-notification {
-  background: #dc2626 !important; /* Rojo sólido más visible */
-  border-color: #b91c1c !important;
-}
-
-.success-notification {
-  background: #16a34a !important; /* Verde sólido más visible */
-  border-color: #15803d !important;
-}
-
-.location-notification {
-  background: #2563eb !important; /* Azul sólido más visible */
-  border-color: #1d4ed8 !important;
-}
-
-/* Asegurar que los mensajes de error específicos sean visibles */
-.error-notification .v-alert__content,
-.error-notification .v-alert__body {
-  font-weight: 500 !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* Mejorar la legibilidad del texto en todas las notificaciones */
-.floating-notification .v-alert__content {
-  font-weight: 500 !important;
-  line-height: 1.4 !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* Animaciones de entrada y salida */
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-down-enter-from {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-20px);
-}
-
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-20px);
-}
-
-.slide-down-enter-to,
-.slide-down-leave-from {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* Responsive para notificaciones */
-@media (max-width: 600px) {
-  .notifications-overlay {
-    top: 70px;
-    left: 20px;
-    right: 20px;
-    transform: none;
-  }
-  
-  .floating-notification {
-    max-width: none !important;
-    width: 100%;
-  }
-  
-  .slide-down-enter-from,
-  .slide-down-leave-to {
-    transform: translateY(-20px);
-  }
-  
-  .slide-down-enter-to,
-  .slide-down-leave-from {
-    transform: translateY(0);
-  }
 }
 </style>

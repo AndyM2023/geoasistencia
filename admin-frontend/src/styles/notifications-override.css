@@ -1,0 +1,123 @@
+/* ===== SOBRESCRITURA COMPLETA DE VUETIFY PARA NOTIFICACIONES ===== */
+
+/* DESHABILITAR COMPLETAMENTE LOS ESTILOS DE VUETIFY */
+.floating-notification .v-alert,
+.floating-notification .v-alert * {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: white !important;
+}
+
+/* SOBRESCRIBIR VARIABLES CSS DE VUETIFY */
+.floating-notification .v-alert {
+  --v-theme-error: transparent !important;
+  --v-theme-success: transparent !important;
+  --v-theme-info: transparent !important;
+  --v-theme-warning: transparent !important;
+  --v-theme-on-error: white !important;
+  --v-theme-on-success: white !important;
+  --v-theme-on-info: white !important;
+  --v-theme-on-warning: white !important;
+}
+
+/* FORZAR COLORES DE FONDO EN TODOS LOS ELEMENTOS DE NOTIFICACIÓN */
+.floating-notification.error-notification,
+.floating-notification.error-notification .v-alert,
+.floating-notification.error-notification .v-alert * {
+  background: rgba(220, 38, 38, 0.2) !important;
+}
+
+.floating-notification.success-notification,
+.floating-notification.success-notification .v-alert,
+.floating-notification.success-notification .v-alert * {
+  background: rgba(22, 163, 74, 0.2) !important;
+}
+
+.floating-notification.info-notification,
+.floating-notification.info-notification .v-alert,
+.floating-notification.info-notification .v-alert * {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+.floating-notification.warning-notification,
+.floating-notification.warning-notification .v-alert,
+.floating-notification.warning-notification .v-alert * {
+  background: rgba(217, 119, 6, 0.2) !important;
+}
+
+/* ASEGURAR QUE EL TEXTO SEA BLANCO */
+.floating-notification .v-alert__content,
+.floating-notification .v-alert__title,
+.floating-notification .v-alert__body,
+.floating-notification .v-icon,
+.floating-notification .v-btn__content .v-icon {
+  color: white !important;
+}
+
+/* SOBRESCRIBIR ESTILOS ESPECÍFICOS DE TIPO DE VUETIFY */
+.floating-notification .v-alert--type-error,
+.floating-notification .v-alert--type-success,
+.floating-notification .v-alert--type-info,
+.floating-notification .v-alert--type-warning {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+/* SOBRESCRIBIR VARIANT TEXT DE VUETIFY */
+.floating-notification .v-alert--variant-text {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* SELECTORES DE MÁXIMA ESPECIFICIDAD */
+div.floating-notification.error-notification div.v-alert,
+div.floating-notification.error-notification div.v-alert * {
+  background: rgba(220, 38, 38, 0.2) !important;
+}
+
+div.floating-notification.success-notification div.v-alert,
+div.floating-notification.success-notification div.v-alert * {
+  background: rgba(22, 163, 74, 0.2) !important;
+}
+
+div.floating-notification.info-notification div.v-alert,
+div.floating-notification.info-notification div.v-alert * {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+div.floating-notification.warning-notification div.v-alert,
+div.floating-notification.warning-notification div.v-alert * {
+  background: rgba(217, 119, 6, 0.2) !important;
+}
+
+/* FORZAR ESTILOS EN TODOS LOS ELEMENTOS POSIBLES */
+.floating-notification.error-notification .v-alert__wrapper,
+.floating-notification.error-notification .v-alert__content,
+.floating-notification.error-notification .v-alert__body,
+.floating-notification.error-notification .v-alert__title {
+  background: rgba(220, 38, 38, 0.2) !important;
+}
+
+.floating-notification.success-notification .v-alert__wrapper,
+.floating-notification.success-notification .v-alert__content,
+.floating-notification.success-notification .v-alert__body,
+.floating-notification.success-notification .v-alert__title {
+  background: rgba(22, 163, 74, 0.2) !important;
+}
+
+.floating-notification.info-notification .v-alert__wrapper,
+.floating-notification.info-notification .v-alert__content,
+.floating-notification.info-notification .v-alert__body,
+.floating-notification.info-notification .v-alert__title {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+.floating-notification.warning-notification .v-alert__wrapper,
+.floating-notification.warning-notification .v-alert__content,
+.floating-notification.warning-notification .v-alert__body,
+.floating-notification.warning-notification .v-alert__title {
+  background: rgba(217, 119, 6, 0.2) !important;
+}

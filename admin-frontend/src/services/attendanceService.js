@@ -130,8 +130,8 @@ export const attendanceService = {
 
     async getEmployeeByCredentials(username, password) {
         try {
-            // Hacer login para obtener el usuario
-            const loginResponse = await api.post(`/auth/login/`, {
+            // Hacer login para obtener el usuario usando el endpoint de empleados
+            const loginResponse = await api.post(`/auth/employee_login/`, {
                 username: username,
                 password: password
             });
@@ -139,7 +139,7 @@ export const attendanceService = {
             const user = loginResponse.data.user;
             const token = loginResponse.data.token;
             
-            console.log('🔍 Respuesta del login:', loginResponse.data);
+            console.log('🔍 Respuesta del login de empleado:', loginResponse.data);
             console.log('👤 Usuario obtenido:', user);
             console.log('🔑 Token obtenido:', token ? 'SÍ' : 'NO');
             
