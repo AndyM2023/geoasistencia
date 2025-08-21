@@ -343,6 +343,90 @@ class DashboardViewSet(viewsets.ViewSet):
             'total': len(activities),
             'lastUpdate': timezone.now().isoformat()
         })
+    
+    @action(detail=False, methods=['get'])
+    def employee_info(self, request):
+        """Obtener información del empleado autenticado"""
+        try:
+            # Obtener el perfil del empleado del usuario autenticado
+            employee = request.user.employee_profile
+            
+            return Response({
+                'fullName': employee.full_name,
+                'employeeId': employee.employee_id,
+                'position': employee.get_position_display(),
+                'area': employee.area.name if employee.area else None,
+                'hireDate': employee.hire_date.strftime('%Y-%m-%d') if employee.hire_date else None
+            })
+        except Exception as e:
+            return Response({
+                'error': 'Error obteniendo información del empleado',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def employee_stats(self, request):
+        """Obtener estadísticas del empleado autenticado"""
+        try:
+            employee = request.user.employee_profile
+            
+            # Obtener asistencias del empleado
+            attendances = Attendance.objects.filter(employee=employee)
+            
+            # Estadísticas básicas
+            total_days = attendances.count()
+            on_time_days = attendances.filter(status='present').count()
+            late_days = attendances.filter(status='late').count()
+            
+            # Calcular tasa de asistencia
+            attendance_rate = 0
+            if total_days > 0:
+                attendance_rate = round((on_time_days / total_days) * 100, 1)
+            
+            return Response({
+                'totalDays': total_days,
+                'onTimeDays': on_time_days,
+                'lateDays': late_days,
+                'attendanceRate': attendance_rate
+            })
+        except Exception as e:
+            return Response({
+                'error': 'Error obteniendo estadísticas del empleado',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def employee_attendances(self, request):
+        """Obtener historial de asistencias del empleado autenticado"""
+        try:
+            employee = request.user.employee_profile
+            
+            # Obtener asistencias ordenadas por fecha (más recientes primero)
+            attendances = Attendance.objects.filter(
+                employee=employee
+            ).select_related('area').order_by('-date', '-created_at')
+            
+            # Serializar datos
+            attendance_data = []
+            for attendance in attendances:
+                attendance_data.append({
+                    'id': attendance.id,
+                    'date': attendance.date.strftime('%Y-%m-%d'),
+                    'check_in': attendance.check_in.isoformat() if attendance.check_in else None,
+                    'check_out': attendance.check_out.isoformat() if attendance.check_out else None,
+                    'status': attendance.status,
+                    'area': attendance.area.name if attendance.area else None
+                })
+            
+            return Response({
+                'attendances': attendance_data,
+                'total': len(attendance_data)
+            })
+        except Exception as e:
+            return Response({
+                'error': 'Error obteniendo asistencias del empleado',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de empleados"""

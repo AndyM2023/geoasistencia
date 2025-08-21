@@ -188,6 +188,36 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const setEmployeeAuth = (userData, employeeId) => {
+    console.log('👤 Auth Store - Configurando autenticación de empleado:', { userData, employeeId })
+    
+    // Obtener el token del localStorage (ya fue guardado por attendanceService)
+    const storedToken = localStorage.getItem('token')
+    if (!storedToken) {
+      console.error('❌ Auth Store - No hay token disponible para empleado')
+      return false
+    }
+    
+    // Actualizar el store
+    token.value = storedToken
+    user.value = {
+      ...userData,
+      employee_id: employeeId,
+      role: 'employee'
+    }
+    
+    // Marcar como inicializado
+    isInitialized.value = true
+    
+    console.log('✅ Auth Store - Autenticación de empleado configurada exitosamente')
+    console.log(`   - Token: ${storedToken ? 'Presente' : 'Ausente'}`)
+    console.log(`   - Usuario: ${user.value?.username || 'No hay usuario'}`)
+    console.log(`   - Empleado ID: ${user.value?.employee_id || 'No hay ID'}`)
+    console.log(`   - isAuthenticated: ${isAuthenticated.value}`)
+    
+    return true
+  }
+
   return {
     user,
     token,
@@ -197,6 +227,7 @@ export const useAuthStore = defineStore('auth', () => {
     initAuth,
     login,
     logout,
-    refreshToken
+    refreshToken,
+    setEmployeeAuth
   }
 })

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useNotifications } from '../composables/useNotifications'
 
 const routes = [
   {
@@ -20,6 +21,11 @@ const routes = [
     path: '/admin/forgot-password',
     name: 'ForgotPassword',
     component: () => import('../views/ForgotPassword.vue')
+  },
+  {
+    path: '/employee/login',
+    name: 'EmployeeLogin',
+    component: () => import('../views/EmployeeLogin.vue')
   },
   {
     path: '/employee/forgot-password',
@@ -76,6 +82,12 @@ const routes = [
     path: '/about',
     name: 'About',
     component: () => import('../views/About.vue')
+  },
+  {
+    path: '/employee/reports',
+    name: 'EmployeeReports',
+    component: () => import('../views/EmployeeReports.vue'),
+    meta: { requiresAuth: true, requiresAdmin: false }
   }
 ]
 
@@ -87,6 +99,7 @@ const router = createRouter({
 // Guardia de navegación para verificar autenticación
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+  const { showError } = useNotifications()
   
   // 🔄 ESPERAR A QUE SE INICIALICE LA AUTENTICACIÓN
   if (!authStore.isInitialized) {
@@ -99,22 +112,45 @@ router.beforeEach(async (to, from, next) => {
     }
   }
   
-  // Si la ruta requiere autenticación
-  if (to.meta.requiresAuth) {
-    console.log('🔒 Router - Ruta protegida, verificando autenticación...')
-    console.log(`   - Usuario autenticado: ${authStore.isAuthenticated}`)
-    console.log(`   - Usuario: ${authStore.user ? authStore.user.username : 'No hay usuario'}`)
-    
-    // Verificar si el usuario está autenticado
-    if (!authStore.isAuthenticated) {
-      console.log('❌ Router - Usuario no autenticado, redirigiendo a login')
-      // Redirigir al login admin si no está autenticado
-      next('/admin/login')
-      return
-    } else {
-      console.log('✅ Router - Usuario autenticado, permitiendo acceso')
+      // Si la ruta requiere autenticación
+    if (to.meta.requiresAuth) {
+      console.log('🔒 Router - Ruta protegida, verificando autenticación...')
+      console.log(`   - Usuario autenticado: ${authStore.isAuthenticated}`)
+      console.log(`   - Usuario: ${authStore.user ? authStore.user.username : 'No hay usuario'}`)
+      console.log(`   - Token presente: ${!!authStore.token}`)
+      console.log(`   - Store inicializado: ${authStore.isInitialized}`)
+      
+      // Verificar si el usuario está autenticado
+      if (!authStore.isAuthenticated) {
+        console.log('❌ Router - Usuario no autenticado, redirigiendo a login')
+        
+        // Redirigir según el tipo de ruta
+        if (to.path.startsWith('/employee/')) {
+          // Para rutas de empleados, ir al login de empleados
+          console.log('🔄 Router - Redirigiendo empleado a login de empleados')
+          next('/employee/login')
+        } else {
+          // Para otras rutas protegidas, ir al login de admin
+          console.log('🔄 Router - Redirigiendo a login de admin')
+          next('/admin/login')
+        }
+        return
+      } else {
+        console.log('✅ Router - Usuario autenticado, permitiendo acceso')
+        console.log(`   - Rol del usuario: ${authStore.user?.role || 'No especificado'}`)
+        
+        // 🔒 BLOQUEAR ACCESO ADMINISTRATIVO A EMPLEADOS
+        if (to.path.startsWith('/app/') && authStore.user?.role === 'employee') {
+          console.log('🚫 Router - Empleado intentando acceder a ruta administrativa, bloqueando')
+          showError('No tienes permisos para acceder al panel administrativo', {
+            title: 'Acceso Denegado',
+            icon: 'mdi-shield-lock'
+          })
+          next('/employee/reports') // Redirigir a sus reportes
+          return
+        }
+      }
     }
-  }
   
   // Si la ruta es login o register y el usuario está autenticado
   if ((to.name === 'AdminLogin' || to.name === 'Register' || to.name === 'ForgotPassword' || to.name === 'ResetPassword') && authStore.isAuthenticated) {
