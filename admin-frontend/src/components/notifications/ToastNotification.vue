@@ -21,10 +21,11 @@
       >
         <v-alert
           :type="notification.type"
-          variant="tonal"
+          variant="text"
           :closable="notification.closable"
           @click:close="removeNotification(notification.id)"
           :max-width="notification.maxWidth || 400"
+          :style="getNotificationStyle(notification.type)"
         >
           <template v-slot:prepend>
             <v-icon v-if="notification.icon">{{ notification.icon }}</v-icon>
@@ -71,11 +72,59 @@ export default {
     const clearAllNotifications = () => {
       notificationStore.clearAll()
     }
+
+    const getNotificationStyle = (type) => {
+      const baseStyle = {
+        background: 'transparent !important',
+        border: 'none !important',
+        boxShadow: 'none !important',
+        color: 'white !important',
+        borderRadius: '12px',
+        backdropFilter: 'blur(20px)',
+        padding: '16px',
+        margin: '0',
+        position: 'relative'
+      }
+
+      switch (type) {
+        case 'error':
+          return {
+            ...baseStyle,
+            backgroundColor: 'rgba(220, 38, 38, 0.2) !important',
+            borderColor: 'rgba(185, 28, 28, 0.4) !important',
+            boxShadow: '0 8px 32px rgba(220, 38, 38, 0.1) !important'
+          }
+        case 'success':
+          return {
+            ...baseStyle,
+            backgroundColor: 'rgba(22, 163, 74, 0.2) !important',
+            borderColor: 'rgba(21, 128, 61, 0.4) !important',
+            boxShadow: '0 8px 32px rgba(22, 163, 74, 0.1) !important'
+          }
+        case 'info':
+          return {
+            ...baseStyle,
+            backgroundColor: 'rgba(37, 99, 235, 0.2) !important',
+            borderColor: 'rgba(29, 78, 216, 0.4) !important',
+            boxShadow: '0 8px 32px rgba(37, 99, 235, 0.1) !important'
+          }
+        case 'warning':
+          return {
+            ...baseStyle,
+            backgroundColor: 'rgba(217, 119, 6, 0.2) !important',
+            borderColor: 'rgba(180, 83, 9, 0.4) !important',
+            boxShadow: '0 8px 32px rgba(217, 119, 6, 0.1) !important'
+          }
+        default:
+          return baseStyle
+      }
+    }
     
     return {
       notifications,
       removeNotification,
-      clearAllNotifications
+      clearAllNotifications,
+      getNotificationStyle
     }
   }
 }
@@ -101,25 +150,35 @@ export default {
 }
 
 .clear-btn {
-  background: rgba(0, 0, 0, 0.7) !important;
+  background: rgba(0, 0, 0, 0.6) !important;
   color: white !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
 }
 
 .clear-btn:hover {
-  background: rgba(0, 0, 0, 0.9) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
   transform: scale(1.1) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .floating-notification {
   pointer-events: auto; /* Restaura los clics en la notificación */
   margin-bottom: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px; /* Bordes más redondeados */
+  backdrop-filter: blur(20px) !important; /* Desenfoque general más intenso */
+  border: 1px solid rgba(255, 255, 255, 0.15) !important; /* Borde sutil */
   color: white !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Transición suave */
+}
+
+.floating-notification:hover {
+  transform: translateY(-2px) !important; /* Efecto hover sutil */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
 }
 
 .floating-notification * {
@@ -150,39 +209,48 @@ export default {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Estilos específicos para cada tipo de notificación */
-.error-notification {
-  background: #dc2626 !important; /* Rojo sólido más visible */
-  border-color: #b91c1c !important;
+/* Estilos específicos para cada tipo de notificación - FORZADOS */
+.floating-notification.error-notification {
+  background: rgba(220, 38, 38, 0.2) !important; /* Rojo MUY transparente */
+  border-color: rgba(185, 28, 28, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.1) !important;
 }
 
-.success-notification {
-  background: #16a34a !important; /* Verde sólido más visible */
-  border-color: #15803d !important;
+.floating-notification.success-notification {
+  background: rgba(22, 163, 74, 0.2) !important; /* Verde MUY transparente */
+  border-color: rgba(21, 128, 61, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(22, 163, 74, 0.1) !important;
 }
 
-.info-notification {
-  background: #2563eb !important; /* Azul sólido más visible */
-  border-color: #1d4ed8 !important;
+.floating-notification.info-notification {
+  background: rgba(37, 99, 235, 0.2) !important; /* Azul MUY transparente */
+  border-color: rgba(29, 78, 216, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.1) !important;
 }
 
-.warning-notification {
-  background: #d97706 !important; /* Naranja sólido más visible */
-  border-color: #b45309 !important;
+.floating-notification.warning-notification {
+  background: rgba(217, 119, 6, 0.2) !important; /* Naranja MUY transparente */
+  border-color: rgba(180, 83, 9, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(217, 119, 6, 0.1) !important;
 }
 
 /* Asegurar que los mensajes de error específicos sean visibles */
 .error-notification .v-alert__content,
 .error-notification .v-alert__body {
-  font-weight: 500 !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  font-weight: 600 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6) !important; /* Sombra más intensa para errores */
 }
 
 /* Mejorar la legibilidad del texto en todas las notificaciones */
 .floating-notification .v-alert__content {
-  font-weight: 500 !important;
-  line-height: 1.4 !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  font-weight: 600 !important; /* Texto más grueso */
+  line-height: 1.5 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important; /* Sombra más pronunciada */
+  letter-spacing: 0.02em !important; /* Espaciado de letras mejorado */
 }
 
 /* Estilos para el contenido de la notificación */
@@ -252,5 +320,249 @@ export default {
   .slide-down-leave-from {
     transform: translateY(0);
   }
+}
+
+/* Efectos de brillo sutiles para cada tipo */
+.error-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 12px 12px 0 0;
+}
+
+.success-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 12px 12px 0 0;
+}
+
+.info-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 12px 12px 0 0;
+}
+
+.warning-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 12px 12px 0 0;
+}
+
+/* SOBRESCRIBIR COMPLETAMENTE VUETIFY - MÁXIMA ESPECIFICIDAD */
+:deep(.floating-notification .v-alert) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: white !important;
+}
+
+:deep(.floating-notification .v-alert__wrapper) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:deep(.floating-notification .v-alert__content) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:deep(.floating-notification .v-alert__body) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* FORZAR COLORES DE FONDO EN TODOS LOS ELEMENTOS */
+:deep(.floating-notification.error-notification .v-alert),
+:deep(.floating-notification.error-notification .v-alert__wrapper),
+:deep(.floating-notification.error-notification .v-alert__content),
+:deep(.floating-notification.error-notification .v-alert__body),
+:deep(.floating-notification.error-notification .v-alert *) {
+  background: rgba(220, 38, 38, 0.2) !important;
+}
+
+:deep(.floating-notification.success-notification .v-alert),
+:deep(.floating-notification.success-notification .v-alert__wrapper),
+:deep(.floating-notification.success-notification .v-alert__content),
+:deep(.floating-notification.success-notification .v-alert__body),
+:deep(.floating-notification.success-notification .v-alert *) {
+  background: rgba(22, 163, 74, 0.2) !important;
+}
+
+:deep(.floating-notification.info-notification .v-alert),
+:deep(.floating-notification.info-notification .v-alert__wrapper),
+:deep(.floating-notification.info-notification .v-alert__content),
+:deep(.floating-notification.info-notification .v-alert__body),
+:deep(.floating-notification.info-notification .v-alert *) {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+:deep(.floating-notification.warning-notification .v-alert),
+:deep(.floating-notification.warning-notification .v-alert__wrapper),
+:deep(.floating-notification.warning-notification .v-alert__content),
+:deep(.floating-notification.warning-notification .v-alert__body),
+:deep(.floating-notification.warning-notification .v-alert *) {
+  background: rgba(217, 119, 6, 0.2) !important;
+}
+
+/* SOBRESCRIBIR VARIABLES CSS DE VUETIFY */
+:deep(.floating-notification .v-alert) {
+  --v-theme-error: transparent !important;
+  --v-theme-success: transparent !important;
+  --v-theme-info: transparent !important;
+  --v-theme-warning: transparent !important;
+}
+
+/* SOBRESCRIBIR ESTILOS DE TIPO DE VUETIFY */
+:deep(.floating-notification .v-alert--type-error) {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+:deep(.floating-notification .v-alert--type-success) {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+:deep(.floating-notification .v-alert--type-info) {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+:deep(.floating-notification .v-alert--type-warning) {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+/* SOBRESCRIBIR VARIANT TEXT DE VUETIFY */
+:deep(.floating-notification .v-alert--variant-text) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* FORZAR ESTILOS EN EL ELEMENTO RAÍZ */
+.floating-notification.error-notification {
+  background: rgba(220, 38, 38, 0.2) !important;
+  border-color: rgba(185, 28, 28, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(220, 38, 38, 0.1) !important;
+}
+
+.floating-notification.success-notification {
+  background: rgba(22, 163, 74, 0.2) !important;
+  border-color: rgba(21, 128, 61, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(22, 163, 74, 0.1) !important;
+}
+
+.floating-notification.info-notification {
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(29, 78, 216, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.1) !important;
+}
+
+.floating-notification.warning-notification {
+  background: rgba(217, 119, 6, 0.2) !important;
+  border-color: rgba(180, 83, 9, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 32px rgba(217, 119, 6, 0.1) !important;
+}
+
+/* ESTILOS DE MÁXIMA ESPECIFICIDAD PARA SOBRESCRIBIR VUETIFY */
+.floating-notification.error-notification .v-alert,
+.floating-notification.error-notification .v-alert * {
+  background: rgba(220, 38, 38, 0.2) !important;
+}
+
+.floating-notification.success-notification .v-alert,
+.floating-notification.success-notification .v-alert * {
+  background: rgba(22, 163, 74, 0.2) !important;
+}
+
+.floating-notification.info-notification .v-alert,
+.floating-notification.info-notification .v-alert * {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+.floating-notification.warning-notification .v-alert,
+.floating-notification.warning-notification .v-alert * {
+  background: rgba(217, 119, 6, 0.2) !important;
+}
+
+/* SOBRESCRIBIR COMPLETAMENTE CON SELECTORES MÁS ESPECÍFICOS */
+div.floating-notification.error-notification div.v-alert,
+div.floating-notification.error-notification div.v-alert * {
+  background: rgba(220, 38, 38, 0.2) !important;
+}
+
+div.floating-notification.success-notification div.v-alert,
+div.floating-notification.success-notification div.v-alert * {
+  background: rgba(22, 163, 74, 0.2) !important;
+}
+
+div.floating-notification.info-notification div.v-alert,
+div.floating-notification.info-notification div.v-alert * {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+div.floating-notification.warning-notification div.v-alert,
+div.floating-notification.warning-notification div.v-alert * {
+  background: rgba(217, 119, 6, 0.2) !important;
+}
+
+/* FORZAR ESTILOS EN TODOS LOS ELEMENTOS POSIBLES */
+.floating-notification.error-notification .v-alert__wrapper,
+.floating-notification.error-notification .v-alert__content,
+.floating-notification.error-notification .v-alert__body,
+.floating-notification.error-notification .v-alert__title {
+  background: rgba(220, 38, 38, 0.2) !important;
+}
+
+.floating-notification.success-notification .v-alert__wrapper,
+.floating-notification.success-notification .v-alert__content,
+.floating-notification.success-notification .v-alert__body,
+.floating-notification.success-notification .v-alert__title {
+  background: rgba(22, 163, 74, 0.2) !important;
+}
+
+.floating-notification.info-notification .v-alert__wrapper,
+.floating-notification.info-notification .v-alert__content,
+.floating-notification.info-notification .v-alert__body,
+.floating-notification.info-notification .v-alert__title {
+  background: rgba(37, 99, 235, 0.2) !important;
+}
+
+.floating-notification.warning-notification .v-alert__wrapper,
+.floating-notification.warning-notification .v-alert__content,
+.floating-notification.warning-notification .v-alert__body,
+.floating-notification.warning-notification .v-alert__title {
+  background: rgba(217, 119, 6, 0.2) !important;
 }
 </style>
