@@ -107,18 +107,42 @@ class AuthViewSet(viewsets.ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Crear el usuario administrador
+            # Crear el usuario administrador (sin el campo position)
             user = User.objects.create_user(
                 username=data['username'],
                 email=data['email'],
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 cedula=data['cedula'],
-                position=data['position'],
                 password=data['password'],
                 role='admin',
                 is_active=True
             )
+            
+            # La señal automática ya creó el perfil de empleado
+            # Solo necesitamos actualizarlo con el cargo correcto
+            try:
+                employee = Employee.objects.get(user=user)
+                
+                # Mapear el cargo del frontend al valor del modelo
+                position_mapping = {
+                    'Administrador de Personal': 'administrador_personal',
+                    'Asistente de RR. HH.': 'asistente_rrhh',
+                    'Técnico de RR. HH.': 'tecnico_rrhh'
+                }
+                
+                employee_position = position_mapping.get(data['position'], 'otro')
+                
+                # Actualizar el cargo del empleado
+                employee.position = employee_position
+                employee.save()
+                
+                print(f"✅ Perfil de empleado actualizado para {user.username} con cargo: {employee_position}")
+                
+            except Employee.DoesNotExist:
+                print(f"⚠️ No se encontró perfil de empleado para {user.username}")
+            except Exception as e:
+                print(f"⚠️ Error actualizando perfil de empleado: {e}")
             
             return Response({
                 'message': 'Administrador registrado exitosamente',
