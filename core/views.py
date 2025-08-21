@@ -953,30 +953,18 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             today = timezone.now().date()
             print(f"📅 Fecha actual: {today}")
             
-            # Obtener horarios esperados del área
-            from .services.schedule_service import ScheduleService
-            expected_check_in, expected_check_out = ScheduleService.get_expected_times(area, today)
-            
             attendance, created = Attendance.objects.get_or_create(
                 employee=employee,
                 date=today,
                 defaults={
                     'area': area,
                     'check_in': timezone.now().time(),
-                    'expected_check_in': expected_check_in,
-                    'expected_check_out': expected_check_out,
                     'status': 'present',
                     'latitude': latitude,
                     'longitude': longitude,
                     'face_verified': face_verified
                 }
             )
-            
-            # Si no se creó nuevo, actualizar con horarios esperados si no existen
-            if not created and not attendance.expected_check_in:
-                attendance.expected_check_in = expected_check_in
-                attendance.expected_check_out = expected_check_out
-                attendance.save()
             
             if created:
                 print(f"✅ NUEVA asistencia creada para {employee.full_name}")
