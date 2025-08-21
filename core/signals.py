@@ -34,12 +34,14 @@ def create_employee_for_admin(sender, instance, created, **kwargs):
         try:
             Employee.objects.create(
                 user=instance,
-                position='administrativo',  # Cargo por defecto para administradores
+                position='otro',  # Cargo genérico - se actualizará desde el formulario
                 has_admin_access=True,      # Acceso administrativo por defecto
                 area=default_area,
                 hire_date=instance.date_joined.date() if instance.date_joined else None
             )
             print(f"✅ Empleado creado automáticamente para administrador: {instance.username}")
+            print(f"   - Cargo temporal: 'otro' (se actualizará desde el formulario)")
+            print(f"   - Acceso administrativo: HABILITADO")
             
         except Exception as e:
             print(f"❌ Error creando empleado para {instance.username}: {e}")
@@ -73,12 +75,14 @@ def update_employee_for_admin(sender, instance, created, **kwargs):
         try:
             Employee.objects.create(
                 user=instance,
-                position='administrativo',  # Cargo por defecto para administradores
+                position='otro',  # Cargo genérico - se actualizará desde el formulario
                 has_admin_access=True,      # Acceso administrativo por defecto
                 area=default_area,
                 hire_date=instance.date_joined.date() if instance.date_joined else None
             )
             print(f"✅ Empleado creado automáticamente para administrador actualizado: {instance.username}")
+            print(f"   - Cargo temporal: 'otro' (se actualizará desde el formulario)")
+            print(f"   - Acceso administrativo: HABILITADO")
             
         except Exception as e:
             print(f"❌ Error creando empleado para {instance.username}: {e}")

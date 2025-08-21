@@ -10,8 +10,15 @@
     
     <!-- ✅ AUTENTICADO Y LISTO -->
     <template v-else>
-      <AppBar v-model:drawer="drawer" />
-      <SideNav v-model:drawer="drawer" :menu-items="menuItems" />
+      <AppBar 
+        :drawer="drawer" 
+        @update:drawer="handleDrawerUpdate" 
+      />
+      <SideNav 
+        :model-value="drawer"
+        :menu-items="menuItems"
+        @update:model-value="handleDrawerUpdate"
+      />
       <v-main class="bg-dark-background">
         <v-container fluid class="pa-6">
           <router-view />
@@ -59,6 +66,12 @@ export default {
       }
     })
     
+    // Función para manejar actualizaciones del drawer
+    const handleDrawerUpdate = (newValue) => {
+      console.log('Layout (views): handleDrawerUpdate called with:', newValue)
+      drawer.value = newValue
+    }
+    
     // 🔍 WATCHER PARA DEBUGGING
     watch(() => authStore.isInitialized, (newVal) => {
       console.log(`🔄 Layout - isInitialized cambió a: ${newVal}`)
@@ -98,7 +111,8 @@ export default {
       drawer,
       menuItems,
       isAuthenticated,
-      authStore
+      authStore,
+      handleDrawerUpdate
     }
   }
 }
