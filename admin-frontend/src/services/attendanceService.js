@@ -319,5 +319,46 @@ export const attendanceService = {
             console.error('❌ Error obteniendo asistencias por rango de fechas:', error);
             throw error;
         }
+    },
+
+    // ===== MÉTODOS PARA EMPLEADOS =====
+    
+    // Obtener información del empleado autenticado
+    async getEmployeeInfo() {
+        try {
+            console.log('👤 Obteniendo información del empleado...');
+            const response = await api.get('/dashboard/employee_info/');
+            console.log('✅ Información del empleado obtenida:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error obteniendo información del empleado:', error);
+            throw error;
+        }
+    },
+
+    // Obtener estadísticas del empleado autenticado
+    async getEmployeeStats() {
+        try {
+            console.log('📊 Obteniendo estadísticas del empleado...');
+            const response = await api.get('/dashboard/employee_stats/');
+            console.log('✅ Estadísticas del empleado obtenidas:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error obteniendo estadísticas del empleado:', error);
+            throw error;
+        }
+    },
+
+    // Obtener historial de asistencias del empleado autenticado
+    async getEmployeeAttendances() {
+        try {
+            console.log('📋 Obteniendo historial de asistencias del empleado...');
+            const response = await api.get('/dashboard/employee_attendances/');
+            console.log('✅ Historial de asistencias obtenido:', response.data);
+            return response.data.attendances || [];
+        } catch (error) {
+            console.error('❌ Error obteniendo historial de asistencias:', error);
+            throw error;
+        }
     }
 };

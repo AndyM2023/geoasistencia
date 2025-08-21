@@ -107,18 +107,42 @@ class AuthViewSet(viewsets.ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Crear el usuario administrador
+            # Crear el usuario administrador (sin el campo position)
             user = User.objects.create_user(
                 username=data['username'],
                 email=data['email'],
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 cedula=data['cedula'],
-                position=data['position'],
                 password=data['password'],
                 role='admin',
                 is_active=True
             )
+            
+            # La señal automática ya creó el perfil de empleado
+            # Solo necesitamos actualizarlo con el cargo correcto
+            try:
+                employee = Employee.objects.get(user=user)
+                
+                # Mapear el cargo del frontend al valor del modelo
+                position_mapping = {
+                    'Administrador de Personal': 'administrador_personal',
+                    'Asistente de RR. HH.': 'asistente_rrhh',
+                    'Técnico de RR. HH.': 'tecnico_rrhh'
+                }
+                
+                employee_position = position_mapping.get(data['position'], 'otro')
+                
+                # Actualizar el cargo del empleado
+                employee.position = employee_position
+                employee.save()
+                
+                print(f"✅ Perfil de empleado actualizado para {user.username} con cargo: {employee_position}")
+                
+            except Employee.DoesNotExist:
+                print(f"⚠️ No se encontró perfil de empleado para {user.username}")
+            except Exception as e:
+                print(f"⚠️ Error actualizando perfil de empleado: {e}")
             
             return Response({
                 'message': 'Administrador registrado exitosamente',
@@ -230,12 +254,27 @@ class DashboardViewSet(viewsets.ViewSet):
         # Obtener actividades de las últimas 24 horas
         yesterday = timezone.now() - timedelta(days=1)
         
-        # Asistencias recientes
+        # Asistencias recientes (mostrar solo las 4 últimas para el dashboard)
+        # Primero intentar con las últimas 24 horas, si no hay suficientes, buscar más atrás
         recent_attendances = Attendance.objects.select_related(
             'employee__user', 'area'
         ).filter(
             created_at__gte=yesterday
-        ).order_by('-created_at')[:10]
+        ).order_by('-created_at')[:4]
+        
+        # Si no hay suficientes actividades en 24 horas, buscar en los últimos 7 días
+        if recent_attendances.count() < 4:
+            week_ago = timezone.now() - timedelta(days=7)
+            recent_attendances = Attendance.objects.select_related(
+                'employee__user', 'area'
+            ).filter(
+                created_at__gte=week_ago
+            ).order_by('-created_at')[:4]
+            print(f"🔍 Dashboard - Extendiendo búsqueda a 7 días, encontradas: {recent_attendances.count()}")
+        
+        # Debug: Log para verificar cantidad de asistencias
+        print(f"🔍 Dashboard - Asistencias encontradas: {recent_attendances.count()}")
+        print(f"🔍 Dashboard - Query SQL: {recent_attendances.query}")
         
         activities = []
         
@@ -287,28 +326,107 @@ class DashboardViewSet(viewsets.ViewSet):
                 'timestamp': attendance.created_at.isoformat()
             })
         
-        # Si no hay actividades recientes, crear algunas de ejemplo
+        # Debug: Log para verificar actividades finales
+        print(f"🔍 Dashboard - Actividades reales encontradas: {len(activities)}")
+        
+        # Si no hay actividades reales, devolver array vacío (no crear actividades de ejemplo)
         if not activities:
-            activities = [
-                {
-                    'id': 'demo-1',
-                    'type': 'demo',
-                    'title': 'Sistema iniciado correctamente',
-                    'time': 'Hace 1 hora',
-                    'icon': 'mdi-check-circle',
-                    'color': 'success',
-                    'status': 'Sistema',
-                    'employee': 'Sistema',
-                    'area': 'General',
-                    'timestamp': timezone.now().isoformat()
-                }
-            ]
+            print("⚠️ No hay actividades reales en las últimas 24 horas")
+            activities = []
+        
+        # Debug: Log final para verificar respuesta
+        print(f"🔍 Dashboard - Actividades finales devueltas: {len(activities)}")
+        print(f"🔍 Dashboard - Total en respuesta: {len(activities)}")
         
         return Response({
             'activities': activities,
             'total': len(activities),
             'lastUpdate': timezone.now().isoformat()
         })
+    
+    @action(detail=False, methods=['get'])
+    def employee_info(self, request):
+        """Obtener información del empleado autenticado"""
+        try:
+            # Obtener el perfil del empleado del usuario autenticado
+            employee = request.user.employee_profile
+            
+            return Response({
+                'fullName': employee.full_name,
+                'employeeId': employee.employee_id,
+                'position': employee.get_position_display(),
+                'area': employee.area.name if employee.area else None,
+                'hireDate': employee.hire_date.strftime('%Y-%m-%d') if employee.hire_date else None
+            })
+        except Exception as e:
+            return Response({
+                'error': 'Error obteniendo información del empleado',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def employee_stats(self, request):
+        """Obtener estadísticas del empleado autenticado"""
+        try:
+            employee = request.user.employee_profile
+            
+            # Obtener asistencias del empleado
+            attendances = Attendance.objects.filter(employee=employee)
+            
+            # Estadísticas básicas
+            total_days = attendances.count()
+            on_time_days = attendances.filter(status='present').count()
+            late_days = attendances.filter(status='late').count()
+            
+            # Calcular tasa de asistencia
+            attendance_rate = 0
+            if total_days > 0:
+                attendance_rate = round((on_time_days / total_days) * 100, 1)
+            
+            return Response({
+                'totalDays': total_days,
+                'onTimeDays': on_time_days,
+                'lateDays': late_days,
+                'attendanceRate': attendance_rate
+            })
+        except Exception as e:
+            return Response({
+                'error': 'Error obteniendo estadísticas del empleado',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def employee_attendances(self, request):
+        """Obtener historial de asistencias del empleado autenticado"""
+        try:
+            employee = request.user.employee_profile
+            
+            # Obtener asistencias ordenadas por fecha (más recientes primero)
+            attendances = Attendance.objects.filter(
+                employee=employee
+            ).select_related('area').order_by('-date', '-created_at')
+            
+            # Serializar datos
+            attendance_data = []
+            for attendance in attendances:
+                attendance_data.append({
+                    'id': attendance.id,
+                    'date': attendance.date.strftime('%Y-%m-%d'),
+                    'check_in': attendance.check_in.isoformat() if attendance.check_in else None,
+                    'check_out': attendance.check_out.isoformat() if attendance.check_out else None,
+                    'status': attendance.status,
+                    'area': attendance.area.name if attendance.area else None
+                })
+            
+            return Response({
+                'attendances': attendance_data,
+                'total': len(attendance_data)
+            })
+        except Exception as e:
+            return Response({
+                'error': 'Error obteniendo asistencias del empleado',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de empleados"""

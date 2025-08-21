@@ -15,6 +15,20 @@
           <v-card-text class="pa-8 pa-4 pa-md-8">
             <h2 class="text-h6 text-h5-md font-weight-bold text-white mb-1 text-center">Reconocimiento Facial</h2>
             
+            <!-- Botón para ver reportes del empleado -->
+            <div class="text-center mb-4">
+              <v-btn
+                @click="goToEmployeeReports"
+                color="info"
+                variant="tonal"
+                size="large"
+                class="employee-reports-btn"
+                prepend-icon="mdi-chart-line"
+              >
+                Acceder a Mis Reportes
+              </v-btn>
+            </div>
+            
             <v-row>
               <!-- Columna izquierda: Cámara -->
               <v-col cols="12" md="6" class="d-flex justify-center">
@@ -789,6 +803,11 @@ export default {
     const goToForgotPassword = () => {
       router.push('/employee/forgot-password')
     }
+    
+    // Función para ir a los reportes del empleado
+    const goToEmployeeReports = () => {
+      router.push('/employee/login')
+    }
 
     return {
       // Variables del formulario
@@ -813,6 +832,7 @@ export default {
       stopCamera,
       resetCamera,
       goToForgotPassword,
+      goToEmployeeReports,
       
       // Funciones de validación
       activateSuccessMode,

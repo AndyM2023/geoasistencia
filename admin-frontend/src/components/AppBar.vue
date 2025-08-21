@@ -6,9 +6,9 @@
     height="70"
   >
     <div class="d-flex align-center">
-      <!-- Botón del menú (solo mostrar en rutas /app/*) -->
+      <!-- Botón del menú (mostrar en rutas /app/* y /employee/*) -->
       <v-btn
-        v-if="showMenuButton"
+        v-if="isAppRoute"
         icon
         @click="toggleDrawer"
         class="mr-4"
@@ -36,7 +36,7 @@
 
     <!-- Acciones de usuario -->
     <div class="d-flex align-center">
-      <!-- Botón de notificaciones (solo en rutas /app/*) -->
+      <!-- Botón de notificaciones (en rutas /app/* y /employee/*) -->
       <v-btn
         v-if="showMenuButton"
         icon
@@ -160,9 +160,10 @@ export default {
     const isLoginPage = computed(() => route.path === '/admin/login')
     const isRegisterPage = computed(() => route.path === '/admin/register')
     const isAppRoute = computed(() => route.path.startsWith('/app'))
+    const isEmployeeRoute = computed(() => route.path.startsWith('/employee'))
     
-    // Mostrar botón de menú solo en rutas /app/*
-    const showMenuButton = computed(() => isAppRoute.value)
+    // Mostrar botón de menú en rutas /app/* y /employee/*
+    const showMenuButton = computed(() => isAppRoute.value || isEmployeeRoute.value)
     
     // Computed para mostrar el nombre del usuario
     const displayUserName = computed(() => {
@@ -196,8 +197,15 @@ export default {
     }
 
     const logout = () => {
-      authStore.logout()
-      router.push('/')
+      // Si estamos en una ruta de empleado, redirigir al reconocimiento
+      if (isEmployeeRoute.value) {
+        authStore.logout()
+        router.push('/')
+      } else {
+        // Si estamos en una ruta de admin, redirigir al reconocimiento
+        authStore.logout()
+        router.push('/')
+      }
     }
 
     const showProfileModal = ref(false)
@@ -223,6 +231,8 @@ export default {
       isRecognitionPage,
       isLoginPage,
       isRegisterPage,
+      isAppRoute,
+      isEmployeeRoute,
       showMenuButton,
       displayUserName,
       showProfileModal
