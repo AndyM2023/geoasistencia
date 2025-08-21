@@ -1,12 +1,19 @@
 <template>
   <div>
+
+
     <v-row class="mt-2 employee-header">
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Empleados</h1>
-                     <v-btn color="blue-400" prepend-icon="mdi-plus" @click="openNewEmployeeDialog" class="neon-border">
-             Nuevo Empleado
-           </v-btn>
+          <v-btn 
+            color="blue-400" 
+            prepend-icon="mdi-plus" 
+            @click="openNewEmployeeDialog" 
+            class="neon-border"
+          >
+            Nuevo Empleado
+          </v-btn>
         </div>
       </v-col>
     </v-row>
@@ -55,7 +62,27 @@
         :loading="loading"
         class="elevation-1 bg-dark-surface"
         theme="dark"
+        :no-data-text="'No hay empleados disponibles'"
+        :no-results-text="'No se encontraron resultados'"
       >
+        <!-- Template para cuando no hay datos -->
+        <template v-slot:no-data>
+          <div class="text-center pa-6">
+            <v-icon size="64" color="grey-400" class="mb-4">mdi-account-group-off</v-icon>
+            <h3 class="text-h6 text-grey-400 mb-2">No hay empleados</h3>
+            <p class="text-grey-500 mb-4">
+              {{ loading ? 'Cargando empleados...' : 'No se pudieron cargar los empleados' }}
+            </p>
+                         <v-btn 
+               v-if="!loading" 
+               color="blue-400" 
+               @click="loadEmployees()"
+               prepend-icon="mdi-refresh"
+             >
+               Reintentar
+             </v-btn>
+          </div>
+        </template>
         <template v-slot:item.actions="{ item }">
           <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editEmployee(item)"></v-btn>
           
@@ -283,23 +310,15 @@
               </v-col>
             </v-row>
 
-              <!-- Campo de Foto del Empleado (siempre visible) -->
-              <v-row>
-                <!-- aquí iría el contenido de master -->
-              </v-row>
-
-              <!-- Sección de Registro Facial - SOLO para edición -->
-              <v-row v-if="editingEmployee">
-                <!-- aquí iría el contenido de Registrov2 -->
-              </v-row>
-
+            <!-- Campo de Foto del Empleado -->
+            <v-row>
               <v-col cols="12">
                 <v-divider class="mb-4"></v-divider>
                 <h3 class="text-white mb-4">📸 Foto del Empleado</h3>
               </v-col>
             </v-row>
 
-            <v-row v-if="editingEmployee">
+            <v-row>
               <v-col cols="12">
                 <v-card class="bg-dark-surface border border-blue-500/20">
                   <v-card-title class="text-sm text-blue-400">📷 Foto de Perfil</v-card-title>
@@ -320,7 +339,7 @@
                           class="employee-photo-preview"
                         ></v-img>
                       </v-avatar>
-                      <p class="text-grey-300 text-sm">Foto actual</p>
+                      <p class="text-grey-300 text-sm">{{ editingEmployee ? 'Foto actual' : 'Foto seleccionada' }}</p>
                       
                       <!-- 🔍 DEBUG: Mostrar estado de la foto -->
                       <p class="text-blue-400 text-xs mt-1">
@@ -371,7 +390,7 @@
 
                       <!-- Eliminar foto -->
                       <v-btn
-                        v-if="shouldShowDeletePhotoButton()"
+                        v-if="editingEmployee && shouldShowDeletePhotoButton()"
                         @click="removePhoto"
                         color="red-400"
                         variant="outlined"
@@ -898,60 +917,31 @@ export default {
       )
     })
     
-         const loadEmployees = async () => {
-       // Verificar autenticación antes de cargar
-       const token = localStorage.getItem('token')
-       const isLoggingOut = localStorage.getItem('isLoggingOut')
-       
-       if (!token || isLoggingOut) {
-         console.log('🔄 loadEmployees: Saltando carga - sin autenticación o logout en progreso')
-         return
-       }
-       
-       loading.value = true
-       try {
-         // CARGAR DESDE API REAL
-         const employeesData = await employeeService.getAll()
-         // El backend devuelve {count, next, previous, results}
-         // Necesitamos acceder a results que es el array de empleados
-         employees.value = employeesData.results || employeesData
-         
-                   // 🔍 DEBUG: Verificar qué datos vienen del backend
-          console.log('🔍 loadEmployees - Datos recibidos del backend:')
-          if (employees.value.length > 0) {
-            const firstEmployee = employees.value[0]
-            console.log('   - Primer empleado position:', firstEmployee.position)
-            console.log('   - Primer empleado position type:', typeof firstEmployee.position)
-            console.log('   - Primer empleado completo:', JSON.stringify(firstEmployee, null, 2))
-            
-            // 🔍 DEBUG: Verificar fotos de todos los empleados
-            console.log('🔍 Verificando fotos de empleados:')
-            employees.value.forEach((emp, index) => {
-              console.log(`   - Empleado ${index + 1}: ${emp.full_name}`)
-              console.log(`     - Foto: ${emp.photo || 'Sin foto'}`)
-              console.log(`     - Photo URL: ${emp.photo_url || 'Sin URL'}`)
-              console.log(`     - Tipo de foto: ${typeof emp.photo}`)
-            })
-          }
-       } catch (error) {
-         console.error('Error cargando empleados:', error)
-         
-         // Si es error 401, no mostrar mensaje de error al usuario
-         if (error.response?.status !== 401) {
-           showMessage('Error cargando empleados', 'error')
-         }
-       } finally {
-         loading.value = false
-       }
-     }
+             const loadEmployees = async () => {
+      // El router ya maneja la autenticación, cargar directamente
+      console.log('📡 Cargando empleados...')
+      
+      loading.value = true
+      try {
+        const employeesData = await employeeService.getAll()
+        employees.value = employeesData.results || employeesData
+        console.log(`✅ Empleados cargados: ${employees.value.length} encontrados`)
+      } catch (error) {
+        console.error('❌ Error cargando empleados:', error)
+        showMessage(`Error cargando empleados: ${error.message}`, 'error')
+        employees.value = []
+      } finally {
+        loading.value = false
+      }
+    }
     
     const loadAreas = async () => {
       try {
         const areasData = await areaService.getAll()
         areas.value = areasData.results || areasData
-        console.log('🔍 Áreas cargadas:', JSON.stringify(areas.value, null, 2))
+        console.log(`✅ Áreas cargadas: ${areas.value.length} encontradas`)
       } catch (error) {
-        console.error('Error cargando áreas:', error)
+        console.error('❌ Error cargando áreas:', error)
         showMessage('Error cargando áreas', 'error')
       }
     }
@@ -1787,36 +1777,26 @@ export default {
     }
     
     
+
+    
     onMounted(() => {
+      console.log('🚀 Componente Employees montado')
+      
+      // Cargar datos directamente (el router ya maneja la autenticación)
       loadEmployees()
       loadAreas()
       
-      // 🚀 IMPLEMENTAR POLLING AUTOMÁTICO
-      // Actualizar lista de empleados cada 30 segundos SOLO si hay autenticación válida
+      // Polling automático cada 30 segundos
       const pollingInterval = setInterval(async () => {
-        // Verificar si hay autenticación válida antes de hacer polling
-        const token = localStorage.getItem('token')
-        const isLoggingOut = localStorage.getItem('isLoggingOut')
-        
-        if (!token || isLoggingOut) {
-          console.log('🔄 Polling automático: Saltando actualización - sin autenticación o logout en progreso')
-          return
-        }
-        
-        console.log('🔄 Polling automático: actualizando lista de empleados...')
         try {
           await loadEmployees()
-          console.log('✅ Lista de empleados actualizada automáticamente')
         } catch (error) {
           console.error('❌ Error en polling automático:', error)
-          
-          // Si hay error 401, detener el polling
           if (error.response?.status === 401) {
-            console.log('🔒 Error 401 en polling, deteniendo actualizaciones automáticas')
             clearInterval(pollingInterval)
           }
         }
-      }, 30000) // 30 segundos
+      }, 30000)
       
       // Limpiar intervalo cuando el componente se desmonte
       onUnmounted(() => {
@@ -1864,8 +1844,8 @@ export default {
       mensaje,
       viewMode,
       filteredEmployees,
-      loadEmployees,
-      loadAreas,
+             loadEmployees,
+       loadAreas,
        onDialogOpened,
        openNewEmployeeDialog,
        editEmployee,
@@ -1885,8 +1865,6 @@ export default {
       resetFaceRegistration,
       checkFaceRegistrationStatus,
 // Funciones de validación
-       validateNameField,
-       validateCedula,
        validateEcuadorianCedula,
        filterLettersOnly,
        filterEmail,
