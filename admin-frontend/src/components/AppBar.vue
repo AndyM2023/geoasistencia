@@ -162,8 +162,12 @@ export default {
     const isAppRoute = computed(() => route.path.startsWith('/app'))
     const isEmployeeRoute = computed(() => route.path.startsWith('/employee'))
     
-    // Mostrar botón de menú en rutas /app/* y /employee/*
-    const showMenuButton = computed(() => isAppRoute.value || isEmployeeRoute.value)
+    // Mostrar botón de menú en rutas /app/* y /employee/* solo si está autenticado
+    const showMenuButton = computed(() => {
+      if (isAppRoute.value) return true
+      if (isEmployeeRoute.value) return authStore.isAuthenticated
+      return false
+    })
     
     // Computed para mostrar el nombre del usuario
     const displayUserName = computed(() => {

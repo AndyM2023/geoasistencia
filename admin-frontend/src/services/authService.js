@@ -23,6 +23,13 @@ export const authService = {
         data: error.response?.data,
         message: error.message
       })
+      
+      // Enriquecer el error con información adicional para mejor manejo
+      if (error.response?.data) {
+        error.backendError = error.response.data
+        error.statusCode = error.response.status
+      }
+      
       throw error
     }
   },
