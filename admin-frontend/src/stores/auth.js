@@ -212,7 +212,8 @@ export const useAuthStore = defineStore('auth', () => {
     // Limpiar la marca de logout después de un delay
     setTimeout(() => {
       localStorage.removeItem('isLoggingOut')
-    }, 1000)
+      console.log('🧹 Auth Store - Marca de logout limpiada')
+    }, 1500) // Aumentado a 1.5 segundos para asegurar que se complete
     
     console.log('✅ Auth Store - Logout completado, estado limpiado')
   }

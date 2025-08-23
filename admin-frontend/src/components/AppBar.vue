@@ -36,16 +36,6 @@
 
     <!-- Acciones de usuario -->
     <div class="d-flex align-center">
-      <!-- Botón de notificaciones (en rutas /app/* y /employee/*) -->
-      <v-btn
-        v-if="showMenuButton"
-        icon
-        color="blue-400"
-        class="mr-2"
-      >
-
-      </v-btn>
-      
       <!-- Botón dinámico según la ruta -->
       <template v-if="!showMenuButton">
         <!-- En página de reconocimiento (/): Botón ADMIN -->
