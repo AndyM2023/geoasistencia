@@ -576,6 +576,15 @@ class AreaViewSet(viewsets.ModelViewSet):
         print(f"   - URL: {request.path}")
         print(f"   - Data: {request.data}")
         print(f"   - Content-Type: {request.content_type}")
+        print(f"   - Data keys: {list(request.data.keys()) if hasattr(request.data, 'keys') else 'No keys'}")
+        if 'schedule' in request.data:
+            print(f"   - Schedule en request.data: {request.data['schedule']}")
+            print(f"   - Schedule tipo: {type(request.data['schedule'])}")
+            if isinstance(request.data['schedule'], dict):
+                print(f"   - Schedule keys: {list(request.data['schedule'].keys())}")
+                print(f"   - monday_start en request: {request.data['schedule'].get('monday_start')}")
+                print(f"   - monday_end en request: {request.data['schedule'].get('monday_end')}")
+                print(f"   - monday_active en request: {request.data['schedule'].get('monday_active')}")
         
         try:
             response = super().update(request, *args, **kwargs)
@@ -711,110 +720,70 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def mark_attendance(self, request):
         """Marcar asistencia de un empleado"""
-        print("🎯 MARK_ATTENDANCE - Datos recibidos:")
-        print(f"   - Request data: {request.data}")
-        print(f"   - Employee ID: {request.data.get('employee_id')}")
-        print(f"   - Area ID: {request.data.get('area_id')}")
-        print(f"   - Latitude: {request.data.get('latitude')}")
-        print(f"   - Longitude: {request.data.get('longitude')}")
-        print(f"   - Face verified: {request.data.get('face_verified')}")
-        
-        employee_id = request.data.get('employee_id')
-        area_id = request.data.get('area_id')
-        latitude = request.data.get('latitude')
-        longitude = request.data.get('longitude')
-        face_verified = request.data.get('face_verified', False)
-        
-        # ✅ VALIDACIÓN DE COORDENADAS: Verificar que sean números válidos
         try:
+            # Obtener datos del request
+            employee_id = request.data.get('employee_id')
+            area_id = request.data.get('area_id')
+            face_verified = request.data.get('face_verified', False)
+            latitude = request.data.get('latitude')
+            longitude = request.data.get('longitude')
+            
+            print(f"🔍 MARK_ATTENDANCE - Datos recibidos:")
+            print(f"   - employee_id: {employee_id}")
+            print(f"   - area_id: {area_id}")
+            print(f"   - face_verified: {face_verified}")
+            print(f"   - latitude: {latitude}")
+            print(f"   - longitude: {longitude}")
+            
+            # Validar datos requeridos
+            if not employee_id or not area_id:
+                return Response({
+                    'success': False,
+                    'message': 'Se requiere employee_id y area_id',
+                    'error_type': 'missing_required_fields'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Obtener empleado y área
+            try:
+                employee = Employee.objects.get(id=employee_id)
+                area = Area.objects.get(id=area_id)
+                print(f"✅ Empleado y área encontrados:")
+                print(f"   - Empleado: {employee.full_name}")
+                print(f"   - Área: {area.name}")
+            except (Employee.DoesNotExist, Area.DoesNotExist) as e:
+                print(f"❌ Error: {e}")
+                return Response(
+                    {'error': 'Empleado o área no encontrada'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Validar ubicación si se proporciona
+            distance_meters = None
             if latitude and longitude:
-                lat_float = float(latitude)
-                lng_float = float(longitude)
+                print(f"📍 Validando ubicación del empleado...")
+                print(f"   - Coordenadas empleado: {latitude}, {longitude}")
+                print(f"   - Coordenadas área: {area.latitude}, {area.longitude}")
+                print(f"   - Radio del área: {area.radius}m")
                 
-                # Validar rangos de coordenadas
-                if not (-90 <= lat_float <= 90):
-                    return Response({
-                        'success': False,
-                        'message': 'Latitud inválida. Debe estar entre -90 y 90 grados.',
-                        'error_type': 'invalid_coordinates'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                # Calcular distancia usando la fórmula de Haversine
+                from math import radians, cos, sin, asin, sqrt
                 
-                if not (-180 <= lng_float <= 180):
-                    return Response({
-                        'success': False,
-                        'message': 'Longitud inválida. Debe estar entre -180 y 180 grados.',
-                        'error_type': 'invalid_coordinates'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                    
-        except (ValueError, TypeError):
-            return Response({
-                'success': False,
-                'message': 'Coordenadas inválidas. Deben ser números válidos.',
-                'error_type': 'invalid_coordinates'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            # Buscar empleado por ID de base de datos, no por employee_id
-            employee = Employee.objects.get(id=employee_id)
-            print(f"✅ Empleado encontrado: {employee.full_name} (ID: {employee.id})")
-            
-            area = Area.objects.get(id=area_id)
-            print(f"✅ Área encontrada: {area.name} (ID: {area.id})")
-            
-            # ✅ VALIDACIÓN: Verificar que el área esté activa
-            if area.status != 'active':
-                print(f"❌ ÁREA INACTIVA: {area.name} - Status: {area.status}")
-                return Response({
-                    'success': False,
-                    'message': f'El área "{area.name}" no está activa actualmente.',
-                    'error_type': 'area_inactive',
-                    'area_name': area.name,
-                    'area_status': area.status
-                }, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                print(f"✅ ÁREA ACTIVA: {area.name}")
-            
-            # ✅ VALIDACIÓN: Verificar que el empleado esté asignado al área correcta
-            if employee.area and employee.area.id != area.id:
-                print(f"❌ EMPLEADO ASIGNADO A OTRA ÁREA: {employee.area.name} vs {area.name}")
-                return Response({
-                    'success': False,
-                    'message': f'No puedes marcar asistencia en el área "{area.name}". Estás asignado al área "{employee.area.name}".',
-                    'error_type': 'wrong_area_assignment',
-                    'assigned_area': employee.area.name,
-                    'requested_area': area.name
-                }, status=status.HTTP_400_BAD_REQUEST)
-            elif not employee.area:
-                print(f"❌ EMPLEADO SIN ÁREA ASIGNADA")
-                return Response({
-                    'success': False,
-                    'message': 'No tienes un área de trabajo asignada. Contacta al administrador.',
-                    'error_type': 'no_area_assigned'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                print(f"✅ EMPLEADO ASIGNADO AL ÁREA CORRECTA: {area.name}")
-            
-            # ✅ VALIDACIÓN DE UBICACIÓN: Verificar que el empleado esté en el área correcta
-            if latitude and longitude:
-                # Calcular distancia entre ubicación del empleado y centro del área
-                from math import radians, cos, sin, sqrt, atan2
+                lat1, lon1 = float(area.latitude), float(area.longitude)
+                lat2, lon2 = float(latitude), float(longitude)
                 
-                # Convertir coordenadas a radianes
-                lat1, lon1 = radians(float(latitude)), radians(float(longitude))  # Empleado
-                lat2, lon2 = radians(float(area.latitude)), radians(float(area.longitude))  # Área
+                # Convertir a radianes
+                lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
                 
-                # Fórmula de Haversine para calcular distancia
+                # Diferencias
                 dlat = lat2 - lat1
                 dlon = lon2 - lon1
-                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-                c = 2 * atan2(sqrt(a), sqrt(1-a))
-                distance_km = 6371 * c  # Radio de la Tierra en km
-                distance_meters = distance_km * 1000  # Convertir a metros
                 
-                print(f"📍 VALIDACIÓN DE UBICACIÓN:")
-                print(f"   - Ubicación empleado: {latitude}, {longitude}")
-                print(f"   - Centro del área: {area.latitude}, {area.longitude}")
-                print(f"   - Radio del área: {area.radius} metros")
+                # Fórmula de Haversine
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                c = 2 * asin(sqrt(a))
+                r = 6371000  # Radio de la Tierra en metros
+                distance_meters = c * r
+                
                 print(f"   - Distancia calculada: {distance_meters:.2f} metros")
                 
                 # Verificar si está dentro del radio del área
@@ -840,49 +809,43 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             
             # Verificar si ya tiene asistencia hoy
             today = timezone.now().date()
+            current_time = timezone.now().time()
             print(f"📅 Fecha actual: {today}")
+            print(f"🕐 Hora actual: {current_time}")
             
             # Obtener horarios esperados del área
             from core.services.schedule_service import ScheduleService
             expected_check_in, expected_check_out = ScheduleService.get_expected_times(area, today)
+            grace_period = ScheduleService.get_grace_period(area)
             
-            attendance, created = Attendance.objects.get_or_create(
-                employee=employee,
-                date=today,
-                defaults={
-                    'area': area,
-                    'check_in': timezone.now().time(),
-                    'status': 'present',
-                    'latitude': latitude,
-                    'longitude': longitude,
-                    'face_verified': face_verified,
-                    'expected_check_in': expected_check_in,
-                    'expected_check_out': expected_check_out
-                }
-            )
+            print(f"⏰ Horarios esperados del área:")
+            print(f"   - Hora entrada esperada: {expected_check_in}")
+            print(f"   - Hora salida esperada: {expected_check_out}")
+            print(f"   - Período de gracia: {grace_period} minutos")
             
-            if created:
-                print(f"✅ NUEVA asistencia creada para {employee.full_name}")
-                message = f"Entrada registrada exitosamente para {employee.full_name}"
-                action_type = "entrada"
-            else:
+            # Validar si es un día laboral
+            if not ScheduleService.is_work_day(area, today):
+                print(f"❌ NO ES DÍA LABORAL para el área {area.name}")
+                return Response({
+                    'success': False,
+                    'message': f'Hoy no es un día laboral para el área "{area.name}". No puedes marcar asistencia.',
+                    'error_type': 'not_work_day',
+                    'area_name': area.name
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verificar si ya tiene asistencia hoy
+            try:
+                attendance = Attendance.objects.get(employee=employee, date=today)
                 print(f"🔄 Asistencia existente encontrada para {employee.full_name}")
-                # Verificar si ya tiene hora de salida
-                if attendance.check_out is None:
-                    # Solo actualizar si no tiene hora de salida
-                    attendance.check_out = timezone.now().time()
-                    attendance.save()
-                    print(f"⏰ Hora de salida actualizada: {attendance.check_out}")
-                    message = f"Salida registrada exitosamente para {employee.full_name}"
-                    action_type = "salida"
-                else:
+                print(f"   - Entrada: {attendance.check_in}")
+                print(f"   - Salida: {attendance.check_out}")
+                
+                # Si ya tiene entrada y salida, no permitir más registros
+                if attendance.check_in and attendance.check_out:
                     print(f"ℹ️ Empleado ya tiene entrada y salida registradas para hoy")
-                    print(f"   Entrada: {attendance.check_in}")
-                    print(f"   Salida: {attendance.check_out}")
                     message = f"{employee.full_name} ya tiene entrada y salida registradas para hoy"
                     action_type = "completo"
                     
-                    # Cuando ya está completo, devolver error informativo
                     return Response({
                         'success': False,
                         'message': message,
@@ -892,8 +855,115 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                         'employee_name': employee.full_name,
                         'error_type': 'already_complete'
                     }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Si solo tiene entrada, registrar salida
+                if attendance.check_in and not attendance.check_out:
+                    # TEMPORALMENTE DESHABILITADO: Validación de tiempo mínimo de trabajo
+                    # if expected_check_out and current_time < expected_check_out:
+                    #     # Calcular tiempo mínimo de trabajo (ej: 1 hora)
+                    #     from datetime import datetime, timedelta
+                    #     min_work_time = timedelta(hours=1)
+                    #     check_in_datetime = datetime.combine(today, attendance.check_in)
+                    #     current_datetime = datetime.combine(today, current_time)
+                    #     work_duration = current_datetime - check_in_datetime
+                    #     
+                    #     if work_duration < min_work_time:
+                    #         print(f"❌ TIEMPO DE TRABAJO INSUFICIENTE: {work_duration}")
+                    #         return Response({
+                    #             'success': False,
+                    #             'message': f'Debes trabajar al menos 1 hora antes de marcar salida. Tiempo actual: {work_duration}',
+                    #             'error_type': 'insufficient_work_time',
+                    #             'work_duration': str(work_duration),
+                    #             'min_required': '1 hora'
+                    #         }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Marcar salida
+                    attendance.check_out = current_time
+                    attendance.save()
+                    print(f"⏰ Hora de salida actualizada: {attendance.check_out}")
+                    message = f"Salida registrada exitosamente para {employee.full_name}"
+                    action_type = "salida"
+                    
+                else:
+                    # No debería llegar aquí, pero por seguridad
+                    print(f"⚠️ Estado inconsistente de asistencia")
+                    return Response({
+                        'success': False,
+                        'message': 'Estado inconsistente de asistencia. Contacta al administrador.',
+                        'error_type': 'inconsistent_state'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+            except Attendance.DoesNotExist:
+                # Nueva asistencia - validar horarios antes de permitir entrada
+                print(f"🆕 Creando nueva asistencia para {employee.full_name}")
+                
+                if expected_check_in and expected_check_out:
+                    # Validar que no sea muy tarde para marcar entrada
+                    from datetime import datetime, timedelta
+                    
+                    # Calcular hora límite con tolerancia
+                    limit_time = datetime.combine(today, expected_check_in)
+                    limit_time = limit_time + timedelta(minutes=grace_period)
+                    limit_time = limit_time.time()
+                    
+                    print(f"🕐 Validación de horarios:")
+                    print(f"   - Hora entrada esperada: {expected_check_in}")
+                    print(f"   - Hora límite con tolerancia: {limit_time}")
+                    print(f"   - Hora actual: {current_time}")
+                    
+                    # Si es muy tarde para marcar entrada
+                    if current_time > expected_check_out:
+                        print(f"❌ MUY TARDE PARA ENTRADA: Hora actual {current_time} > Hora salida {expected_check_out}")
+                        return Response({
+                            'success': False,
+                            'message': f'Ya pasó la hora de salida ({expected_check_out.strftime("%H:%M")}). No puedes marcar entrada ahora.',
+                            'error_type': 'too_late_for_entry',
+                            'expected_check_out': expected_check_out.strftime("%H:%M"),
+                            'current_time': current_time.strftime("%H:%M")
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Si es tarde pero dentro del horario laboral
+                    elif current_time > limit_time:
+                        print(f"⚠️ LLEGADA TARDE: Hora actual {current_time} > Hora límite {limit_time}")
+                        initial_status = 'late'
+                        message = f"Entrada registrada con tardanza para {employee.full_name}"
+                    else:
+                        print(f"✅ A TIEMPO: Hora actual {current_time} <= Hora límite {limit_time}")
+                        initial_status = 'present'
+                        message = f"Entrada registrada exitosamente para {employee.full_name}"
+                else:
+                    # Sin horario definido, marcar como presente
+                    print(f"ℹ️ Sin horario definido para el área, marcando como presente")
+                    initial_status = 'present'
+                    message = f"Entrada registrada exitosamente para {employee.full_name}"
+                
+                # Crear nueva asistencia
+                attendance = Attendance.objects.create(
+                    employee=employee,
+                    date=today,
+                    area=area,
+                    check_in=current_time,
+                    status=initial_status,
+                    latitude=latitude,
+                    longitude=longitude,
+                    face_verified=face_verified,
+                    expected_check_in=expected_check_in,
+                    expected_check_out=expected_check_out
+                )
+                
+                print(f"✅ NUEVA asistencia creada para {employee.full_name}")
+                print(f"   - Status inicial: {initial_status}")
+                print(f"   - Hora entrada: {attendance.check_in}")
+                action_type = "entrada"
+            
+            # Actualizar estado basado en horarios (por si cambió algo)
+            attendance.update_status_based_on_schedule()
+            attendance.save()
             
             print(f"📊 Asistencia final: {attendance}")
+            print(f"   - Status final: {attendance.status}")
+            print(f"   - Es tarde: {attendance.is_late}")
+            
             serializer = AttendanceSerializer(attendance)
             
             # Crear respuesta personalizada
@@ -906,7 +976,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                     'area_lat': float(area.latitude),
                     'area_lng': float(area.longitude),
                     'area_radius': area.radius,
-                    'distance_meters': round(distance_meters, 2) if 'distance_meters' in locals() else None
+                    'distance_meters': round(distance_meters, 2) if distance_meters else None
                 },
                 'action_type': action_type,
                 'check_in': attendance.check_in,
@@ -923,6 +993,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             print(f"   - action_type: {action_type}")
             print(f"   - employee_name: {employee.full_name}")
             print(f"   - message: {message}")
+            print(f"   - status: {attendance.status}")
+            print(f"   - is_late: {attendance.is_late}")
             print(f"   - response_data keys: {list(response_data.keys())}")
             
             return Response(response_data)

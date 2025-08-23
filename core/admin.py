@@ -128,6 +128,8 @@ class AttendanceAdmin(admin.ModelAdmin):
             return "⚠️ TARDANZA"
         elif obj.status == 'present':
             return "✅ A TIEMPO"
+        elif obj.status == 'late':
+            return "⚠️ TARDANZA"
         elif obj.status == 'absent':
             return "❌ AUSENTE"
         else:

@@ -102,10 +102,17 @@ class AreaSerializer(serializers.ModelSerializer):
         print(f"🔍 AreaSerializer.update() - Datos recibidos:")
         print(f"   - Instance ID: {instance.id}")
         print(f"   - Validated data: {validated_data}")
+        print(f"   - Keys en validated_data: {list(validated_data.keys())}")
         
         # Extraer el schedule del validated_data
         schedule_data = validated_data.pop('schedule', None)
         print(f"🔍 Schedule data extraído: {schedule_data}")
+        print(f"🔍 Schedule data tipo: {type(schedule_data)}")
+        if schedule_data:
+            print(f"🔍 Schedule data keys: {list(schedule_data.keys())}")
+            print(f"🔍 monday_start en schedule_data: {schedule_data.get('monday_start')} (tipo: {type(schedule_data.get('monday_start'))})")
+            print(f"🔍 monday_end en schedule_data: {schedule_data.get('monday_end')} (tipo: {type(schedule_data.get('monday_end'))})")
+            print(f"🔍 monday_active en schedule_data: {schedule_data.get('monday_active')} (tipo: {type(schedule_data.get('monday_active'))})")
         
         # Validar coordenadas antes de actualizar
         if 'latitude' in validated_data:
@@ -210,6 +217,10 @@ class AreaSerializer(serializers.ModelSerializer):
                     # Horario personalizado - actualizar solo los campos proporcionados
                     print(f"🔍 Actualizando horarios personalizados")
                     print(f"🔍 Horarios actuales: monday_active={schedule.monday_active}, tuesday_active={schedule.tuesday_active}")
+                    print(f"🔍 Schedule data recibido: {schedule_data}")
+                    print(f"🔍 monday_start recibido: {schedule_data.get('monday_start')} (tipo: {type(schedule_data.get('monday_start'))})")
+                    print(f"🔍 monday_end recibido: {schedule_data.get('monday_end')} (tipo: {type(schedule_data.get('monday_end'))})")
+                    print(f"🔍 monday_active recibido: {schedule_data.get('monday_active')} (tipo: {type(schedule_data.get('monday_active'))})")
                     
                     # ✅ Actualizar campos de lunes a viernes
                     for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
@@ -220,8 +231,14 @@ class AreaSerializer(serializers.ModelSerializer):
                                 # Convertir string de tiempo a objeto time
                                 time_str = schedule_data[f'{day}_start']
                                 if isinstance(time_str, str):
-                                    hour, minute = map(int, time_str.split(':'))
-                                    schedule.__setattr__(f'{day}_start', time(hour, minute))
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_start', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_start: {time_str}")
                                 else:
                                     schedule.__setattr__(f'{day}_start', time_str)
                             except (ValueError, TypeError) as e:
@@ -231,8 +248,14 @@ class AreaSerializer(serializers.ModelSerializer):
                                 # Convertir string de tiempo a objeto time
                                 time_str = schedule_data[f'{day}_end']
                                 if isinstance(time_str, str):
-                                    hour, minute = map(int, time_str.split(':'))
-                                    schedule.__setattr__(f'{day}_end', time(hour, minute))
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_end', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_end: {time_str}")
                                 else:
                                     schedule.__setattr__(f'{day}_end', time_str)
                             except (ValueError, TypeError) as e:
@@ -247,8 +270,14 @@ class AreaSerializer(serializers.ModelSerializer):
                                 # Convertir string de tiempo a objeto time
                                 time_str = schedule_data[f'{day}_start']
                                 if isinstance(time_str, str):
-                                    hour, minute = map(int, time_str.split(':'))
-                                    schedule.__setattr__(f'{day}_start', time(hour, minute))
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_start', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_start: {time_str}")
                                 else:
                                     schedule.__setattr__(f'{day}_start', time_str)
                             except (ValueError, TypeError) as e:
@@ -258,8 +287,14 @@ class AreaSerializer(serializers.ModelSerializer):
                                 # Convertir string de tiempo a objeto time
                                 time_str = schedule_data[f'{day}_end']
                                 if isinstance(time_str, str):
-                                    hour, minute = map(int, time_str.split(':'))
-                                    schedule.__setattr__(f'{day}_end', time(hour, minute))
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_end', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_end: {time_str}")
                                 else:
                                     schedule.__setattr__(f'{day}_end', time_str)
                             except (ValueError, TypeError) as e:
@@ -271,6 +306,10 @@ class AreaSerializer(serializers.ModelSerializer):
                     
                     print(f"✅ Horarios personalizados actualizados")
                     print(f"🔍 Horarios finales: monday_active={schedule.monday_active}, tuesday_active={schedule.tuesday_active}")
+                    print(f"🔍 Horarios finales del lunes:")
+                    print(f"   - monday_start: {schedule.monday_start} (tipo: {type(schedule.monday_start)})")
+                    print(f"   - monday_end: {schedule.monday_end} (tipo: {type(schedule.monday_end)})")
+                    print(f"   - monday_active: {schedule.monday_active} (tipo: {type(schedule.monday_active)})")
                 elif schedule_data.get('schedule_type') == 'none':
                     # Sin horario - eliminar el schedule
                     schedule.delete()
@@ -278,6 +317,12 @@ class AreaSerializer(serializers.ModelSerializer):
                     return area
                 
                 schedule.save()
+                
+                # ✅ VERIFICAR QUE SE GUARDÓ CORRECTAMENTE
+                print(f"🔍 VERIFICACIÓN POST-SAVE:")
+                print(f"   - monday_start guardado: {schedule.monday_start}")
+                print(f"   - monday_end guardado: {schedule.monday_end}")
+                print(f"   - monday_active guardado: {schedule.monday_active}")
                 
                 action = "creado" if created else "actualizado"
                 print(f"✅ AreaSchedule {action}: {schedule.id} para área {area.id}")

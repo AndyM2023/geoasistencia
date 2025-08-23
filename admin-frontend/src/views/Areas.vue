@@ -176,7 +176,7 @@
                   required
                   :rules="[
                     v => !!v || 'Descripción es requerida',
-                    v => v.length >= 10 || 'La descripción debe tener al menos 10 caracteres',
+                    v => v.length >= 3 || 'La descripción debe tener al menos 3 caracteres',
                     v => v.length <= 500 || 'La descripción no puede exceder 500 caracteres',
                     v => /^[a-zA-Z0-9\s]+$/.test(v) || 'Solo se permiten letras y números'
                   ]"
@@ -1132,30 +1132,35 @@ export default {
           scheduleType.value = 'default'
           console.log('✅ Horario por defecto detectado en backend')
           
+          // 🔍 DEBUG: Verificar valores específicos del lunes
+          console.log('🔍 DEBUG - Valores del lunes desde backend (default):')
+          console.log('   - monday_start (raw):', area.schedule.monday_start)
+          console.log('   - monday_start (type):', typeof area.schedule.monday_start)
+          
           // ✅ Cargar EXACTAMENTE los horarios del backend (NO datos estáticos)
           schedule.value = {
-            monday_active: area.schedule.monday_active || false,
-            monday_start: area.schedule.monday_start || '08:00',
-            monday_end: area.schedule.monday_end || '17:00',
-            tuesday_active: area.schedule.tuesday_active || false,
-            tuesday_start: area.schedule.tuesday_start || '08:00',
-            tuesday_end: area.schedule.tuesday_end || '17:00',
-            wednesday_active: area.schedule.wednesday_active || false,
-            wednesday_start: area.schedule.wednesday_start || '08:00',
-            wednesday_end: area.schedule.wednesday_end || '17:00',
-            thursday_active: area.schedule.thursday_active || false,
-            thursday_start: area.schedule.thursday_start || '08:00',
-            thursday_end: area.schedule.thursday_end || '17:00',
-            friday_active: area.schedule.friday_active || false,
-            friday_start: area.schedule.friday_start || '08:00',
-            friday_end: area.schedule.friday_end || '17:00',
-            saturday_active: area.schedule.saturday_active || false,
-            saturday_start: area.schedule.saturday_start || null,
-            saturday_end: area.schedule.saturday_end || null,
-            sunday_active: area.schedule.sunday_active || false,
-            sunday_start: area.schedule.sunday_start || null,
-            sunday_end: area.schedule.sunday_end || null,
-            grace_period_minutes: area.schedule.grace_period_minutes || 15
+            monday_active: area.schedule.monday_active ?? false,
+            monday_start: area.schedule.monday_start ?? '08:00',
+            monday_end: area.schedule.monday_end ?? '17:00',
+            tuesday_active: area.schedule.tuesday_active ?? false,
+            tuesday_start: area.schedule.tuesday_start ?? '08:00',
+            tuesday_end: area.schedule.tuesday_end ?? '17:00',
+            wednesday_active: area.schedule.wednesday_active ?? false,
+            wednesday_start: area.schedule.wednesday_start ?? '08:00',
+            wednesday_end: area.schedule.wednesday_end ?? '17:00',
+            thursday_active: area.schedule.thursday_active ?? false,
+            thursday_start: area.schedule.thursday_start ?? '08:00',
+            thursday_end: area.schedule.thursday_end ?? '17:00',
+            friday_active: area.schedule.friday_active ?? false,
+            friday_start: area.schedule.friday_start ?? '08:00',
+            friday_end: area.schedule.friday_end ?? '17:00',
+            saturday_active: area.schedule.saturday_active ?? false,
+            saturday_start: area.schedule.saturday_start ?? null,
+            saturday_end: area.schedule.saturday_end ?? null,
+            sunday_active: area.schedule.sunday_active ?? false,
+            sunday_start: area.schedule.sunday_start ?? null,
+            sunday_end: area.schedule.sunday_end ?? null,
+            grace_period_minutes: area.schedule.grace_period_minutes ?? 15
           }
         } else if (area.schedule.schedule_type === 'custom') {
           scheduleType.value = 'custom'
@@ -1163,32 +1168,38 @@ export default {
           
           // Cargar los horarios personalizados EXACTAMENTE como están en el backend
           schedule.value = {
-            monday_active: area.schedule.monday_active || false,
-            monday_start: area.schedule.monday_start || '08:00',
-            monday_end: area.schedule.monday_end || '17:00',
-            tuesday_active: area.schedule.tuesday_active || false,
-            tuesday_start: area.schedule.tuesday_start || '08:00',
-            tuesday_end: area.schedule.tuesday_end || '17:00',
-            wednesday_active: area.schedule.wednesday_active || false,
-            wednesday_start: area.schedule.wednesday_start || '08:00',
-            wednesday_end: area.schedule.wednesday_end || '17:00',
-            thursday_active: area.schedule.thursday_active || false,
-            thursday_start: area.schedule.thursday_start || '08:00',
-            thursday_end: area.schedule.thursday_end || '17:00',
-            friday_active: area.schedule.friday_active || false,
-            friday_start: area.schedule.friday_start || '08:00',
-            friday_end: area.schedule.friday_end || '17:00',
-            saturday_active: area.schedule.saturday_active || false,
-            saturday_start: area.schedule.saturday_start || null,
-            saturday_end: area.schedule.saturday_end || null,
-            sunday_active: area.schedule.sunday_active || false,
-            sunday_start: area.schedule.sunday_start || null,
-            sunday_end: area.schedule.sunday_end || null,
-            grace_period_minutes: area.schedule.grace_period_minutes || 15
+            monday_active: area.schedule.monday_active ?? false,
+            monday_start: area.schedule.monday_start ?? '08:00',
+            monday_end: area.schedule.monday_end ?? '17:00',
+            tuesday_active: area.schedule.tuesday_active ?? false,
+            tuesday_start: area.schedule.tuesday_start ?? '08:00',
+            tuesday_end: area.schedule.tuesday_end ?? '17:00',
+            wednesday_active: area.schedule.wednesday_active ?? false,
+            wednesday_start: area.schedule.wednesday_start ?? '08:00',
+            wednesday_end: area.schedule.wednesday_end ?? '17:00',
+            thursday_active: area.schedule.thursday_active ?? false,
+            thursday_start: area.schedule.thursday_start ?? '08:00',
+            thursday_end: area.schedule.thursday_end ?? '17:00',
+            friday_active: area.schedule.friday_active ?? false,
+            friday_start: area.schedule.friday_start ?? '08:00',
+            friday_end: area.schedule.friday_end ?? '17:00',
+            saturday_active: area.schedule.saturday_active ?? false,
+            saturday_start: area.schedule.saturday_start ?? null,
+            saturday_end: area.schedule.saturday_end ?? null,
+            sunday_active: area.schedule.sunday_active ?? false,
+            sunday_start: area.schedule.sunday_start ?? null,
+            sunday_end: area.schedule.sunday_end ?? null,
+            grace_period_minutes: area.schedule.grace_period_minutes ?? 15
           }
           
           console.log('✅ Horarios personalizados cargados:', schedule.value)
         }
+        
+        // 🔍 DEBUG: Verificar valores específicos del lunes
+        console.log('🔍 DEBUG - Valores del lunes desde backend:')
+        console.log('   - monday_start (raw):', area.schedule.monday_start)
+        console.log('   - monday_start (type):', typeof area.schedule.monday_start)
+        console.log('   - monday_start (final):', schedule.value.monday_start)
         
         console.log('🔍 schedule.value después de cargar:', schedule.value)
         console.log('🔍 scheduleType.value después de cargar:', scheduleType.value)
@@ -1337,8 +1348,8 @@ export default {
                    case 'description':
             if (!value) {
               error = 'Descripción es requerida'
-            } else if (value.length < 10) {
-              error = 'La descripción debe tener al menos 10 caracteres'
+            } else if (value.length < 3) {
+              error = 'La descripción debe tener al menos 3 caracteres'
             } else if (value.length > 500) {
               error = 'La descripción no puede exceder 500 caracteres'
             } else if (!/^[a-zA-Z0-9\s]+$/.test(value)) {
@@ -2199,6 +2210,15 @@ export default {
         console.log('🔍 schedule.value.friday_active:', schedule.value?.friday_active)
         console.log('🔍 schedule.value.saturday_active:', schedule.value?.saturday_active)
         console.log('🔍 schedule.value.sunday_active:', schedule.value?.sunday_active)
+        
+        // ✅ LOGS ESPECÍFICOS PARA VERIFICAR VALORES DE TIEMPO
+        console.log('🔍 🔍 🔍 VERIFICACIÓN ESPECÍFICA DE TIEMPOS:')
+        console.log('  - monday_start (schedule.value):', schedule.value?.monday_start)
+        console.log('  - monday_start (areaData.schedule):', areaData.schedule?.monday_start)
+        console.log('  - monday_end (schedule.value):', schedule.value?.monday_end)
+        console.log('  - monday_end (areaData.schedule):', areaData.schedule?.monday_end)
+        console.log('  - tuesday_start (schedule.value):', schedule.value?.tuesday_start)
+        console.log('  - tuesday_start (areaData.schedule):', areaData.schedule?.tuesday_start)
         
         if (editingArea.value) {
           console.log('🔄 === ACTUALIZANDO ÁREA EXISTENTE ===')

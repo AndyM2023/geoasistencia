@@ -95,7 +95,8 @@ class AreaService {
         latitude: Number(areaData.latitude),
         longitude: Number(areaData.longitude),
         radius: Number(areaData.radius),
-        status: String(areaData.status || 'active')  // CRÍTICO: Incluir status
+        status: String(areaData.status || 'active'),  // CRÍTICO: Incluir status
+        schedule: areaData.schedule  // ✅ INCLUIR EL SCHEDULE COMPLETO
       }
       
       // Validar que no haya strings vacíos para coordenadas
@@ -114,6 +115,16 @@ class AreaService {
       console.log('  - longitude:', typeof cleanData.longitude, '=', cleanData.longitude)
       console.log('  - radius:', typeof cleanData.radius, '=', cleanData.radius)
       console.log('  - status:', typeof cleanData.status, '=', cleanData.status)
+      console.log('  - schedule:', typeof cleanData.schedule, '=', cleanData.schedule)
+      if (cleanData.schedule) {
+        console.log('  - schedule.schedule_type:', cleanData.schedule.schedule_type)
+        console.log('  - schedule.monday_start:', cleanData.schedule.monday_start, '(tipo:', typeof cleanData.schedule.monday_start, ')')
+        console.log('  - schedule.monday_end:', cleanData.schedule.monday_end, '(tipo:', typeof cleanData.schedule.monday_end, ')')
+        console.log('  - schedule.monday_active:', cleanData.schedule.monday_active, '(tipo:', typeof cleanData.schedule.monday_active, ')')
+        console.log('  - schedule.tuesday_start:', cleanData.schedule.tuesday_start, '(tipo:', typeof cleanData.schedule.tuesday_start, ')')
+        console.log('  - schedule.tuesday_end:', cleanData.schedule.tuesday_end, '(tipo:', typeof cleanData.schedule.tuesday_end, ')')
+        console.log('  - schedule.tuesday_active:', cleanData.schedule.tuesday_active, '(tipo:', typeof cleanData.schedule.tuesday_active, ')')
+      }
       
       // Verificar que no hay valores NaN
       if (isNaN(cleanData.latitude) || isNaN(cleanData.longitude) || isNaN(cleanData.radius)) {
@@ -125,6 +136,15 @@ class AreaService {
         throw new Error('Valores numéricos inválidos detectados')
       }
       
+      console.log('📤 ENVIANDO PETICIÓN PUT con datos:', cleanData)
+      console.log('🔍 VERIFICACIÓN FINAL ANTES DE ENVIAR:')
+      console.log('  - schedule presente:', !!cleanData.schedule)
+      if (cleanData.schedule) {
+        console.log('  - schedule_type:', cleanData.schedule.schedule_type)
+        console.log('  - monday_start:', cleanData.schedule.monday_start)
+        console.log('  - monday_end:', cleanData.schedule.monday_end)
+        console.log('  - monday_active:', cleanData.schedule.monday_active)
+      }
       const response = await api.put(`/areas/${id}/`, cleanData)
       
       console.log('✅ Área actualizada exitosamente')

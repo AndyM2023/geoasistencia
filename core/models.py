@@ -421,21 +421,6 @@ class Attendance(models.Model):
             return round(duration.total_seconds() / 3600, 2)
         return None
     
-    @property
-    def is_late(self):
-        """Verifica si llegó tarde según el horario del área"""
-        if self.check_in and self.expected_check_in:
-            from datetime import datetime, time
-            grace_period = self.area.schedule.grace_period_minutes if hasattr(self.area, 'schedule') else 15
-            
-            # Calcular hora límite con tolerancia
-            limit_time = datetime.combine(self.date, self.expected_check_in)
-            limit_time = limit_time + timedelta(minutes=grace_period)
-            
-            check_in_datetime = datetime.combine(self.date, self.check_in)
-            return check_in_datetime > limit_time
-        return False
-    
     def update_status_based_on_schedule(self):
         """Actualiza el status basado en el horario del área y la hora de entrada"""
         if not self.check_in or not self.expected_check_in:
@@ -445,10 +430,31 @@ class Attendance(models.Model):
         from core.services.schedule_service import ScheduleService
         if not ScheduleService.is_work_day(self.area, self.date):
             self.status = 'absent'
-        elif self.is_late:
+            return
+        
+        # Obtener período de gracia del área
+        grace_period = ScheduleService.get_grace_period(self.area)
+        
+        # Calcular hora límite con tolerancia
+        from datetime import datetime, timedelta
+        limit_time = datetime.combine(self.date, self.expected_check_in)
+        limit_time = limit_time + timedelta(minutes=grace_period)
+        limit_time = limit_time.time()
+        
+        # Crear datetime para comparar
+        check_in_datetime = datetime.combine(self.date, self.check_in)
+        limit_datetime = datetime.combine(self.date, limit_time)
+        
+        # Actualizar status basado en la hora de entrada
+        if check_in_datetime > limit_datetime:
             self.status = 'late'
         else:
             self.status = 'present'
+        
+        print(f"🔄 Status actualizado para {self.employee.full_name}:")
+        print(f"   - Hora entrada: {self.check_in}")
+        print(f"   - Hora límite con tolerancia: {limit_time}")
+        print(f"   - Status final: {self.status}")
     
     def save(self, *args, **kwargs):
         """Guardar y actualizar status automáticamente"""
@@ -457,6 +463,21 @@ class Attendance(models.Model):
             self.update_status_based_on_schedule()
         
         super().save(*args, **kwargs)
+    
+    @property
+    def is_late(self):
+        """Verifica si llegó tarde según el horario del área"""
+        if self.check_in and self.expected_check_in:
+            from datetime import datetime, timedelta
+            grace_period = self.area.schedule.grace_period_minutes if hasattr(self.area, 'schedule') else 15
+            
+            # Calcular hora límite con tolerancia
+            limit_time = datetime.combine(self.date, self.expected_check_in)
+            limit_time = limit_time + timedelta(minutes=grace_period)
+            
+            check_in_datetime = datetime.combine(self.date, self.check_in)
+            return check_in_datetime > limit_time
+        return False
 
 class PasswordResetToken(models.Model):
     """Token para recuperación de contraseña del administrador"""
