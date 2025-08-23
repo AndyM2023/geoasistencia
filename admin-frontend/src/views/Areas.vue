@@ -32,6 +32,7 @@
       </v-card-title>
 
              <v-data-table
+         :key="tableKey"
          :headers="headers"
          :items="areas"
          :search="search"
@@ -92,6 +93,29 @@
           </v-chip>
         </template>
         
+        <template v-slot:item.schedule_info="{ item }">
+          <v-chip 
+            v-if="item.schedule"
+            :color="getScheduleColor(item.schedule)" 
+            size="small" 
+            variant="tonal"
+            :title="getScheduleTooltip(item.schedule)"
+          >
+            <v-icon left size="small">{{ getScheduleIcon(item.schedule) }}</v-icon>
+            {{ getScheduleText(item.schedule) }}
+          </v-chip>
+          <v-chip 
+            v-else
+            color="grey-500" 
+            size="small" 
+            variant="tonal"
+            title="Sin horario configurado"
+          >
+            <v-icon left size="small">mdi-close-circle</v-icon>
+            Sin horario
+          </v-chip>
+        </template>
+        
         <template v-slot:item.status="{ item }">
           <v-chip 
             :color="item.status === 'active' ? 'green-500' : 'red-500'" 
@@ -107,7 +131,7 @@
     </v-card>
 
     <!-- Dialog para Crear/Editar Área -->
-    <v-dialog v-model="showDialog" max-width="700px">
+    <v-dialog v-model="showDialog" max-width="700px" class="area-dialog">
       <v-card class="bg-dark-surface border border-blue-500/20">
         <v-card-title class="text-white">
           <span class="text-h5">{{ editingArea ? 'Editar' : 'Nueva' }} Área</span>
@@ -117,90 +141,335 @@
           </v-chip>
         </v-card-title>
         
-        <v-card-text>
+        <!-- Contenedor con scroll para el formulario -->
+        <div class="area-form-scroll-wrapper">
           <v-form ref="form" v-model="valid">
-            <v-row>
-              <v-col cols="12" sm="6">
+            <v-row class="ma-0 pa-0">
+              <!-- Nombre y Descripción -->
+              <v-col cols="12" sm="6" class="pa-2">
                 <v-text-field
                   v-model="areaForm.name"
                   label="Nombre del Área"
                   required
-                  :rules="[v => !!v || 'Nombre es requerido']"
+                  :rules="[
+                    v => !!v || 'Nombre es requerido',
+                    v => v.length >= 3 || 'El nombre debe tener al menos 3 caracteres',
+                    v => v.length <= 100 || 'El nombre no puede exceder 100 caracteres',
+                    v => /^[a-zA-Z0-9\s_-]+$/.test(v) || 'Se permiten letras, números, espacios, guiones (-) y guiones bajos (_)'
+                  ]"
                   color="blue-400"
                   variant="outlined"
+                  :error-messages="formErrors.name"
+                  @blur="validateField('name')"
+                  @input="sanitizeName"
+                  :hint="nameHint"
+                  :persistent-hint="showNameHint"
+                  density="compact"
+                  class="mb-2"
                 ></v-text-field>
               </v-col>
               
-              <v-col cols="12" sm="6">
+              <v-col cols="12" sm="6" class="pa-2">
                 <v-text-field
                   v-model="areaForm.description"
                   label="Descripción"
                   required
-                  :rules="[v => !!v || 'Descripción es requerida']"
+                  :rules="[
+                    v => !!v || 'Descripción es requerida',
+                    v => v.length >= 10 || 'La descripción debe tener al menos 10 caracteres',
+                    v => v.length <= 500 || 'La descripción no puede exceder 500 caracteres',
+                    v => /^[a-zA-Z0-9\s]+$/.test(v) || 'Solo se permiten letras y números'
+                  ]"
                   color="blue-400"
                   variant="outlined"
+                  :error-messages="formErrors.description"
+                  @blur="validateField('description')"
+                  @input="sanitizeDescription"
+                  :hint="descriptionHint"
+                  :persistent-hint="showDescriptionHint"
+                  density="compact"
+                  class="mb-2"
                 ></v-text-field>
               </v-col>
               
-              <v-col cols="12">
+              <!-- Botón de ubicación -->
+              <v-col cols="12" class="pa-2">
                 <v-btn 
                   :color="areaForm.latitude && areaForm.longitude ? 'blue-400' : 'green-400'" 
                   :variant="areaForm.latitude && areaForm.longitude ? 'flat' : 'outlined'"
                   :prepend-icon="areaForm.latitude && areaForm.longitude ? 'mdi-check-circle' : 'mdi-map-marker'" 
                   @click="showMapSelectorModal"
-                  class="mb-4"
+                  class="mb-3"
                   block
                 >
                   {{ areaForm.latitude && areaForm.longitude ? '✅ Ubicación Seleccionada - Cambiar' : '📍 Seleccionar Ubicación en el Mapa' }}
                 </v-btn>
               </v-col>
               
-              <v-col cols="12" sm="6">
+              <!-- Coordenadas y Radio -->
+              <v-col cols="12" sm="6" class="pa-2">
                 <v-text-field
                   v-model="areaForm.latitude"
                   label="Latitud"
                   readonly
                   required
-                  :rules="[v => !!v || 'Selecciona ubicación en el mapa']"
                   :color="areaForm.latitude ? 'blue-400' : 'error'"
                   variant="outlined"
                   :prepend-icon="areaForm.latitude ? 'mdi-crosshairs-gps' : 'mdi-alert-circle'"
                   :placeholder="areaForm.latitude ? areaForm.latitude : 'Selecciona en el mapa'"
+                  :error-messages="formErrors.latitude"
+                  density="compact"
+                  class="mb-2"
                 ></v-text-field>
               </v-col>
               
-              <v-col cols="12" sm="6">
+              <v-col cols="12" sm="6" class="pa-2">
                 <v-text-field
                   v-model="areaForm.longitude"
                   label="Longitud"
                   readonly
                   required
-                  :rules="[v => !!v || 'Selecciona ubicación en el mapa']"
                   :color="areaForm.longitude ? 'blue-400' : 'error'"
                   variant="outlined"
                   :prepend-icon="areaForm.longitude ? 'mdi-crosshairs-gps' : 'mdi-alert-circle'"
                   :placeholder="areaForm.longitude ? areaForm.longitude : 'Selecciona en el mapa'"
+                  :error-messages="formErrors.longitude"
+                  density="compact"
+                  class="mb-2"
                 ></v-text-field>
               </v-col>
               
-              <v-col cols="12" sm="6">
+              <v-col cols="12" sm="6" class="pa-2">
                 <v-text-field
                   v-model="areaForm.radius"
                   label="Radio (metros)"
                   readonly
                   required
-                  :rules="[v => (!!v && v >= 10) || 'Radio mínimo: 10 metros']"
                   :color="areaForm.radius >= 10 ? 'blue-400' : 'error'"
                   variant="outlined"
                   :prepend-icon="areaForm.radius >= 10 ? 'mdi-radius' : 'mdi-alert-circle'"
                   :placeholder="areaForm.radius ? areaForm.radius + 'm' : 'Selecciona en el mapa'"
+                  :error-messages="formErrors.radius"
+                  density="compact"
+                  class="mb-2"
                 ></v-text-field>
               </v-col>
               
-
+              <!-- NUEVA SECCIÓN: Configuración de Horarios -->
+              <v-col cols="12" class="pa-2">
+                <v-divider class="my-3"></v-divider>
+                <div class="schedule-section">
+                  <h4 class="text-h6 text-white mb-2">
+                    <v-icon color="blue-400" class="mr-2">mdi-clock</v-icon>
+                    Configuración de Horarios de Trabajo
+                  </h4>
+                  
+                  <!-- Opciones de horario -->
+                  <v-row class="ma-0 pa-0">
+                    <v-col cols="12" class="pa-0">
+                      <v-radio-group v-model="scheduleType" color="blue-400" class="mb-2">
+                        <v-radio value="default" class="mb-1">
+                          <template v-slot:label>
+                            <div class="d-flex align-center">
+                              <v-icon color="green-400" class="mr-2">mdi-check-circle</v-icon>
+                              <span class="text-white">Horario por defecto (8:00 AM - 5:00 PM, Lunes a Viernes)</span>
+                            </div>
+                          </template>
+                        </v-radio>
+                        
+                        <v-radio value="custom" class="mb-1">
+                          <template v-slot:label>
+                            <div class="d-flex align-center">
+                              <v-icon color="blue-400" class="mr-2">mdi-cog</v-icon>
+                              <span class="text-white">Horario personalizado</span>
+                            </div>
+                          </template>
+                        </v-radio>
+                        
+                        <v-radio value="none" class="mb-1">
+                          <template v-slot:label>
+                            <div class="d-flex align-center">
+                              <v-icon color="grey-400" class="mr-2">mdi-close-circle</v-icon>
+                              <span class="text-white">Sin horario (no requiere control de tiempo)</span>
+                            </div>
+                          </template>
+                        </v-radio>
+                      </v-radio-group>
+                      
+                      <!-- Botón para aplicar horario por defecto -->
+                      <div class="mt-2">
+                        <v-btn
+                          v-if="scheduleType === 'custom'"
+                          color="green-400"
+                          variant="outlined"
+                          size="small"
+                          prepend-icon="mdi-refresh"
+                          @click="createDefaultSchedule"
+                        >
+                          Aplicar Horario por Defecto
+                        </v-btn>
+                      </div>
+                    </v-col>
+                  </v-row>
+                  
+                  <!-- Configuración de horario personalizado -->
+                  <div v-if="scheduleType === 'custom'" class="custom-schedule mt-3">
+                    <v-alert type="info" variant="tonal" class="mb-3">
+                      <template v-slot:prepend>
+                        <v-icon>mdi-information</v-icon>
+                      </template>
+                      <strong>Configura los horarios para cada día de la semana</strong>
+                      <br>• Marca los días que son laborables
+                      <br>• Define las horas de entrada y salida
+                      <br>• Establece la tolerancia para llegadas tarde
+                    </v-alert>
+                    
+                    <!-- Días de la semana -->
+                    <div v-for="day in scheduleDays" :key="day.key" class="day-config mb-2">
+                      <v-card class="bg-dark-surface border border-blue-500/20 pa-2">
+                        <div class="d-flex align-center justify-space-between">
+                          <div class="d-flex align-center">
+                            <v-checkbox
+                              v-model="schedule[`${day.key}_active`]"
+                              :color="schedule[`${day.key}_active`] ? 'blue-400' : 'grey-400'"
+                              hide-details
+                              class="mr-3"
+                              @change="validateScheduleDay(day.key)"
+                            ></v-checkbox>
+                            <span class="text-white font-weight-medium">{{ day.label }}</span>
+                          </div>
+                          
+                          <v-chip 
+                            v-if="schedule[`${day.key}_active`]" 
+                            color="green-400" 
+                            variant="tonal" 
+                            size="small"
+                          >
+                            Laborable
+                          </v-chip>
+                          <v-chip 
+                            v-else 
+                            color="grey-400" 
+                            variant="tonal" 
+                            size="small"
+                          >
+                            No laborable
+                          </v-chip>
+                        </div>
+                        
+                        <!-- Campos de horario para días activos -->
+                        <div v-if="schedule[`${day.key}_active`]" class="mt-2">
+                          <v-row class="ma-0 pa-0">
+                            <v-col cols="6" class="pa-1">
+                              <v-text-field
+                                v-model="schedule[`${day.key}_start`]"
+                                label="Hora de Entrada"
+                                type="time"
+                                required
+                                color="blue-400"
+                                variant="outlined"
+                                density="compact"
+                                :rules="[
+                                  v => !!v || 'Hora de entrada requerida',
+                                  v => schedule[`${day.key}_end`] ? v < schedule[`${day.key}_end`] : true || 'La hora de entrada debe ser anterior a la de salida'
+                                ]"
+                                :error-messages="getScheduleFieldError(`${day.key}_start`)"
+                                @blur="validateScheduleField(`${day.key}_start`)"
+                              ></v-text-field>
+                            </v-col>
+                            <v-col cols="6" class="pa-1">
+                              <v-text-field
+                                v-model="schedule[`${day.key}_end`]"
+                                label="Hora de Salida"
+                                type="time"
+                                required
+                                color="blue-400"
+                                variant="outlined"
+                                density="compact"
+                                :rules="[
+                                  v => !!v || 'Hora de salida requerida',
+                                  v => schedule[`${day.key}_start`] ? schedule[`${day.key}_start`] < v : true || 'La hora de salida debe ser posterior a la de entrada'
+                                ]"
+                                :error-messages="getScheduleFieldError(`${day.key}_end`)"
+                                @blur="validateScheduleField(`${day.key}_end`)"
+                              ></v-text-field>
+                            </v-col>
+                          </v-row>
+                        </div>
+                      </v-card>
+                    </div>
+                    
+                    <!-- Configuración de tolerancia -->
+                    <v-card class="bg-dark-surface border border-blue-500/20 pa-3 mt-3">
+                      <h5 class="text-h6 text-white mb-2">
+                        <v-icon color="orange-400" class="mr-2">mdi-timer-sand</v-icon>
+                        Configuración de Tolerancia
+                      </h5>
+                      <v-text-field
+                        v-model.number="schedule.grace_period_minutes"
+                        label="Tolerancia para llegadas tarde (minutos)"
+                        type="number"
+                        min="0"
+                        max="120"
+                        required
+                        color="orange-400"
+                        variant="outlined"
+                        density="compact"
+                        :rules="[
+                          v => !!v || 'Tolerancia requerida',
+                          v => v >= 0 || 'Mínimo 0 minutos',
+                          v => v <= 120 || 'Máximo 120 minutos'
+                        ]"
+                        :hint="`Permite hasta ${schedule.grace_period_minutes} minutos de tardanza antes de marcar como llegada tarde`"
+                        persistent-hint
+                        :error-messages="formErrors.grace_period"
+                        @blur="validateField('grace_period')"
+                      ></v-text-field>
+                    </v-card>
+                  </div>
+                  
+                  <!-- Resumen del horario seleccionado -->
+                  <div v-if="scheduleType !== 'none'" class="schedule-summary mt-3">
+                    <v-alert 
+                      :type="scheduleType === 'default' ? 'success' : 'info'" 
+                      variant="tonal"
+                    >
+                      <template v-slot:prepend>
+                        <v-icon>{{ scheduleType === 'default' ? 'mdi-check-circle' : 'mdi-clock' }}</v-icon>
+                      </template>
+                      <strong>{{ scheduleType === 'default' ? 'Horario por defecto' : 'Horario personalizado' }}</strong>
+                      <br>{{ getScheduleSummary() }}
+                    </v-alert>
+                  </div>
+                  
+                  <!-- Información adicional del horario -->
+                  <div v-if="scheduleType === 'custom'" class="schedule-details mt-2">
+                    <v-card class="bg-dark-surface border border-blue-500/20 pa-2">
+                      <h6 class="text-subtitle-2 text-white mb-2">
+                        <v-icon color="blue-400" class="mr-2" size="small">mdi-information</v-icon>
+                        Detalles del Horario
+                      </h6>
+                      <div class="text-caption text-grey-300">
+                        <div v-for="day in scheduleDays" :key="day.key" class="mb-1">
+                          <span v-if="schedule[`${day.key}_active`]" class="text-green-400">
+                            ✅ {{ day.label }}: {{ schedule[`${day.key}_start`] }} - {{ schedule[`${day.key}_end`] }}
+                          </span>
+                          <span v-else class="text-grey-400">
+                            ❌ {{ day.label }}: No laborable
+                          </span>
+                        </div>
+                        <div class="mt-2 pt-2 border-top border-grey-600">
+                          <strong>Tolerancia:</strong> {{ schedule.grace_period_minutes }} minutos
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
+                </div>
+              </v-col>
+              
             </v-row>
           </v-form>
-        </v-card-text>
+        </div>
         
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -324,19 +593,21 @@
                     </div>
                  </div>
                  
-                 <!-- Chips de estado -->
-                 <div class="mb-2">
-                   <div class="d-flex flex-column gap-2">
-                     <v-chip v-if="isLocating" color="orange-400" variant="tonal" size="small">
-                       <v-icon left>mdi-crosshairs-gps</v-icon>
-                       Obteniendo ubicación...
-                     </v-chip>
-                     <v-chip v-if="userLocation" color="green-400" variant="tonal" size="small">
-                       <v-icon left>mdi-crosshairs-gps</v-icon>
-                       Ubicación actual
-                     </v-chip>
-                   </div>
-                 </div>
+                                   <!-- Chips de estado -->
+                  <div class="mb-2">
+                    <div class="d-flex flex-column gap-2">
+                      <v-chip v-if="isLocating" color="orange-400" variant="tonal" size="small">
+                        <v-icon left>mdi-crosshairs-gps</v-icon>
+                        Obteniendo ubicación...
+                      </v-chip>
+                      <v-chip v-if="userLocation" color="green-400" variant="tonal" size="small">
+                        <v-icon left>mdi-crosshairs-gps</v-icon>
+                        Ubicación actual
+                      </v-chip>
+                    </div>
+                  </div>
+                  
+
                 
                 <!-- Instrucciones -->
                 <div class="mb-4">
@@ -390,9 +661,11 @@
               </div>
             </v-col>
           </v-row>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+                 </v-card-text>
+       </v-card>
+     </v-dialog>
+     
+
 
     <!-- Dialog de Confirmación para Eliminar -->
     <v-dialog v-model="showDeleteDialog" max-width="400px">
@@ -413,25 +686,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- Snackbar para mensajes -->
-    <v-snackbar
-      v-model="mensaje.show"
-      :color="mensaje.type"
-      :timeout="4000"
-      class="custom-snackbar"
-    >
-      {{ mensaje.text }}
-      
-      <template v-slot:actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="mensaje.show = false"
-        >
-          Cerrar
-        </v-btn>
-      </template>
-    </v-snackbar>
+
 
   </div>
 </template>
@@ -440,10 +695,13 @@
  import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import areaService from '../services/areaService'
 import useOptimizedMap from '../composables/useOptimizedMap'
+import { useNotifications } from '../composables/useNotifications'
 
 export default {
   name: 'Areas',
   setup() {
+    const { showSuccess, showError, showWarning, showInfo, showLocationStatus } = useNotifications()
+    
     // Usar el composable optimizado para mapas
     const {
       isMapReady,
@@ -471,10 +729,21 @@ export default {
     }
     
     const showMessage = (text, type = 'success') => {
-      mensaje.value = {
-        show: true,
-        text,
-        type
+      // Usar el sistema global de notificaciones en lugar del mensaje local
+      switch (type) {
+        case 'success':
+          showSuccess(text)
+          break
+        case 'error':
+          showError(text)
+          break
+        case 'warning':
+          showWarning(text)
+          break
+        case 'info':
+        default:
+          showInfo(text)
+          break
       }
     }
     
@@ -498,16 +767,37 @@ export default {
     
     const areas = ref([])
     
+    // ✅ Key dinámica para forzar re-render de la tabla
+    const tableKey = ref(Date.now())
+    
     // Polling automático interno para mantener la lista actualizada
     const pollingInterval = ref(null)
     const POLLING_INTERVAL_MS = 30000 // 30 segundos
     
-    // Estado para mensajes
-    const mensaje = ref({
-      show: false,
-      text: '',
-      type: 'success'
-    })
+         // Estado para mensajes
+     const mensaje = ref({
+       show: false,
+       text: '',
+       type: 'success'
+     })
+     
+     // Estado para errores del formulario
+     const formErrors = ref({
+       name: '',
+       description: '',
+       latitude: '',
+       longitude: '',
+       radius: '',
+       grace_period: ''
+     })
+     
+     // Estado para el hint de descripción
+     const showDescriptionHint = ref(false)
+     const descriptionHint = ref('Solo se permiten letras y números')
+     
+     // Estado para el hint del nombre
+     const showNameHint = ref(false)
+     const nameHint = ref('Se permiten letras, números, espacios, guiones (-) y guiones bajos (_)')
     
     const areaForm = ref({
       name: '',
@@ -518,10 +808,58 @@ export default {
       status: 'active'  // CRÍTICO: Incluir status por defecto
     })
     
+    // Variables para el sistema de horarios
+    const scheduleType = ref('default') // 'default', 'custom', 'none'
+    const schedule = ref({
+      // ✅ NO inicializar con datos estáticos - usar valores mínimos
+      monday_active: false,
+      monday_start: null,
+      monday_end: null,
+      
+      tuesday_active: false,
+      tuesday_start: null,
+      tuesday_end: null,
+      
+      wednesday_active: false,
+      wednesday_start: null,
+      wednesday_end: null,
+      
+      thursday_active: false,
+      thursday_start: null,
+      thursday_end: null,
+      
+      friday_active: false,
+      friday_start: null,
+      friday_end: null,
+      
+      saturday_active: false,
+      saturday_start: null,
+      saturday_end: null,
+      
+      sunday_active: false,
+      sunday_start: null,
+      sunday_end: null,
+      
+      // Tolerancia para llegadas tarde
+      grace_period_minutes: 0
+    })
+    
+    // Días de la semana para el formulario
+    const scheduleDays = [
+      { key: 'monday', label: 'Lunes' },
+      { key: 'tuesday', label: 'Martes' },
+      { key: 'wednesday', label: 'Miércoles' },
+      { key: 'thursday', label: 'Jueves' },
+      { key: 'friday', label: 'Viernes' },
+      { key: 'saturday', label: 'Sábado' },
+      { key: 'sunday', label: 'Domingo' }
+    ]
+    
     const headers = [
       { title: 'Nombre', key: 'name', sortable: true },
       { title: 'Descripción', key: 'description', sortable: true },
       { title: 'Empleados', key: 'employee_count', sortable: true },
+      { title: 'Horarios', key: 'schedule_info', sortable: false, width: '150px' },
       { title: 'Latitud', key: 'latitude', sortable: true, width: '120px' },
       { title: 'Longitud', key: 'longitude', sortable: true, width: '120px' },
       { title: 'Radio', key: 'radius', sortable: true },
@@ -536,12 +874,27 @@ export default {
          // Necesitamos acceder a results que es el array de áreas
          const areasArray = areasData.results || areasData
          
+         console.log('📥 Datos crudos del backend:', areasData)
+         console.log('📋 Array de áreas del backend:', areasArray)
+         
+         // Verificar si las áreas tienen schedule
+         areasArray.forEach((area, index) => {
+           console.log(`🔍 Área ${index + 1} (${area.name}):`, {
+             id: area.id,
+             name: area.name,
+             hasSchedule: !!area.schedule,
+             schedule: area.schedule,
+             scheduleKeys: area.schedule ? Object.keys(area.schedule) : 'No schedule'
+           })
+         })
+         
          // ✅ FILTRAR SOLO ÁREAS ACTIVAS para la lista principal
          const activeAreas = areasArray.filter(area => area.status === 'active')
          
          const areasWithCounts = activeAreas.map(area => ({
            ...area,
-           employee_count: area.employee_count || 0
+           employee_count: area.employee_count || 0,
+           schedule: area.schedule || null  // ✅ Preservar el campo schedule
          }))
          
          // Ordenar alfabéticamente por nombre
@@ -611,6 +964,9 @@ export default {
             status: fullArea.status || 'active'  // CRÍTICO: Incluir status
           }
           
+          // Cargar horarios del área
+          loadScheduleFromArea(fullArea)
+          
           // Sincronizar radio del mapa
           mapRadius.value = fullArea.radius || 100
           
@@ -621,6 +977,7 @@ export default {
           }
           
           console.log('📋 Formulario cargado con:', areaForm.value)
+          console.log('🕐 Horarios cargados:', schedule.value)
           console.log('📍 Coordenadas para el mapa:', editingArea.value.savedCoordinates)
           
           showDialog.value = true
@@ -703,46 +1060,494 @@ export default {
         })
       })
     }
-
-    // Función para reordenar la lista actual
-    const reorderAreasList = () => {
-      console.log('🔄 Reordenando lista de áreas alfabéticamente...')
-      const currentOrder = areas.value.map(area => area.name)
-      console.log('📋 Orden anterior:', currentOrder)
-      
-      areas.value = sortAreasAlphabetically([...areas.value])
-      
-      const newOrder = areas.value.map(area => area.name)
-      console.log('📋 Nuevo orden:', newOrder)
-      console.log('✅ Lista reordenada correctamente')
+    
+    // Funciones para el sistema de horarios
+    const getScheduleSummary = () => {
+      if (scheduleType.value === 'default') {
+        return 'Horario estándar: Lunes a Viernes de 8:00 AM a 5:00 PM con 15 minutos de tolerancia'
+      } else if (scheduleType.value === 'custom') {
+        const activeDays = scheduleDays.filter(day => schedule.value[`${day.key}_active`])
+        if (activeDays.length === 0) return 'No hay días laborables configurados'
+        
+        const dayNames = activeDays.map(day => day.label).join(', ')
+        const tolerance = schedule.value.grace_period_minutes
+        return `${dayNames} - Tolerancia: ${tolerance} minutos`
+      }
+      return ''
     }
-
-    // Funciones de gestión del formulario
-    const resetForm = () => {
-      // Resetear datos del formulario
-      areaForm.value = {
-        name: '',
-        description: '',
-        latitude: '',
-        longitude: '',
-        radius: 200,
-        status: 'active'  // CRÍTICO: Incluir status por defecto
+    
+    const createDefaultSchedule = () => {
+      // ✅ Crear horario por defecto válido y consistente con el backend
+      schedule.value = {
+        monday_active: true,
+        monday_start: '08:00',
+        monday_end: '17:00',
+        
+        tuesday_active: true,
+        tuesday_start: '08:00',
+        tuesday_end: '17:00',
+        
+        wednesday_active: true,
+        wednesday_start: '08:00',
+        wednesday_end: '17:00',
+        
+        thursday_active: true,
+        thursday_start: '08:00',
+        thursday_end: '17:00',
+        
+        friday_active: true,
+        friday_start: '08:00',
+        friday_end: '17:00',
+        
+        saturday_active: false,
+        saturday_start: null,
+        saturday_end: null,
+        
+        sunday_active: false,
+        sunday_start: null,
+        sunday_end: null,
+        
+        grace_period_minutes: 15
+      }
+      console.log('✅ createDefaultSchedule: Horario por defecto válido creado')
+    }
+    
+    const loadScheduleFromArea = (area) => {
+      console.log('🔍 loadScheduleFromArea llamado con área:', area)
+      console.log('🔍 area.schedule:', area.schedule)
+      console.log('🔍 area.schedule.schedule_type:', area.schedule?.schedule_type)
+      console.log('🔍 area.schedule.monday_active:', area.schedule?.monday_active)
+      console.log('🔍 area.schedule.tuesday_active:', area.schedule?.tuesday_active)
+      console.log('🔍 area.schedule.wednesday_active:', area.schedule?.wednesday_active)
+      console.log('🔍 area.schedule.thursday_active:', area.schedule?.thursday_active)
+      console.log('🔍 area.schedule.friday_active:', area.schedule?.friday_active)
+      console.log('🔍 area.schedule.saturday_active:', area.schedule?.saturday_active)
+      console.log('🔍 area.schedule.sunday_active:', area.schedule?.sunday_active)
+      
+      if (area.schedule && area.schedule.schedule_type && area.schedule.schedule_type !== 'none') {
+        // Si el área ya tiene horario, cargarlo según el tipo del backend
+        console.log('✅ Área tiene horario, cargando como', area.schedule.schedule_type)
+        
+        if (area.schedule.schedule_type === 'default') {
+          scheduleType.value = 'default'
+          console.log('✅ Horario por defecto detectado en backend')
+          
+          // ✅ Cargar EXACTAMENTE los horarios del backend (NO datos estáticos)
+          schedule.value = {
+            monday_active: area.schedule.monday_active || false,
+            monday_start: area.schedule.monday_start || '08:00',
+            monday_end: area.schedule.monday_end || '17:00',
+            tuesday_active: area.schedule.tuesday_active || false,
+            tuesday_start: area.schedule.tuesday_start || '08:00',
+            tuesday_end: area.schedule.tuesday_end || '17:00',
+            wednesday_active: area.schedule.wednesday_active || false,
+            wednesday_start: area.schedule.wednesday_start || '08:00',
+            wednesday_end: area.schedule.wednesday_end || '17:00',
+            thursday_active: area.schedule.thursday_active || false,
+            thursday_start: area.schedule.thursday_start || '08:00',
+            thursday_end: area.schedule.thursday_end || '17:00',
+            friday_active: area.schedule.friday_active || false,
+            friday_start: area.schedule.friday_start || '08:00',
+            friday_end: area.schedule.friday_end || '17:00',
+            saturday_active: area.schedule.saturday_active || false,
+            saturday_start: area.schedule.saturday_start || null,
+            saturday_end: area.schedule.saturday_end || null,
+            sunday_active: area.schedule.sunday_active || false,
+            sunday_start: area.schedule.sunday_start || null,
+            sunday_end: area.schedule.sunday_end || null,
+            grace_period_minutes: area.schedule.grace_period_minutes || 15
+          }
+        } else if (area.schedule.schedule_type === 'custom') {
+          scheduleType.value = 'custom'
+          console.log('✅ Horario personalizado detectado en backend')
+          
+          // Cargar los horarios personalizados EXACTAMENTE como están en el backend
+          schedule.value = {
+            monday_active: area.schedule.monday_active || false,
+            monday_start: area.schedule.monday_start || '08:00',
+            monday_end: area.schedule.monday_end || '17:00',
+            tuesday_active: area.schedule.tuesday_active || false,
+            tuesday_start: area.schedule.tuesday_start || '08:00',
+            tuesday_end: area.schedule.tuesday_end || '17:00',
+            wednesday_active: area.schedule.wednesday_active || false,
+            wednesday_start: area.schedule.wednesday_start || '08:00',
+            wednesday_end: area.schedule.wednesday_end || '17:00',
+            thursday_active: area.schedule.thursday_active || false,
+            thursday_start: area.schedule.thursday_start || '08:00',
+            thursday_end: area.schedule.thursday_end || '17:00',
+            friday_active: area.schedule.friday_active || false,
+            friday_start: area.schedule.friday_start || '08:00',
+            friday_end: area.schedule.friday_end || '17:00',
+            saturday_active: area.schedule.saturday_active || false,
+            saturday_start: area.schedule.saturday_start || null,
+            saturday_end: area.schedule.saturday_end || null,
+            sunday_active: area.schedule.sunday_active || false,
+            sunday_start: area.schedule.sunday_start || null,
+            sunday_end: area.schedule.sunday_end || null,
+            grace_period_minutes: area.schedule.grace_period_minutes || 15
+          }
+          
+          console.log('✅ Horarios personalizados cargados:', schedule.value)
+        }
+        
+        console.log('🔍 schedule.value después de cargar:', schedule.value)
+        console.log('🔍 scheduleType.value después de cargar:', scheduleType.value)
+      } else {
+        // Si no tiene horario o schedule_type, usar el por defecto
+        console.log('❌ Área no tiene horario o schedule_type, usando por defecto')
+        createDefaultSchedule()
+        scheduleType.value = 'default'
+        console.log('🔍 schedule.value después de crear por defecto:', schedule.value)
+        console.log('🔍 scheduleType.value después de crear por defecto:', scheduleType.value)
+      }
+    }
+    
+    
+    
+    // Funciones auxiliares para mostrar información de horarios en la tabla
+    const getScheduleColor = (schedule) => {
+      if (!schedule) return 'grey-500'
+      
+      const activeDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        .filter(day => schedule[`${day}_active`])
+      
+      if (activeDays.length === 5 && !schedule.saturday_active && !schedule.sunday_active) {
+        return 'green-500' // Horario estándar
+      } else if (activeDays.length > 0) {
+        return 'blue-500' // Horario personalizado
+      } else {
+        return 'orange-500' // Sin días activos
+      }
+    }
+    
+    const getScheduleIcon = (schedule) => {
+      if (!schedule) return 'mdi-close-circle'
+      
+      const activeDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        .filter(day => schedule[`${day}_active`])
+      
+      if (activeDays.length === 5 && !schedule.saturday_active && !schedule.sunday_active) {
+        return 'mdi-check-circle' // Horario estándar
+      } else if (activeDays.length > 0) {
+        return 'mdi-cog' // Horario personalizado
+      } else {
+        return 'mdi-alert-circle' // Sin días activos
+      }
+    }
+    
+    const getScheduleText = (schedule) => {
+      console.log('🔍 getScheduleText llamado con:', schedule)
+      
+      if (!schedule) {
+        console.log('❌ No hay horario, retornando "Sin horario"')
+        return 'Sin horario'
       }
       
-      // Resetear variables de edición
-      editingArea.value = null
-      
-      // Resetear mapa
-      mapRadius.value = 10
-      clearMap()
-      
-      // Resetear validación del formulario
-      if (form.value) {
-        form.value.resetValidation()
+      // PRIORIDAD 1: Usar schedule_type del backend si está disponible
+      if (schedule.schedule_type) {
+        console.log('🎯 Usando schedule_type del backend:', schedule.schedule_type)
+        if (schedule.schedule_type === 'default') {
+          console.log('✅ Horario estándar detectado por schedule_type')
+          return 'Horario Estándar'
+        } else if (schedule.schedule_type === 'custom') {
+          console.log('🔧 Horario personalizado detectado por schedule_type')
+          return 'Horario Personalizado'
+        } else if (schedule.schedule_type === 'none') {
+          console.log('❌ Sin horario por schedule_type')
+          return 'Sin Horario'
+        }
       }
       
-      console.log('📝 Formulario reseteado')
+      // PRIORIDAD 2: Fallback - adivinar basándose en días activos
+      console.log('🔄 No hay schedule_type, usando fallback de días activos')
+      const activeDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        .filter(day => schedule[`${day}_active`])
+      
+      console.log('📅 Días activos encontrados:', activeDays)
+      
+      if (activeDays.length === 5 && !schedule.saturday_active && !schedule.sunday_active) {
+        console.log('✅ Horario estándar detectado por fallback')
+        return 'Horario Estándar'
+        } else if (activeDays.length > 0) {
+        console.log('🔧 Horario personalizado detectado por fallback:', activeDays.length, 'días')
+        return 'Horario Personalizado'
+      } else {
+        console.log('⚠️ Horario vacío detectado por fallback')
+        return 'Sin Horario'
+      }
     }
+    
+    const getScheduleTooltip = (schedule) => {
+      if (!schedule) return 'Sin horario configurado'
+      
+      const activeDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        .filter(day => schedule[`${day}_active`])
+      
+      if (activeDays.length === 0) {
+        return 'No hay días laborables configurados'
+      }
+      
+      const dayNames = {
+        monday: 'Lun',
+        tuesday: 'Mar',
+        wednesday: 'Mié',
+        thursday: 'Jue',
+        friday: 'Vie',
+        saturday: 'Sáb',
+        sunday: 'Dom'
+      }
+      
+      const activeDayNames = activeDays.map(day => dayNames[day]).join(', ')
+      const tolerance = schedule.grace_period_minutes || 0
+      
+      return `${activeDayNames} - Tolerancia: ${tolerance} min`
+    }
+
+         // Función para reordenar la lista actual
+     const reorderAreasList = () => {
+       console.log('🔄 Reordenando lista de áreas alfabéticamente...')
+       const currentOrder = areas.value.map(area => area.name)
+       console.log('📋 Orden anterior:', currentOrder)
+       
+       areas.value = sortAreasAlphabetically([...areas.value])
+       
+       const newOrder = areas.value.map(area => area.name)
+       console.log('📋 Nuevo orden:', newOrder)
+       console.log('✅ Lista reordenada correctamente')
+     }
+     
+     // Funciones de validación del formulario
+     const validateField = (fieldName) => {
+       const value = areaForm.value[fieldName]
+       let error = ''
+       
+       switch (fieldName) {
+                   case 'name':
+            if (!value) {
+              error = 'Nombre es requerido'
+            } else if (value.length < 3) {
+              error = 'El nombre debe tener al menos 3 caracteres'
+            } else if (value.length > 100) {
+              error = 'El nombre no puede exceder 100 caracteres'
+            } else if (!/^[a-zA-Z0-9\s_-]+$/.test(value)) {
+              error = 'Se permiten letras, números, espacios, guiones (-) y guiones bajos (_)'
+            }
+            break
+           
+                   case 'description':
+            if (!value) {
+              error = 'Descripción es requerida'
+            } else if (value.length < 10) {
+              error = 'La descripción debe tener al menos 10 caracteres'
+            } else if (value.length > 500) {
+              error = 'La descripción no puede exceder 500 caracteres'
+            } else if (!/^[a-zA-Z0-9\s]+$/.test(value)) {
+              error = 'Solo se permiten letras y números'
+            }
+            break
+           
+         case 'latitude':
+           if (!value) {
+             error = 'Selecciona ubicación en el mapa'
+           }
+           break
+           
+         case 'longitude':
+           if (!value) {
+             error = 'Selecciona ubicación en el mapa'
+           }
+           break
+           
+         case 'radius':
+           if (!value || value < 10) {
+             error = 'Radio mínimo: 10 metros'
+           }
+           break
+           
+         case 'grace_period':
+           if (scheduleType.value !== 'none') {
+             const gracePeriod = schedule.value.grace_period_minutes
+             if (!gracePeriod && gracePeriod !== 0) {
+               error = 'Tolerancia requerida'
+             } else if (gracePeriod < 0) {
+               error = 'Mínimo 0 minutos'
+             } else if (gracePeriod > 120) {
+               error = 'Máximo 120 minutos'
+             }
+           }
+           break
+       }
+       
+       formErrors.value[fieldName] = error
+       return !error
+     }
+     
+     const validateScheduleField = (fieldName) => {
+       const [day, type] = fieldName.split('_')
+       const startTime = schedule.value[`${day}_start`]
+       const endTime = schedule.value[`${day}_end`]
+       
+       if (schedule.value[`${day}_active`]) {
+         if (type === 'start' && startTime && endTime && startTime >= endTime) {
+           return false
+         }
+         if (type === 'end' && startTime && endTime && startTime >= endTime) {
+           return false
+         }
+       }
+       
+       return true
+     }
+     
+     const getScheduleFieldError = (fieldName) => {
+       const [day, type] = fieldName.split('_')
+       const startTime = schedule.value[`${day}_start`]
+       const endTime = schedule.value[`${day}_end`]
+       
+       if (schedule.value[`${day}_active`]) {
+         if (startTime && endTime && startTime >= endTime) {
+           return 'La hora de entrada debe ser anterior a la de salida'
+         }
+       }
+       
+       return ''
+     }
+     
+     const validateAllFields = () => {
+       const fields = ['name', 'description', 'latitude', 'longitude', 'radius']
+       let isValid = true
+       
+       // Validar campos básicos
+       fields.forEach(field => {
+         if (!validateField(field)) {
+           isValid = false
+         }
+       })
+       
+       // Validar horarios si es necesario
+       if (scheduleType.value !== 'none') {
+         if (!validateField('grace_period')) {
+           isValid = false
+         }
+         
+         // Validar que al menos un día esté activo
+         const activeDays = scheduleDays.filter(day => schedule.value[`${day.key}_active`])
+         if (activeDays.length === 0) {
+           isValid = false
+         }
+         
+         // Validar horarios de días activos
+         activeDays.forEach(day => {
+           const startTime = schedule.value[`${day.key}_start`]
+           const endTime = schedule.value[`${day.key}_end`]
+           
+           if (!startTime || !endTime) {
+             isValid = false
+           } else if (startTime >= endTime) {
+             isValid = false
+           }
+         })
+       }
+       
+       return isValid
+     }
+     
+           const validateScheduleDay = (dayKey) => {
+        // Validar que si se activa un día, tenga horarios válidos
+        if (schedule.value[`${dayKey}_active`]) {
+          const startTime = schedule.value[`${dayKey}_start`]
+          const endTime = schedule.value[`${dayKey}_end`]
+          
+          if (!startTime || !endTime) {
+            showMessage(`⚠️ El día ${scheduleDays.find(d => d.key === dayKey)?.label} está activo pero no tiene horarios configurados`, 'warning')
+          }
+        }
+      }
+      
+      // Función para sanitizar el nombre del área (solo caracteres permitidos)
+      const sanitizeName = (event) => {
+        const input = event.target
+        const value = input.value
+        
+        // Mostrar el hint cuando el usuario empiece a escribir
+        if (!showNameHint.value && value.length > 0) {
+          showNameHint.value = true
+        }
+        
+        // Remover caracteres no permitidos (letras, números, espacios, guiones y guiones bajos)
+        const sanitized = value.replace(/[^a-zA-Z0-9\s_-]/g, '')
+        
+        // Si el valor cambió, actualizar el campo
+        if (sanitized !== value) {
+          areaForm.value.name = sanitized
+          // Mover el cursor al final del texto
+          nextTick(() => {
+            input.setSelectionRange(sanitized.length, sanitized.length)
+          })
+        }
+      }
+      
+      // Función para sanitizar la descripción (solo letras y números)
+      const sanitizeDescription = (event) => {
+        const input = event.target
+        const value = input.value
+        
+        // Mostrar el hint cuando el usuario empiece a escribir
+        if (!showDescriptionHint.value && value.length > 0) {
+          showDescriptionHint.value = true
+        }
+        
+        // Remover caracteres no permitidos (solo letras, números y espacios)
+        const sanitized = value.replace(/[^a-zA-Z0-9\s]/g, '')
+        
+        // Si el valor cambió, actualizar el campo
+        if (sanitized !== value) {
+          areaForm.value.description = sanitized
+          // Mover el cursor al final del texto
+          nextTick(() => {
+            input.setSelectionRange(sanitized.length, sanitized.length)
+          })
+        }
+      }
+
+         // Funciones de gestión del formulario
+     const resetForm = () => {
+       // Resetear datos del formulario
+       areaForm.value = {
+         name: '',
+         description: '',
+         latitude: '',
+         longitude: '',
+         radius: 200,
+         status: 'active'  // CRÍTICO: Incluir status por defecto
+       }
+       
+       // Resetear variables de edición
+       editingArea.value = null
+       
+       // Resetear mapa
+       mapRadius.value = 10
+       clearMap()
+       
+                // Resetear horarios
+         createDefaultSchedule()
+       
+                // Limpiar errores del formulario
+         Object.keys(formErrors.value).forEach(key => {
+           formErrors.value[key] = ''
+         })
+         
+         // Ocultar hints
+         showDescriptionHint.value = false
+         showNameHint.value = false
+       
+       // Resetear validación del formulario
+       if (form.value) {
+         form.value.resetValidation()
+       }
+       
+       console.log('📝 Formulario reseteado')
+     }
 
     const openNewAreaDialog = () => {
       console.log('🆕 Abriendo diálogo para nueva área')
@@ -814,8 +1619,57 @@ export default {
       }
     })
     
+    // Observar cambios en el tipo de horario
+    watch(scheduleType, (newType, oldType) => {
+      console.log(`🔄 Cambio de tipo de horario: ${oldType} → ${newType}`)
+      
+      if (newType === 'default') {
+        // ✅ Crear horario por defecto válido
+        createDefaultSchedule()
+        console.log('✅ Horario por defecto aplicado')
+      } else if (newType === 'custom') {
+        // ✅ Mantener horarios actuales pero asegurar que sean válidos
+        if (oldType === 'default') {
+          // Si venía de default, mantener los valores pero permitir edición
+          console.log('✅ Cambiando de default a custom - horarios mantenidos')
+        } else if (oldType === 'none') {
+          // Si venía de none, crear horario por defecto como base
+          createDefaultSchedule()
+          console.log('✅ Cambiando de none a custom - horario por defecto como base')
+        }
+      } else if (newType === 'none') {
+        // ✅ Limpiar horarios para "sin horario"
+        schedule.value = {
+          monday_active: false,
+          monday_start: '08:00',
+          monday_end: '17:00',
+          tuesday_active: false,
+          tuesday_start: '08:00',
+          tuesday_end: '17:00',
+          wednesday_active: false,
+          wednesday_start: '08:00',
+          wednesday_end: '17:00',
+          thursday_active: false,
+          thursday_start: '08:00',
+          thursday_end: '17:00',
+          friday_active: false,
+          friday_start: '08:00',
+          friday_end: '17:00',
+          saturday_active: false,
+          saturday_start: '08:00',
+          saturday_end: '17:00',
+          sunday_active: false,
+          sunday_start: '08:00',
+          sunday_end: '17:00',
+          grace_period_minutes: 0
+        }
+        console.log('✅ Horarios limpiados para "sin horario"')
+      }
+    })
+    
                  const showMapSelectorModal = async () => {
       console.log('🗺️ Abriendo modal del mapa optimizado...')
+      console.log('🔔 Estado inicial de isLocating:', isLocating.value)
       
       showMapSelector.value = true
       
@@ -858,12 +1712,42 @@ export default {
           // Refrescar mapa para nueva área
           await refreshMap()
           
+          // Mostrar notificación de búsqueda ANTES de obtener la ubicación
+          console.log('📍 Mostrando notificación de búsqueda de ubicación...')
+          const notificationId = showLocationStatus('getting')
+          console.log('🔔 ID de notificación de búsqueda:', notificationId)
+          
+          // Pequeña pausa para asegurar que la notificación se muestre
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
           // Intentar obtener ubicación actual con radio
           try {
+            isLocating.value = true
+            
             await getCurrentLocation({
               radius: mapRadius.value,
               title: 'Tu ubicación actual'
             })
+            
+            // Esperar a que el mapa se actualice y el punto sea visible
+            console.log('📍 Esperando a que el punto aparezca en el mapa...')
+            await new Promise(resolve => setTimeout(resolve, 1500))
+            
+            // Verificar que realmente se haya establecido la ubicación en el mapa
+            if (selectedLocation.value) {
+              console.log('📍 Ubicación establecida en el mapa:', selectedLocation.value)
+              
+              // Mostrar notificación de éxito solo después de que el punto esté visible
+              console.log('📍 Mostrando notificación de éxito de ubicación...')
+              const successId = showLocationStatus('success')
+              console.log('🔔 ID de notificación de éxito:', successId)
+              
+              // Pausa para que se vea la notificación de éxito
+              await new Promise(resolve => setTimeout(resolve, 4000))
+            } else {
+              console.log('⚠️ No se pudo establecer la ubicación en el mapa')
+            }
+            
           } catch (error) {
             console.log('📍 Usando ubicación por defecto (Ciudad de México)')
             // La ubicación por defecto ya está configurada en el servicio
@@ -871,6 +1755,12 @@ export default {
             if (selectedLocation.value) {
               setRadius(selectedLocation.value.lat, selectedLocation.value.lng, mapRadius.value)
             }
+            // Mostrar notificación de error
+            console.log('📍 Mostrando notificación de error de ubicación...')
+            const errorId = showLocationStatus('error')
+            console.log('🔔 ID de notificación de error:', errorId)
+          } finally {
+            isLocating.value = false
           }
         }
         
@@ -887,6 +1777,11 @@ export default {
         areaForm.value.latitude = selectedLocation.value.lat
         areaForm.value.longitude = selectedLocation.value.lng
         areaForm.value.radius = mapRadius.value
+        
+        // Validar automáticamente los campos después de establecer los valores
+        validateField('latitude')
+        validateField('longitude')
+        validateField('radius')
         
         console.log('✅ Ubicación confirmada:', selectedLocation.value)
         console.log('📋 Formulario actualizado:', {
@@ -921,150 +1816,436 @@ export default {
         areaForm.value.longitude = ''
         areaForm.value.radius = 10
         mapRadius.value = 10
+        
+        // Validar automáticamente los campos después de limpiarlos
+        validateField('latitude')
+        validateField('longitude')
+        validateField('radius')
       }
       
       console.log('❌ Selección de mapa cancelada')
     }
     
-    // Función para usar la ubicación actual del usuario
-    const useCurrentLocation = async () => {
-      try {
-        console.log('📍 Cambiando a ubicación actual del usuario...')
-        isLocating.value = true
-        
-        // Obtener ubicación actual del usuario
-        await getCurrentLocation({
-          radius: mapRadius.value,
-          title: 'Tu ubicación actual'
-        })
-        
-        // Si se obtuvo la ubicación exitosamente, actualizar el formulario
-        if (selectedLocation.value) {
-          areaForm.value.latitude = selectedLocation.value.lat
-          areaForm.value.longitude = selectedLocation.value.lng
-          areaForm.value.radius = mapRadius.value
-          
-          // Actualizar también el radio del mapa si es necesario
-          if (mapRadius.value !== selectedLocation.value.radius) {
-            mapRadius.value = selectedLocation.value.radius || mapRadius.value
-          }
-          
-          console.log('✅ Ubicación actual aplicada:', selectedLocation.value)
-          console.log('📋 Formulario actualizado con ubicación actual')
-          console.log('📏 Radio actualizado:', mapRadius.value)
-          
-          // Si estamos editando, actualizar también las coordenadas de referencia
-          if (editingArea.value) {
-            editingArea.value.savedCoordinates = {
-              lat: selectedLocation.value.lat,
-              lng: selectedLocation.value.lng
+         // Función para usar la ubicación actual del usuario
+     const useCurrentLocation = async () => {
+       try {
+         console.log('📍 Cambiando a ubicación actual del usuario...')
+         
+         // Mostrar notificación de búsqueda ANTES de obtener la ubicación
+         console.log('📍 Mostrando notificación de búsqueda de ubicación...')
+         showLocationStatus('getting')
+         
+         // Pequeña pausa para asegurar que la notificación se muestre
+         await new Promise(resolve => setTimeout(resolve, 100))
+         
+         isLocating.value = true
+         
+         // Obtener ubicación actual del usuario
+         await getCurrentLocation({
+           radius: mapRadius.value,
+           title: 'Tu ubicación actual'
+         })
+         
+         // Si se obtuvo la ubicación exitosamente, actualizar el formulario
+         if (selectedLocation.value) {
+           areaForm.value.latitude = selectedLocation.value.lat
+           areaForm.value.longitude = selectedLocation.value.lng
+           areaForm.value.radius = mapRadius.value
+           
+           // Validar automáticamente los campos después de establecer los valores
+           validateField('latitude')
+           validateField('longitude')
+           validateField('radius')
+           
+           // Actualizar también el radio del mapa si es necesario
+           if (mapRadius.value !== selectedLocation.value.radius) {
+             mapRadius.value = selectedLocation.value.radius || mapRadius.value
+           }
+           
+           console.log('✅ Ubicación actual aplicada:', selectedLocation.value)
+           console.log('📋 Formulario actualizado con ubicación actual')
+           console.log('📏 Radio actualizado:', mapRadius.value)
+           
+           // Si estamos editando, actualizar también las coordenadas de referencia
+           if (editingArea.value) {
+             editingArea.value.savedCoordinates = {
+               lat: selectedLocation.value.lat,
+               lng: selectedLocation.value.lng
+             }
+             console.log('🔄 Coordenadas de referencia actualizadas con ubicación actual')
+           }
+           
+           // Esperar a que el mapa se actualice y el punto sea visible
+           console.log('📍 Esperando a que el punto aparezca en el mapa...')
+           await new Promise(resolve => setTimeout(resolve, 1500))
+           
+           // Verificar que realmente se haya establecido la ubicación en el mapa
+           if (selectedLocation.value) {
+             console.log('📍 Ubicación establecida en el mapa:', selectedLocation.value)
+             
+             // Mostrar mensaje de éxito usando el sistema global
+             console.log('📍 Mostrando notificación de éxito de ubicación...')
+             showLocationStatus('success')
+             
+             // Pausa para que se vea la notificación de éxito
+             await new Promise(resolve => setTimeout(resolve, 4000))
+           } else {
+             console.log('⚠️ No se pudo establecer la ubicación en el mapa')
+           }
+         }
+         
+       } catch (error) {
+         console.error('❌ Error obteniendo ubicación actual:', error)
+         console.log('📍 Mostrando notificación de error de ubicación...')
+         showLocationStatus('error')
+       } finally {
+         isLocating.value = false
+       }
+     }
+    
+    // ✅ Función para validar horarios antes de guardar
+    const validateSchedule = () => {
+      console.log('🔍 Validando horarios...')
+      console.log('🔍 scheduleType.value:', scheduleType.value)
+      console.log('🔍 schedule.value:', schedule.value)
+      
+      if (scheduleType.value === 'none') {
+        console.log('✅ Tipo "none" - no requiere validación de horarios')
+        return true
+      }
+      
+      if (scheduleType.value === 'default') {
+        // Para horario por defecto, verificar que los días activos tengan horarios válidos
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+        for (const day of days) {
+          if (schedule.value[`${day}_active`]) {
+            const start = schedule.value[`${day}_start`]
+            const end = schedule.value[`${day}_end`]
+            
+            if (!start || !end) {
+              console.error(`❌ Día ${day} activo pero sin horarios completos`)
+              showMessage(`⚠️ El día ${day} está activo pero le faltan horarios de inicio o fin`, 'warning')
+              return false
             }
-            console.log('🔄 Coordenadas de referencia actualizadas con ubicación actual')
+            
+            if (start >= end) {
+              console.error(`❌ Día ${day}: hora inicio >= hora fin`)
+              showMessage(`⚠️ El día ${day} tiene hora de inicio mayor o igual a la hora de fin`, 'warning')
+              return false
+            }
           }
-          
-          // Mostrar mensaje de éxito
-          showMessage('Ubicación actual aplicada correctamente', 'success')
+        }
+        console.log('✅ Horario por defecto válido')
+        return true
+      }
+      
+      if (scheduleType.value === 'custom') {
+        // Para horario personalizado, verificar que al menos un día esté activo
+        const hasActiveDay = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+          .some(day => schedule.value[`${day}_active`])
+        
+        if (!hasActiveDay) {
+          console.error('❌ Horario personalizado sin días activos')
+          showMessage('⚠️ Debes activar al menos un día para el horario personalizado', 'warning')
+          return false
         }
         
-      } catch (error) {
-        console.error('❌ Error obteniendo ubicación actual:', error)
-        showMessage('Error obteniendo ubicación actual: ' + error.message, 'error')
-      } finally {
-        isLocating.value = false
+        // Verificar que los días activos tengan horarios válidos
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        for (const day of days) {
+          if (schedule.value[`${day}_active`]) {
+            const start = schedule.value[`${day}_start`]
+            const end = schedule.value[`${day}_end`]
+            
+            if (!start || !end) {
+              console.error(`❌ Día ${day} activo pero sin horarios completos`)
+              showMessage(`⚠️ El día ${day} está activo pero le faltan horarios de inicio o fin`, 'warning')
+              return false
+            }
+            
+            if (start >= end) {
+              console.error(`❌ Día ${day}: hora inicio >= hora fin`)
+              showMessage(`⚠️ El día ${day} tiene hora de inicio mayor o igual a la hora de fin`, 'warning')
+              return false
+            }
+          }
+        }
+        
+        console.log('✅ Horario personalizado válido')
+        return true
+      }
+      
+      console.error('❌ Tipo de horario no reconocido:', scheduleType.value)
+      return false
+    }
+    
+    // ✅ Función para forzar actualización de la interfaz
+    const forceUIUpdate = () => {
+      console.log('🔄 Forzando actualización de la interfaz...')
+      
+      // ✅ Forzar re-render completo del componente
+      areas.value = [...areas.value]
+      
+      // ✅ Forzar re-render de la tabla agregando un key único
+      tableKey.value = Date.now()
+      
+      // ✅ Forzar re-evaluación de computed properties
+      nextTick(() => {
+        console.log('✅ Interfaz actualizada con re-render completo')
+        console.log('🔍 Verificando que la tabla se haya actualizado...')
+        
+        // Verificar que el área editada tenga el schedule_type correcto
+        const editedArea = areas.value.find(area => area.id === editingArea.value?.id)
+        if (editedArea && editedArea.schedule) {
+          console.log(`✅ Área ${editedArea.name}: schedule_type = ${editedArea.schedule.schedule_type}`)
+        }
+      })
+    }
+    
+    // ✅ Función para actualizar correctamente la lista local
+    const updateLocalArea = (updatedAreaData) => {
+      console.log('🔄 Actualizando área en lista local...')
+      
+      const areaIndex = areas.value.findIndex(area => area.id === updatedAreaData.id)
+      if (areaIndex !== -1) {
+        // ✅ Actualizar con los datos frescos del backend
+        areas.value[areaIndex] = { ...updatedAreaData }
+        console.log('✅ Área actualizada en la lista local')
+        
+        // ✅ Forzar re-render de la tabla
+        tableKey.value = Date.now()
+        
+        // ✅ Verificar que se actualizó correctamente
+        const updatedArea = areas.value[areaIndex]
+        if (updatedArea.schedule) {
+          console.log(`✅ Verificación: ${updatedArea.name} ahora tiene schedule_type = ${updatedArea.schedule.schedule_type}`)
+        }
+      } else {
+        console.warn('⚠️ Área no encontrada en lista local para actualizar')
       }
     }
     
-             const saveArea = async () => {
+    const saveArea = async () => {
+      console.log('🚀 === INICIO DE SAVEAREA ===')
       console.log('🔍 Iniciando saveArea...')
       console.log('📝 Datos del formulario:', areaForm.value)
-      console.log('✅ Validación del formulario:', form.value.validate())
+      console.log('🔍 scheduleType.value:', scheduleType.value)
+      console.log('🔍 schedule.value:', schedule.value)
+      console.log('🔍 Estado actual del formulario de horarios')
       
-      if (!form.value.validate()) {
-        console.error('❌ Validación del formulario falló')
-        return
-      }
-
-      // VALIDACIÓN CRÍTICA: Verificar que se haya seleccionado una ubicación
-      if (!areaForm.value.latitude || !areaForm.value.longitude) {
-        console.error('❌ No se ha seleccionado ubicación en el mapa')
-        alert('⚠️ Debes seleccionar una ubicación en el mapa antes de guardar el área.')
-        return
-      }
-
-      // Validar que las coordenadas sean números válidos
-      const lat = parseFloat(areaForm.value.latitude)
-      const lng = parseFloat(areaForm.value.longitude)
-      
-      if (isNaN(lat) || isNaN(lng)) {
-        console.error('❌ Coordenadas no son números válidos:', {
-          latitude: areaForm.value.latitude,
-          longitude: areaForm.value.longitude
-        })
-        alert('⚠️ Las coordenadas deben ser números válidos.')
-        return
-      }
-      
-      // Validar rangos de coordenadas
-      if (lat < -90 || lat > 90) {
-        console.error('❌ Latitud fuera de rango:', lat)
-        alert('⚠️ La latitud debe estar entre -90 y 90 grados.')
-        return
-      }
-      
-      if (lng < -180 || lng > 180) {
-        console.error('❌ Longitud fuera de rango:', lng)
-        alert('⚠️ La longitud debe estar entre -180 y 180 grados.')
-        return
-      }
-
-      // Verificar que el radio sea válido
-      if (!areaForm.value.radius || areaForm.value.radius < 10) {
-        console.error('❌ Radio inválido')
-        alert('⚠️ El radio debe ser de al menos 10 metros.')
-        return
-      }
-      
-      // Validar que el radio sea un número
-      const radius = parseInt(areaForm.value.radius)
-      if (isNaN(radius) || radius < 10 || radius > 10000) {
-        console.error('❌ Radio fuera de rango:', radius)
-        alert('⚠️ El radio debe estar entre 10 y 10000 metros.')
-        return
-      }
-      
-      saving.value = true
       try {
+        // Validar todos los campos antes de proceder
+        if (!validateAllFields()) {
+          console.error('❌ Validación del formulario falló')
+          showMessage('⚠️ Por favor, completa todos los campos obligatorios correctamente', 'warning')
+          return
+        }
+        
+        console.log('✅ Validación del formulario pasó')
+        
+        console.log('🔍 Antes de validación de Vuetify...')
+        console.log('🔍 form.value:', form.value)
+        console.log('🔍 form.value.validate:', form.value?.validate)
+        
+        // Validación adicional del formulario de Vuetify
+        if (!form.value.validate()) {
+          console.error('❌ Validación del formulario de Vuetify falló')
+          return
+        }
+        
+        console.log('✅ Validación de Vuetify pasó')
+        
+        // ✅ Validar horarios antes de continuar
+        if (!validateSchedule()) {
+          console.error('❌ Validación de horarios falló')
+          return
+        }
+        
+        console.log('✅ Validación de horarios pasó')
+        
+        console.log('🔍 Antes de validación de ubicación...')
+        console.log('🔍 areaForm.value.latitude:', areaForm.value.latitude)
+        console.log('🔍 areaForm.value.longitude:', areaForm.value.longitude)
+        
+        // VALIDACIÓN CRÍTICA: Verificar que se haya seleccionado una ubicación
+        if (!areaForm.value.latitude || !areaForm.value.longitude) {
+          console.error('❌ No se ha seleccionado ubicación en el mapa')
+          alert('⚠️ Debes seleccionar una ubicación en el mapa antes de guardar el área.')
+          return
+        }
+        
+        console.log('✅ Validación de ubicación pasó')
+        
+        // Validar que las coordenadas sean números válidos
+        const lat = parseFloat(areaForm.value.latitude)
+        const lng = parseFloat(areaForm.value.longitude)
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          console.error('❌ Coordenadas no son números válidos:', {
+            latitude: areaForm.value.latitude,
+            longitude: areaForm.value.longitude
+          })
+          alert('⚠️ Las coordenadas deben ser números válidos.')
+          return
+        }
+        
+        // Validar rangos de coordenadas
+        if (lat < -90 || lat > 90) {
+          console.error('❌ Latitud fuera de rango:', lat)
+          alert('⚠️ La latitud debe estar entre -90 y 90 grados.')
+          return
+        }
+        
+        if (lng < -180 || lng > 180) {
+          console.error('❌ Longitud fuera de rango:', lng)
+          alert('⚠️ La longitud debe estar entre -180 y 180 grados.')
+          return
+        }
+
+        // Verificar que el radio sea válido
+        if (!areaForm.value.radius || areaForm.value.radius < 10) {
+          console.error('❌ Radio inválido')
+          alert('⚠️ El radio debe ser de al menos 10 metros.')
+          return
+        }
+        
+        // Validar que el radio sea un número
+        const radius = parseInt(areaForm.value.radius)
+        if (isNaN(radius) || radius < 10 || radius > 10000) {
+          console.error('❌ Radio fuera de rango:', radius)
+          alert('⚠️ El radio debe estar entre 10 y 10000 metros.')
+          return
+        }
+        
+        saving.value = true
+        
+        // Preparar datos del área con horarios
+        const areaData = { ...areaForm.value }
+        
+        // Agregar horarios según el tipo seleccionado
+        if (scheduleType.value === 'default') {
+          // ✅ Horario por defecto - usar valores del formulario validados
+          areaData.schedule = {
+            schedule_type: 'default',
+            monday_active: schedule.value.monday_active,
+            monday_start: schedule.value.monday_start,
+            monday_end: schedule.value.monday_end,
+            tuesday_active: schedule.value.tuesday_active,
+            tuesday_start: schedule.value.tuesday_start,
+            tuesday_end: schedule.value.tuesday_end,
+            wednesday_active: schedule.value.wednesday_active,
+            wednesday_start: schedule.value.wednesday_start,
+            wednesday_end: schedule.value.wednesday_end,
+            thursday_active: schedule.value.thursday_active,
+            thursday_start: schedule.value.thursday_start,
+            thursday_end: schedule.value.thursday_end,
+            friday_active: schedule.value.friday_active,
+            friday_start: schedule.value.friday_start,
+            friday_end: schedule.value.friday_end,
+            saturday_active: schedule.value.saturday_active,
+            saturday_start: schedule.value.saturday_start,
+            saturday_end: schedule.value.saturday_end,
+            sunday_active: schedule.value.sunday_active,
+            sunday_start: schedule.value.sunday_start,
+            sunday_end: schedule.value.sunday_end,
+            grace_period_minutes: schedule.value.grace_period_minutes
+          }
+          console.log('✅ Horario por defecto configurado desde formulario:', areaData.schedule)
+        } else if (scheduleType.value === 'custom') {
+          // ✅ Horario personalizado - incluir todos los campos
+          areaData.schedule = {
+            schedule_type: 'custom',
+            monday_active: schedule.value.monday_active,
+            monday_start: schedule.value.monday_start,
+            monday_end: schedule.value.monday_end,
+            tuesday_active: schedule.value.tuesday_active,
+            tuesday_start: schedule.value.tuesday_start,
+            tuesday_end: schedule.value.tuesday_end,
+            wednesday_active: schedule.value.wednesday_active,
+            wednesday_start: schedule.value.wednesday_start,
+            wednesday_end: schedule.value.wednesday_end,
+            thursday_active: schedule.value.thursday_active,
+            thursday_start: schedule.value.thursday_start,
+            thursday_end: schedule.value.thursday_end,
+            friday_active: schedule.value.friday_active,
+            friday_start: schedule.value.friday_start,
+            friday_end: schedule.value.friday_end,
+            saturday_active: schedule.value.saturday_active,
+            saturday_start: schedule.value.saturday_start,
+            saturday_end: schedule.value.saturday_end,
+            sunday_active: schedule.value.sunday_active,
+            sunday_start: schedule.value.sunday_start,
+            sunday_end: schedule.value.sunday_end,
+            grace_period_minutes: schedule.value.grace_period_minutes
+          }
+          console.log('✅ Horario personalizado configurado:', areaData.schedule)
+        } else {
+          // ✅ Sin horario
+          areaData.schedule = {
+            schedule_type: 'none'
+          }
+          console.log('✅ Sin horario configurado')
+        }
+        
+        console.log('📤 Datos del área con horarios:', areaData)
+        console.log('🔍 Campo schedule en areaData:', areaData.schedule)
+        console.log('🔍 Tipo de schedule:', typeof areaData.schedule)
+        console.log('🔍 scheduleType.value:', scheduleType.value)
+        console.log('🔍 schedule.value:', schedule.value)
+        console.log('🔍 schedule.value.monday_active:', schedule.value?.monday_active)
+        console.log('🔍 schedule.value.tuesday_active:', schedule.value?.tuesday_active)
+        console.log('🔍 schedule.value.wednesday_active:', schedule.value?.wednesday_active)
+        console.log('🔍 schedule.value.thursday_active:', schedule.value?.thursday_active)
+        console.log('🔍 schedule.value.friday_active:', schedule.value?.friday_active)
+        console.log('🔍 schedule.value.saturday_active:', schedule.value?.saturday_active)
+        console.log('🔍 schedule.value.sunday_active:', schedule.value?.sunday_active)
+        
         if (editingArea.value) {
-          console.log('✏️ Actualizando área existente...')
-          console.log('📤 Datos enviados para actualización:', areaForm.value)
+          console.log('🔄 === ACTUALIZANDO ÁREA EXISTENTE ===')
+          console.log('🔍 ID del área a editar:', editingArea.value.id)
+          console.log('🔍 Datos del formulario actual:', areaForm.value)
+          console.log('🔍 Schedule actual:', schedule.value)
+          console.log('🔍 ScheduleType actual:', scheduleType.value)
           
           // Actualizar área existente
-          const updatedArea = await areaService.update(editingArea.value.id, areaForm.value)
-          const index = areas.value.findIndex(area => area.id === editingArea.value.id)
-          if (index !== -1) {
-            areas.value[index] = { ...updatedArea }
-            
-            // Reordenar lista si se cambió el nombre (para mantener orden alfabético)
-            areas.value = sortAreasAlphabetically([...areas.value])
-            console.log('📋 Lista reordenada después de actualización:', areas.value.map(area => area.name))
+          const updatedArea = await areaService.update(editingArea.value.id, areaData)
+          console.log('📥 Respuesta del backend (update):', updatedArea)
+          console.log('🔍 Campo schedule en respuesta (update):', updatedArea.schedule)
+          console.log('🔍 Campo has_schedule en respuesta (update):', updatedArea.has_schedule)
+          console.log('🔍 Campo schedule_id en respuesta (update):', updatedArea.schedule_id)
+          console.log('🔍 Campo schedule.schedule_type en respuesta (update):', updatedArea.schedule?.schedule_type)
+          console.log('🔍 Campo schedule.monday_active en respuesta (update):', updatedArea.schedule?.monday_active)
+          console.log('🔍 Campo schedule.tuesday_active en respuesta (update):', updatedArea.schedule?.tuesday_active)
+          console.log('🔍 Campo schedule.wednesday_active en respuesta (update):', updatedArea.schedule?.wednesday_active)
+          console.log('🔍 Campo schedule.thursday_active en respuesta (update):', updatedArea.schedule?.thursday_active)
+          console.log('🔍 Campo schedule.friday_active en respuesta (update):', updatedArea.schedule?.friday_active)
+          console.log('🔍 Campo schedule.saturday_active en respuesta (update):', updatedArea.schedule?.saturday_active)
+          console.log('🔍 Campo schedule.sunday_active en respuesta (update):', updatedArea.schedule?.sunday_active)
+          
+          // ✅ ACTUALIZAR INMEDIATAMENTE el área en la lista local
+          updateLocalArea(updatedArea)
+          
+          // ✅ Verificar que la actualización se aplicó correctamente
+          console.log('🔍 Verificando actualización en lista local...')
+          const updatedLocalArea = areas.value.find(area => area.id === updatedArea.id)
+          if (updatedLocalArea && updatedLocalArea.schedule) {
+            console.log(`✅ Verificación exitosa: ${updatedLocalArea.name} tiene schedule_type = ${updatedLocalArea.schedule.schedule_type}`)
           }
           
-          // CRÍTICO: Actualizar las coordenadas guardadas con los nuevos valores
-          if (editingArea.value.savedCoordinates && areaForm.value.latitude && areaForm.value.longitude) {
-            editingArea.value.savedCoordinates = {
-              lat: parseFloat(areaForm.value.latitude),
-              lng: parseFloat(areaForm.value.longitude)
-            }
-            console.log('🔄 Coordenadas guardadas actualizadas:', editingArea.value.savedCoordinates)
-          }
+          // Cerrar modal y resetear formulario
+          showDialog.value = false
+          resetForm()
           
-          console.log('✅ Área actualizada:', updatedArea)
+          showSuccess('✅ Área actualizada correctamente')
+          console.log('✅ Área actualizada exitosamente')
         } else {
           console.log('🆕 Creando nueva área...')
-          console.log('📤 Datos enviados al servicio:', areaForm.value)
+          console.log('📤 Datos enviados al servicio:', areaData)
           
           // Crear nueva área
-          const newArea = await areaService.create(areaForm.value)
+          const newArea = await areaService.create(areaData)
+          console.log('📥 Respuesta del backend (create):', newArea)
+          console.log('🔍 Campo schedule en respuesta (create):', newArea.schedule)
           console.log('✅ Respuesta del servicio:', newArea)
           
           // Agregar nueva área a la lista
@@ -1082,8 +2263,16 @@ export default {
         
         showDialog.value = false
         
-        // Recargar áreas para asegurar datos actualizados
-        await loadAreas()
+        // ✅ Recargar áreas solo si es necesario (después de un breve delay para asegurar sincronización)
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Recargando áreas para sincronización...')
+            await loadAreas()
+            console.log('✅ Áreas recargadas para sincronización')
+          } catch (error) {
+            console.error('❌ Error recargando áreas:', error)
+          }
+        }, 500)
         
         // Si acabamos de editar un área, verificar que los datos se guardaron correctamente
         if (editedAreaId) {
@@ -1155,10 +2344,15 @@ export default {
       editingArea,
       areaToDelete,
 
-      areas,
-      areaForm,
-      headers,
-      mensaje,
+             areas,
+       areaForm,
+       headers,
+       mensaje,
+       formErrors,
+       showDescriptionHint,
+       descriptionHint,
+       showNameHint,
+       nameHint,
       // Variables del mapa optimizado
        mapRadius,
        selectedLocation,
@@ -1168,6 +2362,12 @@ export default {
        isLocating,
        searchPlace,
        googleMapsAvailable,
+      // Variables del sistema de horarios
+      scheduleType,
+      schedule,
+      scheduleDays,
+      // ✅ Key dinámica para tabla
+      tableKey,
       // Funciones principales
       editArea,
       deleteArea,
@@ -1180,6 +2380,23 @@ export default {
       resetForm,
       sortAreasAlphabetically,
       reorderAreasList,
+             // Funciones del sistema de horarios
+       getScheduleSummary,
+       createDefaultSchedule,
+       loadScheduleFromArea,
+       getScheduleColor,
+       getScheduleIcon,
+       getScheduleText,
+       getScheduleTooltip,
+       // Funciones de validación
+       validateField,
+       validateScheduleField,
+       validateAllFields,
+       validateSchedule,
+       getScheduleFieldError,
+       validateScheduleDay,
+       sanitizeName,
+       sanitizeDescription,
       // Funciones del mapa optimizado
       showMapSelectorModal,
       confirmMapSelection,
@@ -1190,7 +2407,9 @@ export default {
       refreshMap,
       // Funciones de formateo
       formatCoordinate,
-      showMessage
+      showMessage,
+      forceUIUpdate,
+      updateLocalArea
     }
   }
 }
@@ -1469,4 +2688,192 @@ export default {
      gap: 16px;
    }
  }
+ 
+ /* Estilos para la sección de horarios */
+ .schedule-section {
+   background: rgba(15, 23, 42, 0.3);
+   border-radius: 12px;
+   padding: 20px;
+   border: 1px solid rgba(59, 130, 246, 0.2);
+ }
+ 
+ .schedule-section h4 {
+   color: #e2e8f0;
+   font-weight: 600;
+   margin-bottom: 20px;
+ }
+ 
+ .day-config {
+   transition: all 0.3s ease;
+ }
+ 
+ .day-config:hover {
+   transform: translateY(-2px);
+   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+ }
+ 
+ .custom-schedule {
+   animation: fadeIn 0.5s ease-in-out;
+ }
+ 
+ @keyframes fadeIn {
+   from {
+     opacity: 0;
+     transform: translateY(10px);
+   }
+   to {
+     opacity: 1;
+     transform: translateY(0);
+   }
+ }
+ 
+ .schedule-summary {
+   animation: slideIn 0.4s ease-out;
+ }
+ 
+ @keyframes slideIn {
+   from {
+     opacity: 0;
+     transform: translateX(-10px);
+   }
+   to {
+     opacity: 1;
+     transform: translateX(0);
+   }
+ }
+ 
+ /* Estilos para los campos de tiempo */
+ .custom-schedule .v-text-field {
+   margin-bottom: 8px;
+ }
+ 
+ /* Estilos para los checkboxes de días */
+ .custom-schedule .v-checkbox {
+   margin-right: 12px;
+ }
+ 
+   /* Responsive para horarios */
+  @media (max-width: 768px) {
+    .schedule-section {
+      padding: 16px;
+    }
+    
+    .day-config .v-row {
+      flex-direction: column;
+    }
+    
+    .day-config .v-col {
+      width: 100% !important;
+      margin-bottom: 8px;
+    }
+  }
+  
+  /* Estilos para el scroll del formulario */
+  .area-form-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+  }
+  
+  /* Scrollbar personalizado para el formulario */
+  .area-form-scroll-wrapper::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .area-form-scroll-wrapper::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.3);
+    border-radius: 4px;
+  }
+  
+  .area-form-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.6);
+    border-radius: 4px;
+    transition: background 0.3s ease;
+  }
+  
+  .area-form-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.8);
+  }
+  
+  /* Scrollbar para Firefox */
+  .area-form-scroll-wrapper {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.6) rgba(15, 23, 42, 0.3);
+  }
+  
+  /* Ajustes para el modal del formulario */
+  .area-dialog .v-card-text {
+    padding: 0 !important;
+  }
+  
+  /* Contenedor del formulario con scroll */
+  .area-form-scroll-wrapper {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  /* Responsive para el scroll */
+  @media (max-width: 768px) {
+    .area-form-scroll-wrapper {
+      max-height: 60vh;
+      padding: 16px;
+    }
+  }
+  
+  @media (max-height: 800px) {
+    .area-form-scroll-wrapper {
+      max-height: 65vh;
+    }
+  }
+  
+  /* Mejoras adicionales para el scroll */
+  .area-form-scroll-wrapper {
+    /* Suavizar el scroll */
+    scroll-behavior: smooth;
+    
+    /* Ocultar scrollbar en dispositivos móviles */
+    -ms-overflow-style: none;  /* IE and Edge */
+  }
+  
+  /* Ocultar scrollbar en dispositivos móviles */
+  @media (max-width: 768px) {
+    .area-form-scroll-wrapper::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .area-form-scroll-wrapper {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  }
+  
+  /* Indicador visual de scroll */
+  .area-form-scroll-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 8px;
+    height: 30px;
+    background: linear-gradient(transparent, rgba(59, 130, 246, 0.3));
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+     .area-form-scroll-wrapper:hover::after {
+     opacity: 1;
+   }
+   
+
+
+
+   
+
+   
+
 </style>

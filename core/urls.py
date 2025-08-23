@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AuthViewSet, DashboardViewSet, EmployeeViewSet, 
     AreaViewSet, AttendanceViewSet, ChangePasswordView, PasswordResetViewSet,
-    EmployeePasswordResetViewSet
+    EmployeePasswordResetViewSet, AreaScheduleViewSet
 )
 
 router = DefaultRouter()
@@ -11,6 +11,7 @@ router.register(r'auth', AuthViewSet, basename='auth')
 router.register(r'dashboard', DashboardViewSet, basename='dashboard')
 router.register(r'employees', EmployeeViewSet, basename='employee')
 router.register(r'areas', AreaViewSet, basename='area')
+router.register(r'area-schedules', AreaScheduleViewSet, basename='area-schedule')
 router.register(r'attendance', AttendanceViewSet, basename='attendance')
 router.register(r'password-reset', PasswordResetViewSet, basename='password-reset')
 router.register(r'employee-password-reset', EmployeePasswordResetViewSet, basename='employee-password-reset')

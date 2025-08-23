@@ -147,7 +147,19 @@ class Area(models.Model):
 
 class AreaSchedule(models.Model):
     """Horario de trabajo para un área específica"""
+    SCHEDULE_TYPE_CHOICES = [
+        ('default', 'Horario por Defecto'),
+        ('custom', 'Horario Personalizado'),
+        ('none', 'Sin Horario'),
+    ]
+    
     area = models.OneToOneField(Area, on_delete=models.CASCADE, related_name='schedule')
+    schedule_type = models.CharField(
+        max_length=10,
+        choices=SCHEDULE_TYPE_CHOICES,
+        default='default',
+        verbose_name='Tipo de Horario'
+    )
     
     # Horarios de lunes a viernes
     monday_start = models.TimeField(verbose_name='Lunes - Hora de Entrada')
@@ -195,27 +207,6 @@ class AreaSchedule(models.Model):
     
     def __str__(self):
         return f"Horario - {self.area.name}"
-    
-    def get_expected_times(self, date):
-        """Obtiene las horas esperadas de entrada y salida para una fecha específica"""
-        weekday = date.weekday()  # 0=Lunes, 6=Domingo
-        
-        if weekday == 0 and self.monday_active:
-            return self.monday_start, self.monday_end
-        elif weekday == 1 and self.tuesday_active:
-            return self.tuesday_start, self.tuesday_end
-        elif weekday == 2 and self.wednesday_active:
-            return self.wednesday_start, self.wednesday_end
-        elif weekday == 3 and self.thursday_active:
-            return self.thursday_start, self.thursday_end
-        elif weekday == 4 and self.friday_active:
-            return self.friday_start, self.friday_end
-        elif weekday == 5 and self.saturday_active:
-            return self.saturday_start, self.saturday_end
-        elif weekday == 6 and self.sunday_active:
-            return self.sunday_start, self.sunday_end
-        
-        return None, None
 
 class Employee(models.Model):
     """Empleado del sistema"""
@@ -435,10 +426,7 @@ class Attendance(models.Model):
         """Verifica si llegó tarde según el horario del área"""
         if self.check_in and self.expected_check_in:
             from datetime import datetime, time
-            # Obtener tolerancia del área si existe horario configurado
-            grace_period = 15  # Tolerancia por defecto
-            if hasattr(self.area, 'schedule'):
-                grace_period = self.area.schedule.grace_period_minutes
+            grace_period = self.area.schedule.grace_period_minutes if hasattr(self.area, 'schedule') else 15
             
             # Calcular hora límite con tolerancia
             limit_time = datetime.combine(self.date, self.expected_check_in)
@@ -447,6 +435,28 @@ class Attendance(models.Model):
             check_in_datetime = datetime.combine(self.date, self.check_in)
             return check_in_datetime > limit_time
         return False
+    
+    def update_status_based_on_schedule(self):
+        """Actualiza el status basado en el horario del área y la hora de entrada"""
+        if not self.check_in or not self.expected_check_in:
+            return
+        
+        # Verificar si es un día laboral
+        from core.services.schedule_service import ScheduleService
+        if not ScheduleService.is_work_day(self.area, self.date):
+            self.status = 'absent'
+        elif self.is_late:
+            self.status = 'late'
+        else:
+            self.status = 'present'
+    
+    def save(self, *args, **kwargs):
+        """Guardar y actualizar status automáticamente"""
+        # Actualizar status antes de guardar
+        if self.check_in and not self.check_out:
+            self.update_status_based_on_schedule()
+        
+        super().save(*args, **kwargs)
 
 class PasswordResetToken(models.Model):
     """Token para recuperación de contraseña del administrador"""

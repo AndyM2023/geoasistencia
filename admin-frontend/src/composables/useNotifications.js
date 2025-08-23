@@ -234,9 +234,11 @@ export function useNotifications() {
    * @param {string} status - Estado de la ubicación
    */
   const showLocationStatus = (status) => {
-    // Limpiar notificaciones de ubicación anteriores
-    const { clearByType } = useNotifications()
-    clearByType('info')
+    // Solo limpiar notificaciones de ubicación anteriores si es un nuevo estado de "getting"
+    if (status === 'getting') {
+      const { clearByType } = useNotifications()
+      clearByType('info')
+    }
     
     switch (status) {
       case 'getting':
@@ -245,13 +247,13 @@ export function useNotifications() {
           icon: 'mdi-map-marker',
           autoHide: false,
           closable: false,
-          duration: 20000 // 20 segundos máximo
+          duration: 30000 // 30 segundos máximo para dar tiempo a que aparezca el punto
         })
       case 'success':
         return showInfo('📍 Ubicación obtenida correctamente', {
           title: 'Ubicación',
           icon: 'mdi-map-marker',
-          duration: 4000
+          duration: 6000 // 6 segundos para que se vea bien
         })
       case 'error':
         return showError('❌ Error obteniendo ubicación', {
