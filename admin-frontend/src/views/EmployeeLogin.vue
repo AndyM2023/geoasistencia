@@ -279,6 +279,16 @@ export default {
   overflow: hidden;
 }
 
+/* Mejorar el centrado vertical del formulario */
+.v-container {
+  padding-top: 2rem !important;
+  min-height: calc(100vh - 70px) !important;
+}
+
+.v-row {
+  min-height: calc(100vh - 70px) !important;
+}
+
 .login-card {
   background: rgba(30, 41, 59, 0.8) !important;
   backdrop-filter: blur(10px);

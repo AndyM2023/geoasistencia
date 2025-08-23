@@ -69,7 +69,7 @@
             <v-card-text>
               <v-icon size="48" color="warning" class="mb-2">mdi-clock-alert</v-icon>
               <div class="text-h5 text-white">{{ stats.lateDays }}</div>
-              <div class="text-grey-400">Llegadas Tarde</div>
+              <div class="text-grey-400">Atrasos</div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -92,14 +92,14 @@
            <v-spacer></v-spacer>
            
                        <!-- Filtro de Fechas -->
-            <div class="d-flex align-center gap-2">
+            <div class="d-flex align-center date-filter-container">
               <v-text-field
                 v-model="dateFrom"
                 label="Fecha Desde"
                 type="date"
                 density="compact"
                 variant="outlined"
-                class="max-width-150"
+                class="date-filter-field"
                 color="primary"
                 hide-details
                 :max="today"
@@ -113,7 +113,7 @@
                 type="date"
                 density="compact"
                 variant="outlined"
-                class="max-width-150"
+                class="date-filter-field"
                 color="primary"
                 hide-details
                 :max="today"
@@ -127,6 +127,7 @@
                 color="grey"
                 size="small"
                 prepend-icon="mdi-close"
+                class="clear-filter-btn"
               >
                 Limpiar
               </v-btn>
@@ -165,8 +166,8 @@
               </v-chip>
             </template>
             
-            <template v-slot:item.area="{ item }">
-              <span class="text-grey-300">{{ item.area || 'Sin área' }}</span>
+            <template v-slot:item.hours_worked="{ item }">
+              <span class="text-grey-300">{{ calculateHoursWorked(item) }}</span>
             </template>
           </v-data-table>
         </v-card-text>
@@ -231,7 +232,7 @@ export default {
        { title: 'Entrada', key: 'check_in', sortable: true },
        { title: 'Salida', key: 'check_out', sortable: true },
        { title: 'Estado', key: 'status', sortable: true },
-       { title: 'Área', key: 'area', sortable: true }
+       { title: 'Horas Trabajadas', key: 'hours_worked', sortable: true }
      ]
     
          const filteredAttendances = computed(() => {
@@ -395,6 +396,37 @@ export default {
       }
     }
     
+    // Función para calcular horas trabajadas
+    const calculateHoursWorked = (attendance) => {
+      if (!attendance.check_in || !attendance.check_out) {
+        return 'No calculable'
+      }
+      
+      try {
+        // Crear fechas con la hora de entrada y salida
+        const today = new Date()
+        const [checkInHours, checkInMinutes, checkInSeconds] = attendance.check_in.split(':')
+        const [checkOutHours, checkOutMinutes, checkOutSeconds] = attendance.check_out.split(':')
+        
+        const checkInTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                                   parseInt(checkInHours), parseInt(checkInMinutes), parseInt(checkInSeconds))
+        const checkOutTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                                    parseInt(checkOutHours), parseInt(checkOutMinutes), parseInt(checkOutSeconds))
+        
+        // Calcular diferencia en milisegundos
+        const timeDiff = checkOutTime.getTime() - checkInTime.getTime()
+        
+        // Convertir a horas
+        const hours = timeDiff / (1000 * 60 * 60)
+        
+        // Formatear horas con 2 decimales
+        return `${hours.toFixed(2)}h`
+      } catch (error) {
+        console.error('❌ Error calculando horas trabajadas:', error)
+        return 'Error'
+      }
+    }
+    
          // Función para validar y filtrar por rango de fechas
      const validateAndFilterDate = () => {
        // Validar que fecha desde no sea mayor que fecha hasta
@@ -452,6 +484,7 @@ export default {
        formatTime,
        getStatusColor,
        getStatusText,
+       calculateHoursWorked,
        validateAndFilterDate,
        clearDateFilter
      }
@@ -475,6 +508,21 @@ export default {
  
  .date-field-error :deep(.v-field__outline) {
    border-color: #f44336 !important;
+ }
+ 
+ /* Estilos mejorados para el filtro de fechas */
+ .date-filter-container {
+   gap: 16px !important;
+   flex-wrap: wrap;
+ }
+ 
+ .date-filter-field {
+   min-width: 180px;
+   max-width: 200px;
+ }
+ 
+ .clear-filter-btn {
+   margin-left: 8px;
  }
 
 .v-data-table {

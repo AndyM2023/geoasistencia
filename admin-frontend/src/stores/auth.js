@@ -123,9 +123,65 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (error) {
       console.error('💥 Auth Store - Error en login:', error)
+      
+      // Manejar errores específicos del backend
+      if (error.response?.data) {
+        const backendError = error.response.data
+        
+        // Si hay errores de validación específicos del serializer
+        if (backendError.non_field_errors && Array.isArray(backendError.non_field_errors)) {
+          return { 
+            success: false, 
+            error: backendError.non_field_errors[0] 
+          }
+        }
+        
+        // Si hay error específico del campo username
+        if (backendError.username && Array.isArray(backendError.username)) {
+          return { 
+            success: false, 
+            error: backendError.username[0] 
+          }
+        }
+        
+        // Si hay error específico del campo password
+        if (backendError.password && Array.isArray(backendError.password)) {
+          return { 
+            success: false, 
+            error: backendError.password[0] 
+          }
+        }
+        
+        // Si hay un mensaje de error general
+        if (backendError.detail) {
+          return { 
+            success: false, 
+            error: backendError.detail 
+          }
+        }
+        
+        // Si hay un mensaje de error en el primer campo disponible
+        const firstError = Object.values(backendError)[0]
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          return { 
+            success: false, 
+            error: firstError[0] 
+          }
+        }
+      }
+      
+      // Fallback para errores de red o desconocidos
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        return { 
+          success: false, 
+          error: 'Error de conexión. Verifica tu conexión a internet e intenta de nuevo.' 
+        }
+      }
+      
+      // Error genérico como fallback
       return { 
         success: false, 
-        error: error.response?.data?.detail || 'Error de conexión' 
+        error: 'Error inesperado. Por favor intenta de nuevo.' 
       }
     }
   }
@@ -156,7 +212,8 @@ export const useAuthStore = defineStore('auth', () => {
     // Limpiar la marca de logout después de un delay
     setTimeout(() => {
       localStorage.removeItem('isLoggingOut')
-    }, 1000)
+      console.log('🧹 Auth Store - Marca de logout limpiada')
+    }, 1500) // Aumentado a 1.5 segundos para asegurar que se complete
     
     console.log('✅ Auth Store - Logout completado, estado limpiado')
   }

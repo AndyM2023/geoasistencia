@@ -16,18 +16,7 @@
             <h2 class="text-h6 text-h5-md font-weight-bold text-white mb-1 text-center">Reconocimiento Facial</h2>
             
             <!-- Botón para ver reportes del empleado -->
-            <div class="text-center mb-4">
-              <v-btn
-                @click="goToEmployeeReports"
-                color="info"
-                variant="tonal"
-                size="large"
-                class="employee-reports-btn"
-                prepend-icon="mdi-chart-line"
-              >
-                Acceder a Mis Reportes
-              </v-btn>
-            </div>
+
             
             <v-row>
               <!-- Columna izquierda: Cámara -->
@@ -73,19 +62,7 @@
                        Activar Cámara
                     </v-btn>
                     
-                    <!-- Botón de reinicio si hay error -->
-                    <v-btn
-                      v-if="error"
-                      @click="resetCamera"
-                      color="secondary"
-                      size="small"
-                      variant="outlined"
-                      class="mt-2"
-                      :loading="loading"
-                    >
-                      <v-icon left size="16" class="mr-1">mdi-refresh</v-icon>
-                      Reintentar
-                    </v-btn>
+
                   </div>
                   
                   <!-- Estado activo: Overlay de la cámara -->
@@ -102,16 +79,7 @@
                         <v-icon>mdi-close</v-icon>
                       </v-btn>
                       
-                      <v-btn
-                        icon
-                        color="blue"
-                        size="small"
-                        class="reset-camera-btn"
-                        @click.stop="resetCamera"
-                        title="Reiniciar cámara"
-                      >
-                        <v-icon>mdi-refresh</v-icon>
-                      </v-btn>
+
                     </div>
                   </div>
                 </div>
@@ -189,22 +157,34 @@
                     </v-btn>
                   </div>
 
-                  <v-btn
-                    type="submit"
-                    color="primary"
-                    size="large"
-                    block
-                    :loading="loading"
-                    :disabled="loading || !isCameraActive"
-                    class="mb-6 recognition-btn"
-                    elevation="2"
-                  >
-                    <v-icon left class="mr-2">mdi-face-recognition</v-icon>
-                    <span v-if="loading">Reconociendo...</span>
-                    <span v-else>RECONOCER ASISTENCIA</span>
-                  </v-btn>
+                  <!-- Botones juntos de izquierda a derecha -->
+                  <div class="d-flex gap-3 mb-6">
+                    <v-btn
+                      type="submit"
+                      color="primary"
+                      size="large"
+                      :loading="loading"
+                      :disabled="loading || !isCameraActive"
+                      class="flex-1 recognition-btn"
+                      elevation="2"
+                    >
+                      <v-icon left class="mr-2">mdi-face-recognition</v-icon>
+                      <span v-if="loading">Reconociendo...</span>
+                      <span v-else>ASISTENCIA</span>
+                    </v-btn>
+                    
+                    <v-btn
+                      @click="goToEmployeeReports"
+                      color="info"
+                      variant="tonal"
+                      size="large"
+                      class="flex-1 employee-reports-btn"
+                      prepend-icon="mdi-chart-line"
+                    >
+                      REPORTES
+                    </v-btn>
+                  </div>
                 </v-form>
-
                 <!-- Los mensajes ahora se muestran como overlays flotantes -->
 
                 <!-- Instrucciones -->
@@ -1136,15 +1116,7 @@ export default {
   pointer-events: auto;
 }
 
-.reset-camera-btn {
-  background: rgba(0, 0, 0, 0.7) !important;
-  transition: all 0.3s ease;
-}
 
-.reset-camera-btn:hover {
-  background: rgba(0, 0, 0, 0.9) !important;
-  transform: scale(1.1);
-}
 
 .close-camera-btn:hover {
   background: rgba(0, 0, 0, 0.9) !important;
@@ -1480,5 +1452,32 @@ export default {
 /* Transición suave para el cambio de color */
 .recognition-form .v-text-field .v-field__outline {
   transition: border-color 0.3s ease;
+}
+
+/* Estilos para los botones juntos */
+.recognition-btn,
+.employee-reports-btn {
+  flex: 1;
+  min-width: 0;
+  transition: all 0.3s ease;
+}
+
+.recognition-btn:hover,
+.employee-reports-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Responsive para botones juntos */
+@media (max-width: 600px) {
+  .d-flex.gap-3 {
+    flex-direction: column;
+    gap: 1rem !important;
+  }
+  
+  .recognition-btn,
+  .employee-reports-btn {
+    width: 100%;
+  }
 }
 </style>

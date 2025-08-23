@@ -5,7 +5,7 @@
       <v-card-title class="text-white d-flex align-center justify-space-between">
         <div class="d-flex align-center">
           <v-icon color="blue-400" class="mr-3">mdi-account-circle</v-icon>
-          <span class="text-h5">Perfil del Administrador</span>
+          <span class="text-h5">Perfil del Usuario</span>
         </div>
         <v-btn
           icon
@@ -71,7 +71,7 @@
               </h2>
               <div class="profile-role">
                 <v-icon color="blue-400" size="small" class="mr-2">mdi-shield-account</v-icon>
-                {{ profile.role || 'Administrador del Sistema' }}
+                {{ profile.role === 'admin' ? 'Administrador del Sistema' : (profile.role === 'employee' ? 'Empleado' : profile.role || 'Usuario del Sistema') }}
               </div>
               <div class="profile-username">
                 <v-icon color="grey-400" size="small" class="mr-2">mdi-at</v-icon>
@@ -197,7 +197,8 @@
            </div>
 
                      <!-- Recuperar Contraseña -->
-           <div class="profile-section">
+           <!-- Seguridad de la Cuenta - Solo para Administradores -->
+           <div v-if="profile.role === 'admin' || profile.role === 'administrator'" class="profile-section">
              <h3 class="section-title">
                <v-icon color="blue-400" class="mr-2">mdi-lock-reset</v-icon>
                Seguridad de la Cuenta

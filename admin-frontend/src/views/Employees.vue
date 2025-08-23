@@ -767,25 +767,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- Snackbar para mensajes -->
-    <v-snackbar
-      v-model="mensaje.show"
-      :color="mensaje.type"
-      :timeout="4000"
-      class="custom-snackbar"
-    >
-      {{ mensaje.text }}
-      
-      <template v-slot:actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="mensaje.show = false"
-        >
-          Cerrar
-        </v-btn>
-      </template>
-    </v-snackbar>
+
   </div>
 </template>
 
@@ -795,6 +777,7 @@ import { employeeService } from '../services/employeeService'
 import areaService from '../services/areaService'
 import { faceService } from '../services/faceService'
 import FaceRegistration from '../components/FaceRegistration.vue'
+import { useNotifications } from '../composables/useNotifications'
 
 export default {
   name: 'Employees',
@@ -832,12 +815,7 @@ export default {
     const employees = ref([])
     const areas = ref([])
     
-    // Estado para mensajes
-    const mensaje = ref({
-      show: false,
-      text: '',
-      type: 'success'
-    })
+
    
          // Estados para registro facial
      const faceRegistration = ref({
@@ -916,7 +894,41 @@ export default {
       )
     })
     
-             const loadEmployees = async () => {
+    // Inicializar notificaciones antes de las funciones que las usan
+    const { showSuccess, showError, showInfo, showWarning } = useNotifications()
+    
+    const showMessage = (text, type = 'success') => {
+      switch (type) {
+        case 'success':
+          showSuccess(text, {
+            title: 'Éxito',
+            icon: 'mdi-check-circle'
+          })
+          break
+        case 'error':
+          showError(text, {
+            title: 'Error',
+            icon: 'mdi-alert-circle'
+          })
+          break
+        case 'warning':
+          showWarning(text, {
+            title: 'Advertencia',
+            icon: 'mdi-alert'
+          })
+          break
+        case 'info':
+          showInfo(text, {
+            title: 'Información',
+            icon: 'mdi-information'
+          })
+          break
+        default:
+          showSuccess(text)
+      }
+    }
+    
+    const loadEmployees = async () => {
       // El router ya maneja la autenticación, cargar directamente
       console.log('📡 Cargando empleados...')
       
@@ -927,7 +939,7 @@ export default {
         console.log(`✅ Empleados cargados: ${employees.value.length} encontrados`)
       } catch (error) {
         console.error('❌ Error cargando empleados:', error)
-        showMessage(`Error cargando empleados: ${error.message}`, 'error')
+        showMessage(`❌ Error cargando empleados: ${error.message}`, 'error')
         employees.value = []
       } finally {
         loading.value = false
@@ -941,17 +953,9 @@ export default {
         console.log(`✅ Áreas cargadas: ${areas.value.length} encontradas`)
       } catch (error) {
         console.error('❌ Error cargando áreas:', error)
-        showMessage('Error cargando áreas', 'error')
+        showMessage('❌ Error cargando áreas', 'error')
       }
     }
-    
-         const showMessage = (text, type = 'success') => {
-       mensaje.value = {
-         show: true,
-         text,
-         type
-       }
-     }
      
      const openNewEmployeeDialog = () => {
        // Limpiar estado de edición
@@ -1045,13 +1049,13 @@ export default {
       deleting.value = true
       try {
         await employeeService.delete(employeeToDelete.value.id)
-        showMessage('Empleado desactivado correctamente')
+                 showMessage('✅ Empleado desactivado correctamente')
         await loadEmployees()
         showDeleteDialog.value = false
         employeeToDelete.value = null
       } catch (error) {
         console.error('Error desactivando empleado:', error)
-        showMessage('Error desactivando empleado', 'error')
+                 showMessage('❌ Error desactivando empleado', 'error')
       } finally {
         deleting.value = false
       }
@@ -1060,11 +1064,11 @@ export default {
     const activateEmployee = async (employee) => {
       try {
         await employeeService.activate(employee.id)
-        showMessage('Empleado reactivado correctamente')
+                 showMessage('✅ Empleado reactivado correctamente')
         await loadEmployees()
       } catch (error) {
         console.error('Error reactivando empleado:', error)
-        showMessage('Error reactivando empleado', 'error')
+                 showMessage('❌ Error reactivando empleado', 'error')
       }
     }
     
@@ -1102,7 +1106,7 @@ export default {
            
            if (!validPositions.includes(employeeForm.value.position)) {
              console.error(`❌ Position inválido en el formulario: "${employeeForm.value.position}"`)
-             showMessage(`Cargo inválido: "${employeeForm.value.position}". Debe seleccionar una opción válida.`, 'error')
+             showMessage(`❌ Cargo inválido: "${employeeForm.value.position}". Debe seleccionar una opción válida.`, 'error')
              return
            }
          }
@@ -1118,9 +1122,9 @@ export default {
            savedEmployee = await employeeService.update(editingEmployee.value.id, employeeForm.value)
            
            if (isDeletingPhoto) {
-             showMessage('Empleado actualizado correctamente. Foto eliminada.', 'success')
+             showMessage('✅ Empleado actualizado correctamente. Foto eliminada.', 'success')
            } else {
-             showMessage('Empleado actualizado correctamente', 'success')
+             showMessage('✅ Empleado actualizado correctamente', 'success')
            }
          } else {
            // Crear nuevo empleado
@@ -1128,7 +1132,7 @@ export default {
            console.log('📋 Datos de creación:', employeeForm.value)
            
            savedEmployee = await employeeService.create(employeeForm.value)
-           showMessage('Empleado creado correctamente')
+           showMessage('✅ Empleado creado correctamente')
            
            // Si se creó exitosamente, mostrar registro facial
            if (savedEmployee && savedEmployee.id) {
@@ -1180,7 +1184,7 @@ export default {
          resetFaceRegistration() // Resetear estado facial
       } catch (error) {
         console.error('Error guardando empleado:', error)
-        showMessage('Error guardando empleado', 'error')
+                 showMessage('❌ Error guardando empleado', 'error')
       } finally {
         saving.value = false
       }
@@ -1221,7 +1225,7 @@ export default {
       }
       
       // Mostrar mensaje de éxito
-      showMessage('Registro facial completado exitosamente')
+               showMessage('✅ Registro facial completado exitosamente')
       
       // ✅ NO cerrar automáticamente el diálogo principal
       // Solo cerrar el registro facial, mantener el diálogo de empleado abierto
@@ -1236,18 +1240,18 @@ export default {
       showFaceRegistration.value = false
       
       // Mostrar mensaje de error
-      showMessage('Error en registro facial: ' + error.message, 'error')
+               showMessage('❌ Error en registro facial: ' + error.message, 'error')
     }
     
     const trainFaceModel = async () => {
       if (!faceRegistration.value.capturedPhotos || faceRegistration.value.capturedPhotos.length === 0) {
-        alert('Primero debes capturar fotos')
+        showMessage('⚠️ Primero debes capturar fotos', 'warning')
         return
       }
       
       // Verificar que el empleado esté guardado
       if (!editingEmployee.value || !editingEmployee.value.id) {
-        alert('Primero debes guardar el empleado antes de procesar el rostro facial')
+        showMessage('⚠️ Primero debes guardar el empleado antes de procesar el rostro facial', 'warning')
         return
       }
       
@@ -1552,13 +1556,13 @@ export default {
       if (file) {
         // Validar tipo de archivo
         if (!file.type.startsWith('image/')) {
-          showMessage('Solo se permiten archivos de imagen', 'error')
+          showMessage('❌ Solo se permiten archivos de imagen', 'error')
           return
         }
         
         // Validar tamaño (5MB)
         if (file.size > 5 * 1024 * 1024) {
-          showMessage('El archivo es demasiado grande. Máximo 5MB', 'error')
+          showMessage('❌ El archivo es demasiado grande. Máximo 5MB', 'error')
           return
         }
         
@@ -1581,23 +1585,23 @@ export default {
           // Restaurar la foto original del empleado
           employeeForm.value.photo = null // Volver al estado inicial
           console.log('🔄 Eliminación de foto deshecha')
-          showMessage('Eliminación de foto cancelada', 'info')
+          showMessage('ℹ️ Eliminación de foto cancelada', 'info')
         } else {
           // Limpiar la foto
           employeeForm.value.photo = null
           console.log('🔄 Eliminación de foto deshecha')
-          showMessage('Eliminación de foto cancelada', 'info')
+          showMessage('ℹ️ Eliminación de foto cancelada', 'info')
         }
       } else if (editingEmployee.value && editingEmployee.value.photo) {
         // Marcar que se debe eliminar la foto existente
         employeeForm.value.photo = 'DELETE_PHOTO'
         console.log('🗑️ Foto existente marcada para eliminación')
-        showMessage('Foto marcada para eliminar. Haz clic en "Guardar" para confirmar.', 'warning')
+        showMessage('⚠️ Foto marcada para eliminar. Haz clic en "Guardar" para confirmar.', 'warning')
       } else {
         // Si es una foto nueva, simplemente limpiar
         employeeForm.value.photo = null
         console.log('🗑️ Foto nueva eliminada')
-        showMessage('Foto eliminada del formulario', 'info')
+        showMessage('ℹ️ Foto eliminada del formulario', 'info')
       }
       
       console.log('🔍 removePhoto - Estado después de la acción:')
@@ -1687,11 +1691,7 @@ export default {
         }
       } catch (error) {
         console.error('❌ Error al iniciar cámara:', error)
-        mensaje.value = {
-          show: true,
-          text: 'Error al acceder a la cámara. Verifica los permisos.',
-          type: 'error'
-        }
+        showMessage('Error al acceder a la cámara. Verifica los permisos.', 'error')
       } finally {
         cameraLoading.value = false
       }
@@ -1840,7 +1840,6 @@ export default {
        positions,
        existingCedulas,
       headers,
-      mensaje,
       viewMode,
       filteredEmployees,
              loadEmployees,

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!authStore.isInitialized" class="auth-initializer">
+  <div v-if="!authStore.isInitialized && !isLoggingOut" class="auth-initializer">
     <div class="initialization-overlay">
       <v-card class="initialization-card" elevation="24">
         <v-card-text class="text-center pa-8">
@@ -94,6 +94,7 @@ export default {
     const authStore = useAuthStore()
     const currentStep = ref(0)
     const error = ref(null)
+    const isLoggingOut = ref(false)
     
     const initializeAuth = async () => {
       try {
@@ -105,6 +106,7 @@ export default {
         // Verificar si ya estamos en proceso de logout
         if (localStorage.getItem('isLoggingOut')) {
           console.log('🔄 AuthInitializer - Logout en progreso, esperando...')
+          isLoggingOut.value = true
           await new Promise(resolve => setTimeout(resolve, 1000))
         }
         
@@ -151,7 +153,14 @@ export default {
     // Inicializar al montar el componente
     onMounted(() => {
       console.log('🚀 AuthInitializer - Componente montado')
-      initializeAuth()
+      
+      // No inicializar si estamos en proceso de logout
+      if (!localStorage.getItem('isLoggingOut')) {
+        initializeAuth()
+      } else {
+        console.log('🔄 AuthInitializer - Logout en progreso, saltando inicialización')
+        isLoggingOut.value = true
+      }
     })
     
     // Watch para cambios en el estado de inicialización
@@ -159,10 +168,22 @@ export default {
       console.log(`🔄 AuthInitializer - Estado de inicialización cambió: ${newVal}`)
     })
     
+    // Watch para detectar cuando se inicia el logout
+    watch(() => localStorage.getItem('isLoggingOut'), (newVal) => {
+      isLoggingOut.value = !!newVal
+      console.log(`🔄 AuthInitializer - Estado de logout cambió: ${isLoggingOut.value}`)
+    })
+    
+    // Verificar estado inicial de logout
+    onMounted(() => {
+      isLoggingOut.value = !!localStorage.getItem('isLoggingOut')
+    })
+    
     return {
       authStore,
       currentStep,
       error,
+      isLoggingOut,
       retryInitialization
     }
   }
