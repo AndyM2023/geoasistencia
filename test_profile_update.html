@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Actualización de Perfil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Prueba de Actualización de Perfil</h1>
+        
+        <div class="info">
+            <h3>📋 Instrucciones:</h3>
+            <ol>
+                <li>Primero haz login para obtener un token</li>
+                <li>Luego usa ese token para actualizar el perfil</li>
+                <li>Verifica que los cambios se guarden correctamente</li>
+            </ol>
+        </div>
+
+        <h2>🔑 Paso 1: Login</h2>
+        <div class="form-group">
+            <label for="username">Usuario:</label>
+            <input type="text" id="username" placeholder="Ingresa tu usuario">
+        </div>
+        <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input type="text" id="password" type="password" placeholder="Ingresa tu contraseña">
+        </div>
+        <button onclick="login()">Iniciar Sesión</button>
+
+        <div id="loginResult"></div>
+
+        <hr>
+
+        <h2>✏️ Paso 2: Actualizar Perfil</h2>
+        <div class="form-group">
+            <label for="firstName">Nombre:</label>
+            <input type="text" id="firstName" placeholder="Nuevo nombre">
+        </div>
+        <div class="form-group">
+            <label for="lastName">Apellido:</label>
+            <input type="text" id="lastName" placeholder="Nuevo apellido">
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Nuevo email">
+        </div>
+        <div class="form-group">
+            <label for="newUsername">Nuevo Usuario:</label>
+            <input type="text" id="newUsername" placeholder="Nuevo nombre de usuario">
+        </div>
+        <button onclick="updateProfile()">Actualizar Perfil</button>
+
+        <div id="updateResult"></div>
+
+        <hr>
+
+        <h2>👤 Paso 3: Ver Perfil Actual</h2>
+        <button onclick="getProfile()">Obtener Perfil Actual</button>
+        <div id="profileResult"></div>
+    </div>
+
+    <script>
+        let currentToken = null;
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showResult('loginResult', 'Por favor completa todos los campos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/core/auth/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario: username,
+                        contraseña: password
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentToken = data.token;
+                    showResult('loginResult', `✅ Login exitoso! Token: ${currentToken.substring(0, 20)}...`, 'success');
+                    
+                    // Pre-llenar el formulario con datos del usuario
+                    if (data.user) {
+                        document.getElementById('firstName').value = data.user.first_name || '';
+                        document.getElementById('lastName').value = data.user.last_name || '';
+                        document.getElementById('email').value = data.user.email || '';
+                        document.getElementById('newUsername').value = data.user.username || '';
+                    }
+                } else {
+                    showResult('loginResult', `❌ Error en login: ${data.error || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                showResult('loginResult', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateProfile() {
+            if (!currentToken) {
+                showResult('updateResult', '❌ Primero debes hacer login', 'error');
+                return;
+            }
+
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value;
+            const newUsername = document.getElementById('newUsername').value;
+            
+            if (!firstName || !lastName || !email || !newUsername) {
+                showResult('updateResult', 'Por favor completa todos los campos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/core/auth/update_profile/', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        username: newUsername
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('updateResult', `✅ Perfil actualizado exitosamente!`, 'success');
+                    console.log('Respuesta completa:', data);
+                } else {
+                    showResult('updateResult', `❌ Error actualizando perfil: ${data.error || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                showResult('updateResult', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        async function getProfile() {
+            if (!currentToken) {
+                showResult('profileResult', '❌ Primero debes hacer login', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/core/auth/me/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const profileInfo = `
+                        <h4>📋 Perfil Actual:</h4>
+                        <p><strong>Nombre:</strong> ${data.first_name} ${data.last_name}</p>
+                        <p><strong>Email:</strong> ${data.email}</p>
+                        <p><strong>Usuario:</strong> ${data.username}</p>
+                        <p><strong>Rol:</strong> ${data.role}</p>
+                        <p><strong>Creado:</strong> ${data.created_at}</p>
+                        <p><strong>Actualizado:</strong> ${data.updated_at}</p>
+                    `;
+                    showResult('profileResult', profileInfo, 'success');
+                } else {
+                    showResult('profileResult', `❌ Error obteniendo perfil: ${data.error || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                showResult('profileResult', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `result ${type}`;
+        }
+    </script>
+</body>
+</html>

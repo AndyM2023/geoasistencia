@@ -294,5 +294,92 @@ export const authService = {
        
        return { success: false, error: errorMessage }
      }
+   },
+
+   // ✅ MÉTODO PARA ACTUALIZAR PERFIL DEL USUARIO
+   async updateUserProfile(userData) {
+     try {
+       console.log('📝 Auth Service - Iniciando actualización de perfil:', userData)
+       
+       const token = localStorage.getItem('token')
+       if (!token) {
+         throw new Error('No hay token disponible')
+       }
+       
+       // Validar que los datos requeridos estén presentes
+       if (!userData.first_name || !userData.last_name || !userData.email || !userData.username) {
+         throw new Error('Todos los campos son requeridos')
+       }
+       
+       // Validar formato de email
+       if (!/.+@.+\..+/.test(userData.email)) {
+         throw new Error('Formato de email inválido')
+       }
+       
+       // Validar longitud del username
+       if (userData.username.length < 3) {
+         throw new Error('El nombre de usuario debe tener al menos 3 caracteres')
+       }
+       
+       console.log('📤 Enviando petición de actualización al backend...')
+       const response = await api.put('/auth/update_profile/', userData, {
+         headers: { Authorization: `Bearer ${token}` }
+       })
+       
+       console.log('✅ Auth Service - Perfil actualizado exitosamente:', response.data)
+       
+       // Actualizar datos en localStorage si la respuesta incluye información del usuario
+       if (response.data.user) {
+         localStorage.setItem('user_data', JSON.stringify(response.data.user))
+       }
+       
+       return { success: true, user: response.data.user || response.data }
+     } catch (error) {
+       console.error('❌ Auth Service - Error actualizando perfil:', error)
+       console.error('🔍 Detalles del error:', {
+         status: error.response?.status,
+         statusText: error.response?.statusText,
+         data: error.response?.data,
+         message: error.message
+       })
+       
+       let errorMessage = 'Error al actualizar el perfil'
+       
+       if (error.response?.data) {
+         const { data } = error.response
+         if (typeof data === 'string') {
+           errorMessage = data
+         } else if (data.detail) {
+           errorMessage = data.detail
+         } else if (data.error) {
+           errorMessage = data.error
+         } else if (data.non_field_errors) {
+           errorMessage = data.non_field_errors.join(', ')
+         } else {
+           // Manejar errores de validación por campo
+           const fieldErrors = []
+           Object.keys(data).forEach(field => {
+             if (Array.isArray(data[field])) {
+               fieldErrors.push(`${field}: ${data[field].join(', ')}`)
+             }
+           })
+           if (fieldErrors.length > 0) {
+             errorMessage = fieldErrors.join('\n')
+           }
+         }
+       } else if (error.code === 'ERR_NETWORK') {
+         errorMessage = 'Error de conexión. Verifica que el backend esté funcionando'
+       } else if (error.response?.status === 404) {
+         errorMessage = 'Endpoint no encontrado. Verifica que el backend tenga implementado /auth/update_profile/'
+       } else if (error.response?.status === 500) {
+         errorMessage = 'Error interno del servidor'
+       } else if (error.response?.status === 401) {
+         errorMessage = 'No autorizado. Verifica que tu sesión sea válida'
+       } else if (error.response?.status === 403) {
+         errorMessage = 'Acceso denegado. No tienes permisos para actualizar el perfil'
+       }
+       
+       return { success: false, error: errorMessage }
+     }
    }
 }

@@ -85,10 +85,46 @@
 
           <!-- Información de contacto -->
           <div class="profile-section">
-            <h3 class="section-title">
-              <v-icon color="blue-400" class="mr-2">mdi-contact-mail</v-icon>
-              Información de Contacto
-            </h3>
+            <div class="section-header">
+              <h3 class="section-title">
+                <v-icon color="blue-400" class="mr-2">mdi-contact-mail</v-icon>
+                Información de Contacto
+              </h3>
+              <v-btn
+                v-if="!isEditing"
+                color="blue-400"
+                variant="tonal"
+                size="small"
+                @click="startEditing"
+                class="edit-btn"
+              >
+                <v-icon left size="small">mdi-pencil</v-icon>
+                Editar
+              </v-btn>
+              <div v-else class="edit-actions">
+                <v-btn
+                  color="green-400"
+                  variant="tonal"
+                  size="small"
+                  @click="saveChanges"
+                  :loading="saving"
+                  class="save-btn"
+                >
+                  <v-icon left size="small">mdi-check</v-icon>
+                  Guardar
+                </v-btn>
+                <v-btn
+                  color="grey-400"
+                  variant="text"
+                  size="small"
+                  @click="cancelEditing"
+                  class="cancel-btn"
+                >
+                  <v-icon left size="small">mdi-close</v-icon>
+                  Cancelar
+                </v-btn>
+              </div>
+            </div>
             <v-row>
               <v-col cols="12" sm="6">
                 <div class="info-card">
@@ -97,7 +133,17 @@
                   </div>
                   <div class="info-content">
                     <div class="info-label">Correo Electrónico</div>
-                    <div class="info-value">{{ profile.email || 'No especificado' }}</div>
+                    <div v-if="!isEditing" class="info-value">{{ profile.email || 'No especificado' }}</div>
+                    <v-text-field
+                      v-else
+                      v-model="editForm.email"
+                      label="Correo Electrónico"
+                      variant="outlined"
+                      color="blue-400"
+                      :rules="[v => !!v || 'El correo es requerido', v => /.+@.+\..+/.test(v) || 'Formato de correo inválido']"
+                      density="compact"
+                      class="edit-field"
+                    ></v-text-field>
                   </div>
                 </div>
               </v-col>
@@ -109,7 +155,17 @@
                   </div>
                   <div class="info-content">
                     <div class="info-label">Nombre de Usuario</div>
-                    <div class="info-value">{{ profile.username || 'No especificado' }}</div>
+                    <div v-if="!isEditing" class="info-value">{{ profile.username || 'No especificado' }}</div>
+                    <v-text-field
+                      v-else
+                      v-model="editForm.username"
+                      label="Nombre de Usuario"
+                      variant="outlined"
+                      color="blue-400"
+                      :rules="[v => !!v || 'El nombre de usuario es requerido', v => v.length >= 3 || 'Mínimo 3 caracteres']"
+                      density="compact"
+                      class="edit-field"
+                    ></v-text-field>
                   </div>
                 </div>
               </v-col>
@@ -118,10 +174,12 @@
 
           <!-- Información personal -->
           <div class="profile-section">
-            <h3 class="section-title">
-              <v-icon color="blue-400" class="mr-2">mdi-account-details</v-icon>
-              Información Personal
-            </h3>
+            <div class="section-header">
+              <h3 class="section-title">
+                <v-icon color="blue-400" class="mr-2">mdi-account-details</v-icon>
+                Información Personal
+              </h3>
+            </div>
             <v-row>
               <v-col cols="12" sm="6">
                 <div class="info-card">
@@ -130,7 +188,17 @@
                   </div>
                   <div class="info-content">
                     <div class="info-label">Nombre</div>
-                    <div class="info-value">{{ profile.first_name || 'No especificado' }}</div>
+                    <div v-if="!isEditing" class="info-value">{{ profile.first_name || 'No especificado' }}</div>
+                    <v-text-field
+                      v-else
+                      v-model="editForm.first_name"
+                      label="Nombre"
+                      variant="outlined"
+                      color="blue-400"
+                      :rules="[v => !!v || 'El nombre es requerido']"
+                      density="compact"
+                      class="edit-field"
+                    ></v-text-field>
                   </div>
                 </div>
               </v-col>
@@ -142,7 +210,17 @@
                   </div>
                   <div class="info-content">
                     <div class="info-label">Apellido</div>
-                    <div class="info-value">{{ profile.last_name || 'No especificado' }}</div>
+                    <div v-if="!isEditing" class="info-value">{{ profile.last_name || 'No especificado' }}</div>
+                    <v-text-field
+                      v-else
+                      v-model="editForm.last_name"
+                      label="Apellido"
+                      variant="outlined"
+                      color="blue-400"
+                      :rules="[v => !!v || 'El apellido es requerido']"
+                      density="compact"
+                      class="edit-field"
+                    ></v-text-field>
                   </div>
                 </div>
               </v-col>
@@ -638,6 +716,58 @@ export default {
        }
      }
 
+     // Variables para la edición del perfil
+     const isEditing = ref(false)
+     const editForm = ref({
+       email: '',
+       username: '',
+       first_name: '',
+       last_name: ''
+     })
+     const saving = ref(false)
+
+     const startEditing = () => {
+       isEditing.value = true
+       editForm.value = { ...profile.value }
+     }
+
+     const cancelEditing = () => {
+       isEditing.value = false
+       editForm.value = { ...profile.value }
+     }
+
+     const saveChanges = async () => {
+       if (!isEditing.value) return
+
+       saving.value = true
+       error.value = null
+
+       try {
+         console.log('�� Iniciando guardado de cambios...')
+         const result = await authService.updateUserProfile(editForm.value)
+         console.log('💾 Resultado de updateUserProfile:', result)
+
+         if (result.success) {
+           profile.value = result.user
+           console.log('✅ Perfil actualizado:', profile.value)
+           isEditing.value = false
+           // Re-cargar el perfil para actualizar la fecha de actualización
+           await loadProfile()
+           // Mostrar mensaje de éxito por 3 segundos
+           setTimeout(() => {
+             // No cerrar el modal, ya que el usuario puede seguir editando
+           }, 3000)
+         } else {
+           throw new Error(result.error || 'Error al actualizar el perfil')
+         }
+       } catch (err) {
+         console.error('❌ Error guardando cambios:', err)
+         error.value = err.message
+       } finally {
+         saving.value = false
+       }
+     }
+
      return {
        show,
        loading,
@@ -661,7 +791,14 @@ export default {
        openPasswordModal,
        closePasswordModal,
        resetPasswordForm,
-       changePassword
+       changePassword,
+       // Variables para la edición del perfil
+       isEditing,
+       editForm,
+       saving,
+       startEditing,
+       cancelEditing,
+       saveChanges
      }
   }
 }
@@ -756,15 +893,60 @@ export default {
   margin-bottom: 2.5rem;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
 .section-title {
   color: #ffffff;
   font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0; /* Remove default margin */
   display: flex;
   align-items: center;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.edit-btn {
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.save-btn {
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.cancel-btn {
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
 }
 
 /* Tarjetas de información */
@@ -819,6 +1001,14 @@ export default {
   font-weight: 600;
   line-height: 1.4;
   word-break: break-word;
+}
+
+.edit-field .v-field__outline {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.edit-field .v-field--focused .v-field__outline {
+  border-color: #60a5fa !important;
 }
 
 /* Grid de permisos */
