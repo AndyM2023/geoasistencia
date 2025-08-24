@@ -1,6 +1,10 @@
 <template>
-  <div>
-    <h1 class="text-h4 mb-6 text-white">Dashboard</h1>
+  <v-container fluid class="dashboard-container pa-2">
+    <v-row class="page-header dashboard-header">
+      <v-col>
+        <h1 class="dashboard-title">Dashboard</h1>
+      </v-col>
+    </v-row>
     
     <div v-if="loading && !isAuthenticated" class="text-center pa-8">
       <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
@@ -9,7 +13,7 @@
     
     <div v-else>
     <!-- Tarjetas de Estadísticas -->
-    <v-row class="mb-4 dashboard-stats-row">
+    <v-row class="g-0 dashboard-stats-row">
       <v-col cols="12" sm="6" md="3">
         <StatsCard
           title="Total Empleados"
@@ -56,7 +60,7 @@
     </v-row>
 
     <!-- Gráficos y Actividad Reciente -->
-    <v-row class="g-0">
+    <v-row class="g-0 dashboard-charts-row">
       <v-col cols="12" md="8" class="pr-md-2">
         <v-card class="bg-dark-surface border border-blue-500/20 h-100">
           <v-card-title class="text-white pb-2">Asistencias por Semana</v-card-title>
@@ -111,7 +115,7 @@
       </v-col>
     </v-row>
     </div>
-  </div>
+  </v-container>
 </template>
 
 <script>
@@ -129,6 +133,16 @@ export default {
     AttendanceLineChart
   },
   setup() {
+    // Agregar clase al body para estilos específicos
+    onMounted(() => {
+      document.body.classList.add('dashboard-page')
+      document.documentElement.classList.add('dashboard-page')
+    })
+    
+    onUnmounted(() => {
+      document.body.classList.remove('dashboard-page')
+      document.documentElement.classList.remove('dashboard-page')
+    })
     const router = useRouter()
     const authStore = useAuthStore()
     const loading = ref(true)
@@ -241,11 +255,53 @@ export default {
 
 <style scoped>
 .dashboard-stats-row {
-  margin-bottom: 1rem !important;
+  margin-bottom: 0 !important;
 }
 
 .dashboard-stats-row .v-col {
-  padding: 0.5rem;
+  padding: 0;
+  margin: 0;
+}
+
+/* Eliminar espacios entre tarjetas KPI */
+.dashboard-stats-row .v-col > * {
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Primera tarjeta - solo bordes redondeados en esquinas superiores */
+.dashboard-stats-row .v-col:first-child > * {
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+}
+
+/* Última tarjeta - solo bordes redondeados en esquinas inferiores */
+.dashboard-stats-row .v-col:last-child > * {
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+/* Eliminar espacios entre filas del dashboard */
+.v-row.g-0 {
+  margin: 0 !important;
+}
+
+.v-row.g-0 .v-col {
+  padding: 0;
+}
+
+/* Eliminar espacios entre tarjetas KPI y secciones del gráfico */
+.dashboard-stats-row + .v-row {
+  margin-top: 0 !important;
+}
+
+/* Asegurar que las tarjetas KPI estén pegadas entre sí */
+.dashboard-stats-row .v-col:not(:last-child) > * {
+  border-right: none !important;
+}
+
+.dashboard-stats-row .v-col:not(:first-child) > * {
+  border-left: none !important;
 }
 
 .v-card {
@@ -284,8 +340,15 @@ export default {
     padding: 0.25rem;
   }
   
+  .v-row.g-0 .v-col {
+    padding: 0;
+  }
+  
   .v-card-text {
     padding: 0.75rem;
   }
 }
+
+/* ===== ESTILOS ESPECÍFICOS DEL DASHBOARD ===== */
+/* Los estilos de scroll están en dashboard-specific.css */
 </style>

@@ -33,15 +33,24 @@ export default {
 html, body {
   margin: 0 !important;
   padding: 0 !important;
-  overflow-x: hidden;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
 }
 
 .v-application {
   margin: 0 !important;
   padding: 0 !important;
+  overflow: hidden !important;
 }
 
 .v-application__wrap {
   min-height: 100vh;
+  overflow: hidden !important;
 }
+
+/* ===== ELIMINAR SCROLL COMPLETAMENTE ===== */
+/* Los estilos específicos del dashboard están en dashboard-specific.css */
 </style>

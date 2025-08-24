@@ -2,10 +2,10 @@
   <div>
 
 
-    <v-row class="mt-2 employee-header">
+    <v-row class="page-header employee-header">
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
-          <h1 class="text-h4 text-white">Gestión de Empleados</h1>
+          <h1 class="page-title">Gestión de Empleados</h1>
           <v-btn 
             color="blue-400" 
             prepend-icon="mdi-plus" 
