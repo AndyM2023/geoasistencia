@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 import uuid
-from datetime import timedelta
+from datetime import timedelta, time
 
 class User(AbstractUser):
     """Usuario base del sistema (Admin o Empleado)"""
@@ -145,6 +145,68 @@ class Area(models.Model):
         self.clean()
         super().save(*args, **kwargs)
 
+class AreaSchedule(models.Model):
+    """Horario de trabajo para un área específica"""
+    SCHEDULE_TYPE_CHOICES = [
+        ('default', 'Horario por Defecto'),
+        ('custom', 'Horario Personalizado'),
+        ('none', 'Sin Horario'),
+    ]
+    
+    area = models.OneToOneField(Area, on_delete=models.CASCADE, related_name='schedule')
+    schedule_type = models.CharField(
+        max_length=10,
+        choices=SCHEDULE_TYPE_CHOICES,
+        default='default',
+        verbose_name='Tipo de Horario'
+    )
+    
+    # Horarios de lunes a viernes
+    monday_start = models.TimeField(verbose_name='Lunes - Hora de Entrada')
+    monday_end = models.TimeField(verbose_name='Lunes - Hora de Salida')
+    monday_active = models.BooleanField(default=True, verbose_name='Lunes Activo')
+    
+    tuesday_start = models.TimeField(verbose_name='Martes - Hora de Entrada')
+    tuesday_end = models.TimeField(verbose_name='Martes - Hora de Salida')
+    tuesday_active = models.BooleanField(default=True, verbose_name='Martes Activo')
+    
+    wednesday_start = models.TimeField(verbose_name='Miércoles - Hora de Entrada')
+    wednesday_end = models.TimeField(verbose_name='Miércoles - Hora de Salida')
+    wednesday_active = models.BooleanField(default=True, verbose_name='Miércoles Activo')
+    
+    thursday_start = models.TimeField(verbose_name='Jueves - Hora de Entrada')
+    thursday_end = models.TimeField(verbose_name='Jueves - Hora de Salida')
+    thursday_active = models.BooleanField(default=True, verbose_name='Jueves Activo')
+    
+    friday_start = models.TimeField(verbose_name='Viernes - Hora de Entrada')
+    friday_end = models.TimeField(verbose_name='Viernes - Hora de Salida')
+    friday_active = models.BooleanField(default=True, verbose_name='Viernes Activo')
+    
+    # Horarios de fin de semana (opcional)
+    saturday_start = models.TimeField(null=True, blank=True, verbose_name='Sábado - Hora de Entrada')
+    saturday_end = models.TimeField(null=True, blank=True, verbose_name='Sábado - Hora de Salida')
+    saturday_active = models.BooleanField(default=False, verbose_name='Sábado Activo')
+    
+    sunday_start = models.TimeField(null=True, blank=True, verbose_name='Domingo - Hora de Entrada')
+    sunday_end = models.TimeField(null=True, blank=True, verbose_name='Domingo - Hora de Salida')
+    sunday_active = models.BooleanField(default=False, verbose_name='Domingo Activo')
+    
+    # Configuraciones adicionales
+    grace_period_minutes = models.PositiveIntegerField(
+        default=15, 
+        verbose_name='Tolerancia (minutos)',
+        help_text='Minutos de tolerancia antes de considerar llegada tarde'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Horario del Área'
+        verbose_name_plural = 'Horarios de las Áreas'
+    
+    def __str__(self):
+        return f"Horario - {self.area.name}"
 class Employee(models.Model):
     """Empleado del sistema"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
@@ -353,10 +415,68 @@ class Attendance(models.Model):
             return round(duration.total_seconds() / 3600, 2)
         return None
     
+    def update_status_based_on_schedule(self):
+        """Actualiza el status basado en el horario del área y la hora de entrada"""
+        if not self.check_in or not self.expected_check_in:
+            return
+        
+        # Verificar si es un día laboral
+        from core.services.schedule_service import ScheduleService
+        if not ScheduleService.is_work_day(self.area, self.date):
+            self.status = 'absent'
+            return
+        
+        # Obtener período de gracia del área
+        grace_period = ScheduleService.get_grace_period(self.area)
+        
+        # Calcular hora límite con tolerancia
+        from datetime import datetime, timedelta
+        limit_time = datetime.combine(self.date, self.expected_check_in)
+        limit_time = limit_time + timedelta(minutes=grace_period)
+        limit_time = limit_time.time()
+        
+        # Crear datetime para comparar
+        check_in_datetime = datetime.combine(self.date, self.check_in)
+        limit_datetime = datetime.combine(self.date, limit_time)
+        
+        # Actualizar status basado en la hora de entrada
+        if check_in_datetime > limit_datetime:
+            self.status = 'late'
+        else:
+            self.status = 'present'
+        
+        print(f"🔄 Status actualizado para {self.employee.full_name}:")
+        print(f"   - Hora entrada: {self.check_in}")
+        print(f"   - Hora límite con tolerancia: {limit_time}")
+        print(f"   - Status final: {self.status}")
+    
+    def save(self, *args, **kwargs):
+        """Guardar y actualizar status automáticamente"""
+        # Actualizar status antes de guardar
+        if self.check_in and not self.check_out:
+            self.update_status_based_on_schedule()
+        
+        super().save(*args, **kwargs)
+    
     @property
     def is_late(self):
-        """Verifica si llegó tarde (después de las 8:30 AM)"""
-        if self.check_in:
+        """Verifica si llegó tarde según el horario del área"""
+        if self.check_in and hasattr(self.area, 'schedule') and self.area.schedule:
+            from datetime import datetime, timedelta
+            grace_period = self.area.schedule.grace_period_minutes if hasattr(self.area.schedule, 'grace_period_minutes') else 15
+            
+            # Calcular hora límite con tolerancia (por defecto 8:00 AM)
+            default_start = time(8, 0)
+            start_time = getattr(self.area.schedule, 'monday_start', default_start)
+            
+            # Calcular hora límite con tolerancia
+            limit_time = datetime.combine(self.date, start_time)
+            limit_time = limit_time + timedelta(minutes=grace_period)
+            
+            check_in_datetime = datetime.combine(self.date, self.check_in)
+            return check_in_datetime > limit_time
+        elif self.check_in:
+            # Fallback: verificar si llegó tarde (después de las 8:30 AM)
             from datetime import time
             return self.check_in > time(8, 30)
         return False

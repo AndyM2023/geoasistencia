@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Employee, Area, Attendance
+from .models import User, Employee, Area, Attendance, AreaSchedule
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -24,10 +24,30 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
 
+@admin.register(AreaSchedule)
+class AreaScheduleAdmin(admin.ModelAdmin):
+    """Admin para el modelo AreaSchedule"""
+    list_display = ('area', 'monday_active', 'tuesday_active', 'wednesday_active', 'thursday_active', 'friday_active', 'grace_period_minutes')
+    list_filter = ('monday_active', 'tuesday_active', 'wednesday_active', 'thursday_active', 'friday_active', 'saturday_active', 'sunday_active')
+    search_fields = ('area__name',)
+    ordering = ('area__name',)
+    
+    fieldsets = (
+        ('Área', {'fields': ('area',)}),
+        ('Lunes', {'fields': ('monday_active', 'monday_start', 'monday_end')}),
+        ('Martes', {'fields': ('tuesday_active', 'tuesday_start', 'tuesday_end')}),
+        ('Miércoles', {'fields': ('wednesday_active', 'wednesday_start', 'wednesday_end')}),
+        ('Jueves', {'fields': ('thursday_active', 'thursday_start', 'thursday_end')}),
+        ('Viernes', {'fields': ('friday_active', 'friday_start', 'friday_end')}),
+        ('Sábado', {'fields': ('saturday_active', 'saturday_start', 'saturday_end')}),
+        ('Domingo', {'fields': ('sunday_active', 'sunday_start', 'sunday_end')}),
+        ('Configuración', {'fields': ('grace_period_minutes',)}),
+    )
+
 @admin.register(Area)
 class AreaAdmin(admin.ModelAdmin):
     """Admin para el modelo Area"""
-    list_display = ('name', 'description', 'latitude', 'longitude', 'radius', 'status', 'employee_count', 'created_at')
+    list_display = ('name', 'description', 'latitude', 'longitude', 'radius', 'status', 'employee_count', 'has_schedule', 'created_at')
     list_filter = ('status', 'created_at')
     search_fields = ('name', 'description')
     ordering = ('name',)
@@ -36,6 +56,16 @@ class AreaAdmin(admin.ModelAdmin):
         ('Información Básica', {'fields': ('name', 'description', 'status')}),
         ('Ubicación', {'fields': ('latitude', 'longitude', 'radius')}),
     )
+    
+    def has_schedule(self, obj):
+        """Verificar si el área tiene horario configurado"""
+        return hasattr(obj, 'schedule')
+    has_schedule.boolean = True
+    has_schedule.short_description = 'Horario Configurado'
+    
+    def save_model(self, request, obj, form, change):
+        """Guardar área sin crear horario automáticamente"""
+        super().save_model(request, obj, form, change)
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
@@ -78,7 +108,7 @@ class EmployeeAdmin(admin.ModelAdmin):
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
     """Admin para el modelo Attendance"""
-    list_display = ('employee_name', 'date', 'check_in', 'check_out', 'status', 'area', 'face_verified', 'hours_worked')
+    list_display = ('employee_name', 'date', 'check_in', 'check_out', 'status', 'area', 'is_late_display', 'face_verified', 'hours_worked')
     list_filter = ('status', 'date', 'area', 'face_verified')
     search_fields = ('employee__user__first_name', 'employee__user__last_name', 'employee__employee_id')
     ordering = ('-date', '-check_in')
@@ -90,6 +120,20 @@ class AttendanceAdmin(admin.ModelAdmin):
         ('Ubicación', {'fields': ('area', 'latitude', 'longitude')}),
         ('Verificación', {'fields': ('face_verified',)}),
     )
+    
+    def is_late_display(self, obj):
+        """Mostrar si llegó tarde de forma visual"""
+        if obj.is_late:
+            return "⚠️ TARDANZA"
+        elif obj.status == 'present':
+            return "✅ A TIEMPO"
+        elif obj.status == 'late':
+            return "⚠️ TARDANZA"
+        elif obj.status == 'absent':
+            return "❌ AUSENTE"
+        else:
+            return obj.get_status_display()
+    is_late_display.short_description = 'Estado de Puntualidad'
     
     def employee_name(self, obj):
         return obj.employee.full_name

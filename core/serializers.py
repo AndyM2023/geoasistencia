@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
-from .models import User, Employee, Area, Attendance
+from .models import User, Employee, Area, Attendance, AreaSchedule
 from .models import PasswordResetToken
 from .services.employee_welcome_service import EmployeeWelcomeService
+from datetime import time
 import os
 
 User = get_user_model()
@@ -22,6 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
 class AreaSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Area"""
     employee_count = serializers.ReadOnlyField()
+    schedule = serializers.JSONField(write_only=True, required=False)
     
     class Meta:
         model = Area
@@ -29,17 +31,88 @@ class AreaSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'employee_count']
     
     def create(self, validated_data):
-        """Crear área con estado activo por defecto"""
+        """Crear área con estado activo por defecto y schedule"""
+        print(f"🔍 AreaSerializer.create() - Datos recibidos:")
+        print(f"   - Validated data: {validated_data}")
+        
+        # Extraer el schedule del validated_data
+        schedule_data = validated_data.pop('schedule', None)
+        print(f"🔍 Schedule data extraído: {schedule_data}")
+        
         # Si no se proporciona status, establecer como activo
         if 'status' not in validated_data:
             validated_data['status'] = 'active'
-        return super().create(validated_data)
+        
+        # Crear el área
+        area = super().create(validated_data)
+        print(f"✅ Área creada: {area.id} - {area.name}")
+        
+        # Si hay schedule data, crear el AreaSchedule
+        if schedule_data:
+            try:
+                from .models import AreaSchedule
+                
+                # Determinar el tipo de schedule basado en scheduleType.value
+                schedule_type = 'default'  # Por defecto
+                if hasattr(self, 'context') and self.context.get('schedule_type'):
+                    schedule_type = self.context['schedule_type']
+                elif 'schedule_type' in schedule_data:
+                    schedule_type = schedule_data['schedule_type']
+                
+                print(f"🔍 Creando AreaSchedule con tipo: {schedule_type}")
+                
+                # Crear el schedule con los datos recibidos
+                schedule = AreaSchedule.objects.create(
+                    area=area,
+                    schedule_type=schedule_type,
+                    monday_start=schedule_data.get('monday_start', '08:00'),
+                    monday_end=schedule_data.get('monday_end', '17:00'),
+                    monday_active=schedule_data.get('monday_active', True),
+                    tuesday_start=schedule_data.get('tuesday_start', '08:00'),
+                    tuesday_end=schedule_data.get('tuesday_end', '17:00'),
+                    tuesday_active=schedule_data.get('tuesday_active', True),
+                    wednesday_start=schedule_data.get('wednesday_start', '08:00'),
+                    wednesday_end=schedule_data.get('wednesday_end', '17:00'),
+                    wednesday_active=schedule_data.get('wednesday_active', True),
+                    thursday_start=schedule_data.get('thursday_start', '08:00'),
+                    thursday_end=schedule_data.get('thursday_end', '17:00'),
+                    thursday_active=schedule_data.get('thursday_active', True),
+                    friday_start=schedule_data.get('friday_start', '08:00'),
+                    friday_end=schedule_data.get('friday_end', '17:00'),
+                    friday_active=schedule_data.get('friday_active', True),
+                    saturday_start=schedule_data.get('saturday_start'),
+                    saturday_end=schedule_data.get('saturday_end'),
+                    saturday_active=schedule_data.get('saturday_active', False),
+                    sunday_start=schedule_data.get('sunday_start'),
+                    sunday_end=schedule_data.get('sunday_end'),
+                    sunday_active=schedule_data.get('sunday_active', False),
+                    grace_period_minutes=schedule_data.get('grace_period_minutes', 15)
+                )
+                print(f"✅ AreaSchedule creado: {schedule.id} para área {area.id}")
+                
+            except Exception as e:
+                print(f"❌ Error creando AreaSchedule: {e}")
+                # No fallar la creación del área si falla el schedule
+                pass
+        
+        return area
     
     def update(self, instance, validated_data):
-        """Actualizar área con validación personalizada"""
+        """Actualizar área con validación personalizada y schedule"""
         print(f"🔍 AreaSerializer.update() - Datos recibidos:")
         print(f"   - Instance ID: {instance.id}")
         print(f"   - Validated data: {validated_data}")
+        print(f"   - Keys en validated_data: {list(validated_data.keys())}")
+        
+        # Extraer el schedule del validated_data
+        schedule_data = validated_data.pop('schedule', None)
+        print(f"🔍 Schedule data extraído: {schedule_data}")
+        print(f"🔍 Schedule data tipo: {type(schedule_data)}")
+        if schedule_data:
+            print(f"🔍 Schedule data keys: {list(schedule_data.keys())}")
+            print(f"🔍 monday_start en schedule_data: {schedule_data.get('monday_start')} (tipo: {type(schedule_data.get('monday_start'))})")
+            print(f"🔍 monday_end en schedule_data: {schedule_data.get('monday_end')} (tipo: {type(schedule_data.get('monday_end'))})")
+            print(f"🔍 monday_active en schedule_data: {schedule_data.get('monday_active')} (tipo: {type(schedule_data.get('monday_active'))})")
         
         # Validar coordenadas antes de actualizar
         if 'latitude' in validated_data:
@@ -66,8 +139,201 @@ class AreaSerializer(serializers.ModelSerializer):
                 })
             print(f"✅ Radio válido: {radius}")
         
-        # Actualizar la instancia
-        return super().update(instance, validated_data)
+        # Actualizar la instancia del área
+        area = super().update(instance, validated_data)
+        print(f"✅ Área actualizada: {area.id} - {area.name}")
+        
+        # Si hay schedule data, actualizar o crear el AreaSchedule
+        if schedule_data:
+            try:
+                from .models import AreaSchedule
+                
+                # Obtener el schedule existente o crear uno nuevo
+                schedule, created = AreaSchedule.objects.get_or_create(
+                    area=area,
+                    defaults={
+                        'schedule_type': schedule_data.get('schedule_type', 'default'),
+                        'monday_start': '08:00',
+                        'monday_end': '17:00',
+                        'monday_active': True,
+                        'tuesday_start': '08:00',
+                        'tuesday_end': '17:00',
+                        'tuesday_active': True,
+                        'wednesday_start': '08:00',
+                        'wednesday_end': '17:00',
+                        'wednesday_active': True,
+                        'thursday_start': '08:00',
+                        'thursday_end': '17:00',
+                        'thursday_active': True,
+                        'friday_start': '08:00',
+                        'friday_end': '17:00',
+                        'friday_active': True,
+                        'saturday_start': None,
+                        'saturday_end': None,
+                        'saturday_active': False,
+                        'sunday_start': None,
+                        'sunday_end': None,
+                        'sunday_active': False,
+                        'grace_period_minutes': 15
+                    }
+                )
+                
+                print(f"🔍 Schedule existente: {schedule.id}, creado: {created}")
+                print(f"🔍 Schedule type actual: {schedule.schedule_type}")
+                print(f"🔍 Schedule type nuevo: {schedule_data.get('schedule_type')}")
+                
+                # ✅ ACTUALIZAR EXPLÍCITAMENTE el schedule_type SIEMPRE que se reciba
+                if 'schedule_type' in schedule_data:
+                    schedule.schedule_type = schedule_data['schedule_type']
+                    print(f"✅ Schedule type actualizado a: {schedule.schedule_type}")
+                
+                # Actualizar horarios según el tipo
+                if schedule_data.get('schedule_type') == 'default':
+                    # Horario por defecto - sobrescribir completamente con valores válidos
+                    schedule.monday_start = time(8, 0)
+                    schedule.monday_end = time(17, 0)
+                    schedule.monday_active = True
+                    schedule.tuesday_start = time(8, 0)
+                    schedule.tuesday_end = time(17, 0)
+                    schedule.tuesday_active = True
+                    schedule.wednesday_start = time(8, 0)
+                    schedule.wednesday_end = time(17, 0)
+                    schedule.wednesday_active = True
+                    schedule.thursday_start = time(8, 0)
+                    schedule.thursday_end = time(17, 0)
+                    schedule.thursday_active = True
+                    schedule.friday_start = time(8, 0)
+                    schedule.friday_end = time(17, 0)
+                    schedule.friday_active = True
+                    schedule.saturday_start = None
+                    schedule.saturday_end = None
+                    schedule.saturday_active = False
+                    schedule.sunday_start = None
+                    schedule.sunday_end = None
+                    schedule.sunday_active = False
+                    schedule.grace_period_minutes = 15
+                    print(f"✅ Horarios actualizados a por defecto")
+                elif schedule_data.get('schedule_type') == 'custom':
+                    # Horario personalizado - actualizar solo los campos proporcionados
+                    print(f"🔍 Actualizando horarios personalizados")
+                    print(f"🔍 Horarios actuales: monday_active={schedule.monday_active}, tuesday_active={schedule.tuesday_active}")
+                    print(f"🔍 Schedule data recibido: {schedule_data}")
+                    print(f"🔍 monday_start recibido: {schedule_data.get('monday_start')} (tipo: {type(schedule_data.get('monday_start'))})")
+                    print(f"🔍 monday_end recibido: {schedule_data.get('monday_end')} (tipo: {type(schedule_data.get('monday_end'))})")
+                    print(f"🔍 monday_active recibido: {schedule_data.get('monday_active')} (tipo: {type(schedule_data.get('monday_active'))})")
+                    
+                    # ✅ Actualizar campos de lunes a viernes
+                    for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+                        if f'{day}_active' in schedule_data:
+                            schedule.__setattr__(f'{day}_active', schedule_data[f'{day}_active'])
+                        if f'{day}_start' in schedule_data and schedule_data[f'{day}_start']:
+                            try:
+                                # Convertir string de tiempo a objeto time
+                                time_str = schedule_data[f'{day}_start']
+                                if isinstance(time_str, str):
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_start', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_start: {time_str}")
+                                else:
+                                    schedule.__setattr__(f'{day}_start', time_str)
+                            except (ValueError, TypeError) as e:
+                                print(f"❌ Error convirtiendo {day}_start: {e}")
+                        if f'{day}_end' in schedule_data and schedule_data[f'{day}_end']:
+                            try:
+                                # Convertir string de tiempo a objeto time
+                                time_str = schedule_data[f'{day}_end']
+                                if isinstance(time_str, str):
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_end', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_end: {time_str}")
+                                else:
+                                    schedule.__setattr__(f'{day}_end', time_str)
+                            except (ValueError, TypeError) as e:
+                                print(f"❌ Error convirtiendo {day}_end: {e}")
+                    
+                    # ✅ Actualizar campos de fin de semana
+                    for day in ['saturday', 'sunday']:
+                        if f'{day}_active' in schedule_data:
+                            schedule.__setattr__(f'{day}_active', schedule_data[f'{day}_active'])
+                        if f'{day}_start' in schedule_data and schedule_data[f'{day}_start']:
+                            try:
+                                # Convertir string de tiempo a objeto time
+                                time_str = schedule_data[f'{day}_start']
+                                if isinstance(time_str, str):
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_start', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_start: {time_str}")
+                                else:
+                                    schedule.__setattr__(f'{day}_start', time_str)
+                            except (ValueError, TypeError) as e:
+                                print(f"❌ Error convirtiendo {day}_start: {e}")
+                        if f'{day}_end' in schedule_data and schedule_data[f'{day}_end']:
+                            try:
+                                # Convertir string de tiempo a objeto time
+                                time_str = schedule_data[f'{day}_end']
+                                if isinstance(time_str, str):
+                                    # Manejar formato HH:MM:SS o HH:MM
+                                    time_parts = time_str.split(':')
+                                    if len(time_parts) >= 2:
+                                        hour = int(time_parts[0])
+                                        minute = int(time_parts[1])
+                                        schedule.__setattr__(f'{day}_end', time(hour, minute))
+                                    else:
+                                        print(f"❌ Formato de tiempo inválido para {day}_end: {time_str}")
+                                else:
+                                    schedule.__setattr__(f'{day}_end', time_str)
+                            except (ValueError, TypeError) as e:
+                                print(f"❌ Error convirtiendo {day}_end: {e}")
+                    
+                    # ✅ Actualizar tolerancia
+                    if 'grace_period_minutes' in schedule_data:
+                        schedule.grace_period_minutes = schedule_data['grace_period_minutes']
+                    
+                    print(f"✅ Horarios personalizados actualizados")
+                    print(f"🔍 Horarios finales: monday_active={schedule.monday_active}, tuesday_active={schedule.tuesday_active}")
+                    print(f"🔍 Horarios finales del lunes:")
+                    print(f"   - monday_start: {schedule.monday_start} (tipo: {type(schedule.monday_start)})")
+                    print(f"   - monday_end: {schedule.monday_end} (tipo: {type(schedule.monday_end)})")
+                    print(f"   - monday_active: {schedule.monday_active} (tipo: {type(schedule.monday_active)})")
+                elif schedule_data.get('schedule_type') == 'none':
+                    # Sin horario - eliminar el schedule
+                    schedule.delete()
+                    print(f"✅ Schedule eliminado (sin horario)")
+                    return area
+                
+                schedule.save()
+                
+                # ✅ VERIFICAR QUE SE GUARDÓ CORRECTAMENTE
+                print(f"🔍 VERIFICACIÓN POST-SAVE:")
+                print(f"   - monday_start guardado: {schedule.monday_start}")
+                print(f"   - monday_end guardado: {schedule.monday_end}")
+                print(f"   - monday_active guardado: {schedule.monday_active}")
+                
+                action = "creado" if created else "actualizado"
+                print(f"✅ AreaSchedule {action}: {schedule.id} para área {area.id}")
+                print(f"✅ Schedule type final: {schedule.schedule_type}")
+                
+            except Exception as e:
+                print(f"❌ Error actualizando AreaSchedule: {e}")
+                # No fallar la actualización del área si falla el schedule
+                pass
+        
+        return area
     
     def validate(self, data):
         """Validación personalizada para el serializer"""
@@ -87,6 +353,53 @@ class AreaSerializer(serializers.ModelSerializer):
             })
         
         print(f"✅ Validación exitosa")
+        return data
+    
+    def to_representation(self, instance):
+        """Incluir el schedule en la respuesta si está disponible"""
+        data = super().to_representation(instance)
+        
+        # Agregar información del schedule si existe
+        try:
+            if hasattr(instance, 'schedule') and instance.schedule:
+                schedule_data = {
+                    'schedule_type': instance.schedule.schedule_type,
+                    'monday_start': instance.schedule.monday_start.strftime('%H:%M') if instance.schedule.monday_start else None,
+                    'monday_end': instance.schedule.monday_end.strftime('%H:%M') if instance.schedule.monday_end else None,
+                    'monday_active': instance.schedule.monday_active,
+                    'tuesday_start': instance.schedule.tuesday_start.strftime('%H:%M') if instance.schedule.tuesday_start else None,
+                    'tuesday_end': instance.schedule.tuesday_end.strftime('%H:%M') if instance.schedule.tuesday_end else None,
+                    'tuesday_active': instance.schedule.tuesday_active,
+                    'wednesday_start': instance.schedule.wednesday_start.strftime('%H:%M') if instance.schedule.wednesday_start else None,
+                    'wednesday_end': instance.schedule.wednesday_end.strftime('%H:%M') if instance.schedule.wednesday_end else None,
+                    'wednesday_active': instance.schedule.wednesday_active,
+                    'thursday_start': instance.schedule.thursday_start.strftime('%H:%M') if instance.schedule.thursday_start else None,
+                    'thursday_end': instance.schedule.thursday_end.strftime('%H:%M') if instance.schedule.thursday_end else None,
+                    'thursday_active': instance.schedule.thursday_active,
+                    'friday_start': instance.schedule.friday_start.strftime('%H:%M') if instance.schedule.friday_start else None,
+                    'friday_end': instance.schedule.friday_end.strftime('%H:%M') if instance.schedule.friday_end else None,
+                    'friday_active': instance.schedule.friday_active,
+                    'saturday_start': instance.schedule.saturday_start.strftime('%H:%M') if instance.schedule.saturday_start else None,
+                    'saturday_end': instance.schedule.saturday_end.strftime('%H:%M') if instance.schedule.saturday_end else None,
+                    'saturday_active': instance.schedule.saturday_active,
+                    'sunday_start': instance.schedule.sunday_start.strftime('%H:%M') if instance.schedule.sunday_start else None,
+                    'sunday_end': instance.schedule.sunday_end.strftime('%H:%M') if instance.schedule.sunday_end else None,
+                    'sunday_active': instance.schedule.sunday_active,
+                    'grace_period_minutes': instance.schedule.grace_period_minutes
+                }
+                data['schedule'] = schedule_data
+                data['schedule_id'] = instance.schedule.id
+                data['has_schedule'] = True
+            else:
+                data['schedule'] = None
+                data['schedule_id'] = None
+                data['has_schedule'] = False
+        except Exception as e:
+            print(f"❌ Error obteniendo schedule en to_representation: {e}")
+            data['schedule'] = None
+            data['schedule_id'] = None
+            data['has_schedule'] = False
+        
         return data
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -476,3 +789,86 @@ class EmployeePasswordResetRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "No se encontró una cuenta de empleado activa con este email."
             )
+
+class AreaScheduleSerializer(serializers.ModelSerializer):
+    """Serializer para el horario de un área"""
+    area_name = serializers.CharField(source='area.name', read_only=True)
+    
+    class Meta:
+        model = AreaSchedule
+        fields = [
+            'id', 'area', 'area_name', 'schedule_type',
+            'monday_start', 'monday_end', 'monday_active',
+            'tuesday_start', 'tuesday_end', 'tuesday_active',
+            'wednesday_start', 'wednesday_end', 'wednesday_active',
+            'thursday_start', 'thursday_end', 'thursday_active',
+            'friday_start', 'friday_end', 'friday_active',
+            'saturday_start', 'saturday_end', 'saturday_active',
+            'sunday_start', 'sunday_end', 'sunday_active',
+            'grace_period_minutes', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def validate(self, data):
+        """Validar que los horarios sean consistentes"""
+        # Validar que si un día está activo, tenga horarios
+        for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
+            active = data.get(f'{day}_active', False)
+            start = data.get(f'{day}_start')
+            end = data.get(f'{day}_end')
+            
+            if active and (start is None or end is None):
+                raise serializers.ValidationError(
+                    f"Si {day} está activo, debe tener hora de inicio y fin"
+                )
+            
+            if start and end and start >= end:
+                raise serializers.ValidationError(
+                    f"La hora de inicio de {day} debe ser menor que la hora de fin"
+                )
+        
+        return data
+
+class AreaWithScheduleSerializer(serializers.ModelSerializer):
+    """Serializer para área con su horario incluido"""
+    schedule = AreaScheduleSerializer(read_only=True)
+    schedule_id = serializers.IntegerField(source='schedule.id', read_only=True)
+    has_schedule = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Area
+        fields = [
+            'id', 'name', 'description', 'latitude', 'longitude', 'radius', 'status',
+            'schedule', 'schedule_id', 'has_schedule', 'created_at', 'updated_at'
+        ]
+    
+    def get_has_schedule(self, obj):
+        """Verificar si el área tiene horario configurado"""
+        return hasattr(obj, 'schedule')
+    
+    def to_representation(self, instance):
+        """Incluir el schedule_type en la respuesta"""
+        data = super().to_representation(instance)
+        
+        # Agregar información del schedule si existe
+        try:
+            if hasattr(instance, 'schedule') and instance.schedule:
+                # ✅ INCLUIR schedule_type en el schedule
+                if hasattr(instance.schedule, 'schedule_type'):
+                    data['schedule']['schedule_type'] = instance.schedule.schedule_type
+                else:
+                    data['schedule']['schedule_type'] = 'default'  # Fallback
+                
+                data['schedule_id'] = instance.schedule.id
+                data['has_schedule'] = True
+            else:
+                data['schedule'] = None
+                data['schedule_id'] = None
+                data['has_schedule'] = False
+        except Exception as e:
+            print(f"❌ Error obteniendo schedule en AreaWithScheduleSerializer: {e}")
+            data['schedule'] = None
+            data['schedule_id'] = None
+            data['has_schedule'] = False
+        
+        return data

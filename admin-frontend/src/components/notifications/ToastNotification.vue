@@ -137,7 +137,7 @@ export default {
   top: 80px; /* Debajo del AppBar */
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1001;
+  z-index: 9999; /* Aumentado para estar por encima de todos los modales */
   pointer-events: none; /* Permite que los clics pasen a través del overlay */
 }
 
