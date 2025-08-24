@@ -195,129 +195,142 @@
                   <!-- Días de la semana -->
                   <div v-for="day in scheduleDays" :key="day.key" class="day-config mb-2">
                     <v-card class="bg-dark-surface border border-blue-500/20 pa-2">
-                      <v-row class="ma-0 align-center">
-                        <!-- Checkbox del día -->
-                        <v-col cols="12" sm="3" class="pa-1">
+                      <div class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
                           <v-checkbox
                             v-model="localSchedule[`${day.key}_active`]"
-                            :label="day.name"
-                            color="blue-400"
-                            density="compact"
+                            :color="localSchedule[`${day.key}_active`] ? 'blue-400' : 'grey-400'"
                             hide-details
-                            class="text-white"
+                            class="mr-3"
+                            @change="validateScheduleDay(day.key)"
                           ></v-checkbox>
-                        </v-col>
+                          <span class="text-white font-weight-medium">{{ day.name }}</span>
+                        </div>
                         
-                        <!-- Hora de inicio -->
-                        <v-col cols="12" sm="3" class="pa-1">
-                          <v-text-field
-                            v-model="localSchedule[`${day.key}_start`]"
-                            label="Hora inicio"
-                            type="time"
-                            :disabled="!localSchedule[`${day.key}_active`]"
-                            :color="localSchedule[`${day.key}_active`] ? 'blue-400' : 'grey-400'"
-                            variant="outlined"
-                            density="compact"
-                            hide-details
-                            :error-messages="getScheduleFieldError(day.key, 'start')"
-                            @blur="validateScheduleField(day.key, 'start')"
-                          ></v-text-field>
-                        </v-col>
-                        
-                        <!-- Hora de fin -->
-                        <v-col cols="12" sm="3" class="pa-1">
-                          <v-text-field
-                            v-model="localSchedule[`${day.key}_end`]"
-                            label="Hora fin"
-                            type="time"
-                            :disabled="!localSchedule[`${day.key}_active`]"
-                            :color="localSchedule[`${day.key}_active`] ? 'blue-400' : 'grey-400'"
-                            variant="outlined"
-                            density="compact"
-                            hide-details
-                            :error-messages="getScheduleFieldError(day.key, 'end')"
-                            @blur="validateScheduleField(day.key, 'end')"
-                          ></v-text-field>
-                        </v-col>
-                        
-                        <!-- Estado visual -->
-                        <v-col cols="12" sm="3" class="pa-1 text-center">
-                          <v-chip
-                            v-if="localSchedule[`${day.key}_active`] && localSchedule[`${day.key}_start`] && localSchedule[`${day.key}_end`]"
-                            color="green-400"
-                            size="small"
-                            variant="tonal"
-                          >
-                            <v-icon left size="small">mdi-check</v-icon>
-                            Configurado
-                          </v-chip>
-                          <v-chip
-                            v-else-if="localSchedule[`${day.key}_active`]"
-                            color="orange-400"
-                            size="small"
-                            variant="tonal"
-                          >
-                            <v-icon left size="small">mdi-alert</v-icon>
-                            Incompleto
-                          </v-chip>
-                          <v-chip
-                            v-else
-                            color="grey-400"
-                            size="small"
-                            variant="tonal"
-                          >
-                            <v-icon left size="small">mdi-minus</v-icon>
-                            Inactivo
-                          </v-chip>
-                        </v-col>
-                      </v-row>
+                        <v-chip 
+                          v-if="localSchedule[`${day.key}_active`]" 
+                          color="green-400" 
+                          variant="tonal" 
+                          size="small"
+                        >
+                          Laborable
+                        </v-chip>
+                        <v-chip 
+                          v-else 
+                          color="grey-400" 
+                          variant="tonal" 
+                          size="small"
+                        >
+                          No laborable
+                        </v-chip>
+                      </div>
+                      
+                      <!-- Campos de horario para días activos -->
+                      <div v-if="localSchedule[`${day.key}_active`]" class="mt-2">
+                        <v-row class="ma-0 pa-0">
+                          <v-col cols="6" class="pa-1">
+                            <v-text-field
+                              v-model="localSchedule[`${day.key}_start`]"
+                              label="Hora de Entrada"
+                              type="time"
+                              required
+                              color="blue-400"
+                              variant="outlined"
+                              density="compact"
+                              :rules="[
+                                v => !!v || 'Hora de entrada requerida',
+                                v => localSchedule[`${day.key}_end`] ? v < localSchedule[`${day.key}_end`] : true || 'La hora de entrada debe ser anterior a la de salida'
+                              ]"
+                              :error-messages="getScheduleFieldError(`${day.key}_start`)"
+                              @blur="validateScheduleField(`${day.key}_start`)"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col cols="6" class="pa-1">
+                            <v-text-field
+                              v-model="localSchedule[`${day.key}_end`]"
+                              label="Hora de Salida"
+                              type="time"
+                              required
+                              color="blue-400"
+                              variant="outlined"
+                              density="compact"
+                              :rules="[
+                                v => !!v || 'Hora de salida requerida',
+                                v => localSchedule[`${day.key}_start`] ? localSchedule[`${day.key}_start`] < v : true || 'La hora de salida debe ser posterior a la de entrada'
+                              ]"
+                              :error-messages="getScheduleFieldError(`${day.key}_end`)"
+                              @blur="validateScheduleField(`${day.key}_end`)"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                      </div>
                     </v-card>
                   </div>
                   
-                  <!-- Tolerancia de llegadas tarde -->
+                  <!-- Configuración de tolerancia -->
                   <v-card class="bg-dark-surface border border-blue-500/20 pa-3 mt-3">
-                    <v-row class="ma-0 align-center">
-                      <v-col cols="12" sm="6" class="pa-1">
-                        <v-text-field
-                          v-model="localSchedule.grace_period_minutes"
-                          label="Tolerancia para llegadas tarde (minutos)"
-                          type="number"
-                          min="0"
-                          max="60"
-                          color="blue-400"
-                          variant="outlined"
-                          density="compact"
-                          :rules="[
-                            v => v >= 0 || 'La tolerancia debe ser mayor o igual a 0',
-                            v => v <= 60 || 'La tolerancia no puede exceder 60 minutos'
-                          ]"
-                          hint="Tiempo adicional permitido después de la hora de entrada"
-                          persistent-hint
-                        ></v-text-field>
-                      </v-col>
-                      <v-col cols="12" sm="6" class="pa-1 text-center">
-                        <v-chip
-                          :color="localSchedule.grace_period_minutes > 0 ? 'blue-400' : 'grey-400'"
-                          size="small"
-                          variant="tonal"
-                        >
-                          <v-icon left size="small">mdi-clock-outline</v-icon>
-                          {{ localSchedule.grace_period_minutes || 0 }} minutos
-                        </v-chip>
-                      </v-col>
-                    </v-row>
+                    <h5 class="text-h6 text-white mb-2">
+                      <v-icon color="orange-400" class="mr-2">mdi-timer-sand</v-icon>
+                      Configuración de Tolerancia
+                    </h5>
+                    <v-text-field
+                      v-model.number="localSchedule.grace_period_minutes"
+                      label="Tolerancia para llegadas tarde (minutos)"
+                      type="number"
+                      min="0"
+                      max="120"
+                      required
+                      color="orange-400"
+                      variant="outlined"
+                      density="compact"
+                      :rules="[
+                        v => !!v || 'Tolerancia requerida',
+                        v => v >= 0 || 'Mínimo 0 minutos',
+                        v => v <= 120 || 'Máximo 120 minutos'
+                      ]"
+                      :hint="`Permite hasta ${localSchedule.grace_period_minutes} minutos de tardanza antes de marcar como llegada tarde`"
+                      persistent-hint
+                      :error-messages="formErrors.grace_period"
+                      @blur="validateField('grace_period')"
+                    ></v-text-field>
                   </v-card>
-                </div>
-                
-                <!-- Resumen de horarios -->
-                <div v-if="localScheduleType !== 'none'" class="schedule-summary mt-3">
-                  <v-alert type="success" variant="tonal" class="mb-0">
-                    <template v-slot:prepend>
-                      <v-icon>mdi-calendar-check</v-icon>
-                    </template>
-                    <strong>Resumen de Horarios:</strong>
-                    <br>{{ getScheduleSummary() }}
-                  </v-alert>
+                  
+                  <!-- Resumen del horario seleccionado -->
+                  <div v-if="localScheduleType !== 'none'" class="schedule-summary mt-3">
+                    <v-alert 
+                      :type="localScheduleType === 'default' ? 'success' : 'info'" 
+                      variant="tonal"
+                    >
+                      <template v-slot:prepend>
+                        <v-icon>{{ localScheduleType === 'default' ? 'mdi-check-circle' : 'mdi-clock' }}</v-icon>
+                      </template>
+                      <strong>{{ localScheduleType === 'default' ? 'Horario por defecto' : 'Horario personalizado' }}</strong>
+                      <br>{{ getScheduleSummary() }}
+                    </v-alert>
+                  </div>
+                  
+                  <!-- Información adicional del horario -->
+                  <div v-if="localScheduleType === 'custom'" class="schedule-details mt-2">
+                    <v-card class="bg-dark-surface border border-blue-500/20 pa-2">
+                      <h6 class="text-subtitle-2 text-white mb-2">
+                        <v-icon color="blue-400" class="mr-2" size="small">mdi-information</v-icon>
+                        Detalles del Horario
+                      </h6>
+                      <div class="text-caption text-grey-300">
+                        <div v-for="day in scheduleDays" :key="day.key" class="mb-1">
+                          <span v-if="localSchedule[`${day.key}_active`]" class="text-green-400">
+                            ✅ {{ day.name }}: {{ localSchedule[`${day.key}_start`] }} - {{ localSchedule[`${day.key}_end`] }}
+                          </span>
+                          <span v-else class="text-grey-400">
+                            ❌ {{ day.name }}: No laborable
+                          </span>
+                        </div>
+                        <div class="mt-2 pt-2 border-top border-grey-600">
+                          <strong>Tolerancia:</strong> {{ localSchedule.grace_period_minutes }} minutos
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
                 </div>
               </div>
             </v-col>
@@ -335,7 +348,7 @@
           variant="flat" 
           @click="saveArea"
           :loading="saving"
-          :disabled="!valid || saving"
+          :disabled="saving"
         >
           {{ editingArea ? 'Actualizar' : 'Crear' }} Área
         </v-btn>
@@ -382,9 +395,9 @@ export default {
     return {
       valid: false,
       showNameHint: false,
-      nameHint: '',
+      nameHint: 'Se permiten letras, números, espacios, guiones (-) y guiones bajos (_)',
       showDescriptionHint: false,
-      descriptionHint: '',
+      descriptionHint: 'Solo se permiten letras y números',
       scheduleDays: [
         { key: 'monday', name: 'Lunes' },
         { key: 'tuesday', name: 'Martes' },
@@ -430,6 +443,21 @@ export default {
       }
     }
   },
+  watch: {
+    editingArea: {
+      handler(newArea) {
+        if (newArea) {
+          // Cuando se edita un área, asegurar que el formulario sea válido
+          this.$nextTick(() => {
+            if (this.$refs.form) {
+              this.valid = true
+            }
+          })
+        }
+      },
+      immediate: true
+    }
+  },
   methods: {
     validateField(fieldName) {
       // Emit to parent to handle validation
@@ -447,20 +475,35 @@ export default {
       // Emit to parent to handle default schedule creation
       this.$emit('createDefaultSchedule')
     },
-    validateScheduleField(day, field) {
+    validateScheduleField(fieldName) {
       // Emit to parent to handle schedule validation
-      this.$emit('validateScheduleField', day, field)
+      this.$emit('validateScheduleField', fieldName)
     },
-    getScheduleFieldError(day, field) {
+    validateScheduleDay(dayKey) {
+      // Emit to parent to handle schedule day validation
+      this.$emit('validateScheduleDay', dayKey)
+    },
+    getScheduleFieldError(fieldName) {
       // Return schedule field error from parent
-      return this.formErrors[`${day}_${field}`] || ''
+      return this.formErrors[fieldName] || ''
     },
     getScheduleSummary() {
       // Emit to parent to get schedule summary
-      return this.$emit('getScheduleSummary') || 'Sin horarios configurados'
+      this.$emit('getScheduleSummary')
+      return 'Horarios configurados correctamente'
     },
     saveArea() {
-      if (this.$refs.form.validate()) {
+      // Validar el formulario antes de emitir el evento
+      if (this.$refs.form && this.$refs.form.validate) {
+        const isValid = this.$refs.form.validate()
+        if (isValid) {
+          this.$emit('save')
+        } else {
+          console.log('❌ Validación del formulario falló')
+        }
+      } else {
+        // Si no hay referencia al formulario, emitir directamente
+        console.log('⚠️ No hay referencia al formulario, emitiendo evento save')
         this.$emit('save')
       }
     }
