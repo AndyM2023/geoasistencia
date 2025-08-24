@@ -5,7 +5,7 @@
       <!-- Panel izquierdo con gradiente azul oscuro -->
       <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
         <div class="text-center">
-          <h1 class="logo-text text-h3 font-weight-bold text-white">
+          <h1 class="logo-text text-h3 font-weight-bold text-white" :class="{ 'text-h4': $vuetify.display.smAndDown, 'text-h5': $vuetify.display.xs }">
             GEOASISTENCIA
             <br>
             ADMIN
@@ -235,6 +235,7 @@ export default {
 .right-panel {
   background: #16213e;
   position: relative;
+  padding: 2rem;
 }
 
 .right-panel::before {
@@ -304,15 +305,54 @@ export default {
 /* Responsive */
 @media (max-width: 960px) {
   .left-panel {
-    min-height: 200px;
+    min-height: 100px;
   }
   
-  .logo-text {
-    font-size: 1.5rem !important;
+  .right-panel {
+    padding: 1rem;
   }
   
   .forgot-password-card {
-    margin: 1rem;
+    max-width: 400px;
+    width: 90%;
+  }
+  
+  .forgot-password-card .v-card-text {
+    padding: 2rem !important;
+  }
+  
+  .logo-text {
+    font-size: 1.25rem !important;
+    line-height: 1.2 !important;
+    margin: 0.5rem 0 !important;
+    letter-spacing: 1px !important;
+  }
+}
+
+/* Responsive para pantallas muy pequeñas */
+@media (max-width: 600px) {
+  .left-panel {
+    min-height: 120px;
+  }
+  
+  .right-panel {
+    padding: 0.5rem;
+  }
+  
+  .forgot-password-card {
+    max-width: 350px;
+    width: 95%;
+  }
+  
+  .forgot-password-card .v-card-text {
+    padding: 1rem !important;
+  }
+  
+  .logo-text {
+    font-size: 1rem !important;
+    line-height: 1.1 !important;
+    margin: 0.25rem 0 !important;
+    letter-spacing: 0.5px !important;
   }
 }
 
