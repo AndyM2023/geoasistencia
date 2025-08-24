@@ -235,3 +235,36 @@ body.recognition-page {
     margin-right: 8px;
   }
 }
+
+/* ===== ESTILOS ESPECÍFICOS PARA EL DASHBOARD ===== */
+/* Eliminar scroll del body cuando esté en dashboard */
+body.dashboard-page {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+/* Eliminar scroll de todos los contenedores de Vuetify cuando esté en dashboard */
+body.dashboard-page .v-application {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+body.dashboard-page .v-application__wrap {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+body.dashboard-page .v-main {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+body.dashboard-page .v-container {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}

@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <h1 class="text-h4 mb-6 text-white">Dashboard</h1>
+  <div class="dashboard-content">
+    <h1 class="text-h4 text-white dashboard-title">Dashboard</h1>
     
     <div v-if="loading && !isAuthenticated" class="text-center pa-8">
       <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
@@ -9,7 +9,7 @@
     
     <div v-else>
     <!-- Tarjetas de Estadísticas -->
-    <v-row class="mb-4 dashboard-stats-row">
+    <v-row class="dashboard-stats-row">
       <v-col cols="12" sm="6" md="3">
         <StatsCard
           title="Total Empleados"
@@ -216,11 +216,17 @@ export default {
       
       // Iniciar polling automático
       startPolling()
+      
+      // Agregar clase al body para eliminar scroll
+      document.body.classList.add('dashboard-page')
     })
     
     // Limpiar polling al desmontar el componente
     onUnmounted(() => {
       stopPolling()
+      
+      // Remover clase del body
+      document.body.classList.remove('dashboard-page')
     })
     
     return {
@@ -240,12 +246,10 @@ export default {
 </script>
 
 <style scoped>
-.dashboard-stats-row {
-  margin-bottom: 1rem !important;
-}
-
-.dashboard-stats-row .v-col {
-  padding: 0.5rem;
+.dashboard-content {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
 }
 
 .v-card {
@@ -280,10 +284,6 @@ export default {
 
 /* Responsive adjustments */
 @media (max-width: 960px) {
-  .dashboard-stats-row .v-col {
-    padding: 0.25rem;
-  }
-  
   .v-card-text {
     padding: 0.75rem;
   }

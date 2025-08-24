@@ -19,8 +19,8 @@
         :menu-items="menuItems"
         @update:model-value="handleDrawerUpdate"
       />
-      <v-main class="bg-dark-background">
-        <v-container fluid class="pa-6">
+      <v-main class="bg-dark-background" :class="{ 'dashboard-main': $route.name === 'Dashboard' }">
+        <v-container fluid :class="{ 'pa-6': !['Dashboard', 'Employees', 'Areas'].includes($route.name), 'dashboard-container': $route.name === 'Dashboard', 'no-top-padding': ['Employees', 'Areas'].includes($route.name) }">
           <router-view />
         </v-container>
       </v-main>
@@ -121,5 +121,27 @@ export default {
 <style scoped>
 .bg-dark-background {
   background-color: #0f172a;
+}
+
+/* Estilos específicos para el dashboard */
+.dashboard-main {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.dashboard-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.no-top-padding {
+  padding-top: 0 !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
 }
 </style>

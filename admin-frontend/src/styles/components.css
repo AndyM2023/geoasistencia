@@ -9,7 +9,7 @@
 .stats-card {
   border-radius: 12px;
   overflow: hidden;
-  height: 120px;
+  height: 100px;
   display: flex;
   flex-direction: column;
 }
@@ -50,6 +50,99 @@
 
 .dashboard-stats-row .v-col > * {
   width: 100%;
+}
+
+/* ===== DASHBOARD TITLE ===== */
+.dashboard-title {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  padding: 0 !important;
+}
+
+/* ===== EMPLOYEE AND AREAS HEADERS ===== */
+.employee-header,
+.areas-header {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.employee-header h1,
+.areas-header h1 {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  padding: 0 !important;
+}
+
+/* ===== DASHBOARD LAYOUT ===== */
+/* Eliminar margen inferior de las tarjetas de estadísticas */
+.dashboard-stats-row {
+  margin-bottom: 0 !important;
+}
+
+/* Eliminar margen superior del contenedor de gráficos */
+.dashboard-stats-row + .v-row {
+  margin-top: 0 !important;
+}
+
+/* Eliminar scroll innecesario del dashboard */
+.dashboard-content {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  padding: 1rem !important;
+  box-sizing: border-box !important;
+}
+
+/* Eliminar scroll del contenedor principal del dashboard */
+.dashboard-content .v-row {
+  margin: 0 !important;
+}
+
+.dashboard-content .v-col {
+  padding: 0.5rem !important;
+}
+
+/* Asegurar que no haya scroll en el body cuando esté en dashboard */
+body.dashboard-page {
+  overflow: hidden !important;
+}
+
+/* Eliminar scroll del contenedor principal del layout cuando esté en dashboard */
+body.dashboard-page .v-main {
+  overflow: hidden !important;
+}
+
+body.dashboard-page .v-container {
+  overflow: hidden !important;
+  max-height: 100vh !important;
+}
+
+/* Estilos específicos para eliminar scroll en Vuetify */
+.dashboard-page .v-application {
+  overflow: hidden !important;
+}
+
+.dashboard-page .v-application__wrap {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.dashboard-page .v-main {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+/* Eliminar scroll de cualquier elemento hijo del dashboard */
+.dashboard-page * {
+  overflow: visible !important;
+}
+
+.dashboard-page .v-row,
+.dashboard-page .v-col,
+.dashboard-page .v-card {
+  overflow: visible !important;
 }
 
 /* ===== DATA TABLE COMPONENT ===== */

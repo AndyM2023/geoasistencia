@@ -2,7 +2,7 @@
   <div>
 
 
-    <v-row class="mt-2 employee-header">
+    <v-row class="mt-0 employee-header">
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
           <h1 class="text-h4 text-white">Gestión de Empleados</h1>
