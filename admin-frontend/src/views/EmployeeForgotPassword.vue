@@ -5,7 +5,7 @@
       <!-- Panel izquierdo con gradiente azul oscuro -->
       <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
         <div class="text-center">
-          <h1 class="logo-text text-h3 font-weight-bold text-white">
+          <h1 class="logo-text text-h3 font-weight-bold text-white" :class="{ 'text-h4': $vuetify.display.smAndDown, 'text-h5': $vuetify.display.xs }">
             GEOASISTENCIA
             <br>
             EMPLEADOS
@@ -17,47 +17,47 @@
       <!-- Panel derecho con formulario -->
       <v-col cols="12" md="8" class="right-panel d-flex align-center justify-center">
         <v-card class="employee-forgot-password-card" elevation="0">
-          <v-card-text class="pa-8">
-            <div class="text-center mb-6">
-              <v-icon size="64" color="primary" class="mb-4">mdi-account-lock</v-icon>
-              <h2 class="text-h4 font-weight-bold text-white mb-2">Recuperar Contraseña</h2>
-              <p class="text-body-1 text-grey-lighten-1">
-                Ingresa tu email de empleado y te enviaremos instrucciones para recuperar tu contraseña.
-              </p>
-            </div>
+                     <v-card-text class="pa-6">
+             <div class="text-center mb-6">
+               <v-icon size="56" color="primary" class="mb-3">mdi-account-lock</v-icon>
+               <h2 class="text-h4 font-weight-bold text-white mb-2">Recuperar Contraseña</h2>
+               <p class="text-body-1 text-grey-lighten-1">
+                 Ingresa tu email de empleado y te enviaremos instrucciones para recuperar tu contraseña.
+               </p>
+             </div>
 
-            <v-form ref="formRef" @submit.prevent="handleSubmit" class="employee-forgot-password-form">
-              <v-text-field
-                v-model="form.email"
-                label="EMAIL"
-                type="email"
-                placeholder="Ingresa tu email de empleado"
-                variant="outlined"
-                color="primary"
-                bg-color="dark-surface"
-                class="mb-6"
-                :rules="[rules.required, rules.email]"
-                hide-details="auto"
-                :disabled="loading"
-              >
-                <template v-slot:prepend-inner>
-                  <v-icon color="primary">mdi-email</v-icon>
-                </template>
-              </v-text-field>
+                         <v-form ref="formRef" @submit.prevent="handleSubmit" class="employee-forgot-password-form mt-4">
+               <v-text-field
+                 v-model="form.email"
+                 label="EMAIL"
+                 type="email"
+                 placeholder="Ingresa tu email de empleado"
+                 variant="outlined"
+                 color="primary"
+                 bg-color="dark-surface"
+                 class="mb-4"
+                 :rules="[rules.required, rules.email]"
+                 hide-details="auto"
+                 :disabled="loading"
+               >
+                 <template v-slot:prepend-inner>
+                   <v-icon color="primary">mdi-email</v-icon>
+                 </template>
+               </v-text-field>
 
-              <v-btn
-                type="submit"
-                color="primary"
-                size="large"
-                block
-                :loading="loading"
-                :disabled="loading"
-                class="mb-6"
-                elevation="2"
-              >
-                <span v-if="loading">Enviando...</span>
-                <span v-else>Enviar Instrucciones</span>
-              </v-btn>
+               <v-btn
+                 type="submit"
+                 color="primary"
+                 size="large"
+                 block
+                 :loading="loading"
+                 :disabled="loading"
+                 class="mb-4"
+                 elevation="2"
+               >
+                 <span v-if="loading">Enviando...</span>
+                 <span v-else>Enviar Instrucciones</span>
+               </v-btn>
 
               <div class="text-center">
                 <v-btn
@@ -226,6 +226,7 @@ export default {
   position: relative;
   z-index: 2;
   text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  letter-spacing: 2px;
 }
 
 .logo-glow {
@@ -296,7 +297,7 @@ export default {
 /* Responsive */
 @media (max-width: 960px) {
   .left-panel {
-    display: none;
+    min-height: 100px;
   }
   
   .right-panel {
@@ -304,7 +305,32 @@ export default {
   }
   
   .employee-forgot-password-card {
-    max-width: 100%;
+    max-width: 400px;
+    width: 90%;
+  }
+  
+  .employee-forgot-password-card .v-card-text {
+    padding: 2rem !important;
+  }
+  
+     /* Reducir espaciado del formulario en tablets */
+   .employee-forgot-password-form .mb-4 {
+     margin-bottom: 1rem !important;
+   }
+   
+   .employee-forgot-password-form .text-center.mb-6 {
+     margin-bottom: 1.5rem !important;
+   }
+   
+   .employee-forgot-password-form.mt-4 {
+     margin-top: 1rem !important;
+   }
+  
+  .logo-text {
+    font-size: 1.25rem !important;
+    line-height: 1.2 !important;
+    margin: 0.5rem 0 !important;
+    letter-spacing: 1px !important;
   }
 }
 
@@ -313,16 +339,41 @@ export default {
     margin-top: 56px !important;
   }
   
+  .left-panel {
+    min-height: 100px;
+  }
+  
   .right-panel {
     padding: 0.5rem;
   }
   
-  .employee-forgot-password-card .v-card-text {
-    padding: 1.5rem !important;
+  .employee-forgot-password-card {
+    max-width: 350px;
+    width: 95%;
   }
   
+  .employee-forgot-password-card .v-card-text {
+    padding: 1rem !important;
+  }
+  
+     /* Reducir espaciado del formulario en móviles */
+   .employee-forgot-password-form .mb-4 {
+     margin-bottom: 0.75rem !important;
+   }
+   
+   .employee-forgot-password-form .text-center.mb-6 {
+     margin-bottom: 1rem !important;
+   }
+   
+   .employee-forgot-password-form.mt-4 {
+     margin-top: 0.75rem !important;
+   }
+  
   .logo-text {
-    font-size: 1.5rem !important;
+    font-size: 1rem !important;
+    line-height: 1.1 !important;
+    margin: 0.25rem 0 !important;
+    letter-spacing: 0.5px !important;
   }
 }
 </style>

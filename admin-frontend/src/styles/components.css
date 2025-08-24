@@ -9,7 +9,7 @@
 .stats-card {
   border-radius: 12px;
   overflow: hidden;
-  height: 120px;
+  height: 100px;
   display: flex;
   flex-direction: column;
 }
@@ -50,6 +50,273 @@
 
 .dashboard-stats-row .v-col > * {
   width: 100%;
+}
+
+/* ===== DASHBOARD TITLE ===== */
+.dashboard-title {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  padding: 0 !important;
+}
+
+/* ===== EMPLOYEE AND AREAS HEADERS ===== */
+.employee-header,
+.areas-header {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.employee-header h1,
+.areas-header h1 {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  padding: 0 !important;
+}
+
+/* ===== DESCRIPTION CELL STYLES ===== */
+.description-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 200px;
+}
+
+.description-line {
+  display: block;
+  line-height: 1.2;
+  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== ACTIONS BUTTONS STYLES ===== */
+.actions-container {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  min-width: fit-content !important;
+}
+
+.actions-container .v-btn {
+  flex-shrink: 0 !important;
+  min-width: auto !important;
+}
+
+/* ===== SEARCH FIELD RESPONSIVE STYLES ===== */
+.search-field-responsive {
+  min-width: 100px !important;
+  max-width: 150px !important;
+  width: 150px !important;
+}
+
+/* Estilos para tablets */
+.search-field-tablet {
+  min-width: 150px !important;
+  width: 150px !important;
+  max-width: 200px !important;
+}
+
+/* Estilos para móviles */
+.search-field-mobile {
+  min-width: 125px !important;
+  width: 125px !important;
+  max-width: 50% !important;
+}
+
+/* Responsive para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .search-field-mobile {
+    min-width: 50% !important;
+    width: 50% !important;
+  }
+}
+
+/* Estilos más específicos para sobrescribir Vuetify */
+.search-field-responsive.v-text-field {
+  min-width: 100px !important;
+  max-width: 150px !important;
+  width: 150px !important;
+}
+
+.search-field-responsive .v-field__input {
+  min-width: 100px !important;
+  max-width: 150px !important;
+  width: 150px !important;
+}
+
+/* ===== DASHBOARD LAYOUT ===== */
+/* Eliminar margen inferior de las tarjetas de estadísticas */
+.dashboard-stats-row {
+  margin-bottom: 0 !important;
+}
+
+/* Eliminar margen superior del contenedor de gráficos */
+.dashboard-stats-row + .v-row {
+  margin-top: 0 !important;
+}
+
+/* Eliminar scroll innecesario del dashboard */
+.dashboard-content {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  padding: 1rem !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Permitir scroll en responsive para el dashboard */
+@media (max-width: 960px) {
+  .dashboard-content {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  /* Asegurar que las columnas del dashboard sean visibles en responsive */
+  .dashboard-content .v-row {
+    margin: 0 !important;
+  }
+  
+  .dashboard-content .v-col {
+    margin-bottom: 1rem !important;
+  }
+  
+  /* Asegurar que las tarjetas mantengan su altura natural en responsive */
+  .dashboard-content .v-card {
+    height: auto !important;
+    min-height: auto !important;
+  }
+  
+  /* Asegurar que la lista de actividades sea visible */
+  .dashboard-content .v-list {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+  
+  /* Asegurar que la columna de actividades recientes sea visible */
+  .dashboard-content .v-col[md="4"] {
+    height: auto !important;
+    min-height: auto !important;
+  }
+  
+  /* Estilos específicos para la tarjeta de actividades recientes */
+  .dashboard-content .v-card:has(.v-card-title:contains("Actividad Reciente")) {
+    height: auto !important;
+    min-height: auto !important;
+  }
+  
+  /* Alternativa más específica para la tarjeta de actividades */
+  .dashboard-content .v-col[md="4"] .v-card {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Asegurar que la lista de actividades tenga scroll interno si es necesario */
+  .dashboard-content .v-col[md="4"] .v-list {
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* Eliminar scroll del contenedor principal del dashboard */
+.dashboard-content .v-row {
+  margin: 0 !important;
+}
+
+.dashboard-content .v-col {
+  padding: 0.5rem !important;
+}
+
+/* Asegurar que no haya scroll en el body cuando esté en dashboard */
+body.dashboard-page {
+  overflow: hidden !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Eliminar scroll del contenedor principal del layout cuando esté en dashboard */
+body.dashboard-page .v-main {
+  overflow: hidden !important;
+  transition: all 0.2s ease !important;
+}
+
+body.dashboard-page .v-container {
+  overflow: hidden !important;
+  max-height: 100vh !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Permitir scroll en responsive para el dashboard */
+@media (max-width: 960px) {
+  body.dashboard-page {
+    overflow-y: auto !important;
+  }
+  
+  body.dashboard-page .v-main {
+    overflow-y: auto !important;
+  }
+  
+  body.dashboard-page .v-container {
+    overflow-y: auto !important;
+    max-height: none !important;
+  }
+}
+
+/* Estilos específicos para eliminar scroll en Vuetify */
+.dashboard-page .v-application {
+  overflow: hidden !important;
+  transition: all 0.2s ease !important;
+}
+
+.dashboard-page .v-application__wrap {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  transition: all 0.2s ease !important;
+}
+
+.dashboard-page .v-main {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Permitir scroll en responsive para Vuetify */
+@media (max-width: 960px) {
+  .dashboard-page .v-application {
+    overflow-y: auto !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .dashboard-page .v-application__wrap {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .dashboard-page .v-main {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+}
+
+/* Eliminar scroll de cualquier elemento hijo del dashboard */
+.dashboard-page * {
+  overflow: visible !important;
+}
+
+.dashboard-page .v-row,
+.dashboard-page .v-col,
+.dashboard-page .v-card {
+  overflow: visible !important;
 }
 
 /* ===== DATA TABLE COMPONENT ===== */

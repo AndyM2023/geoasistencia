@@ -5,7 +5,7 @@
       <!-- Panel izquierdo con gradiente azul oscuro -->
       <v-col cols="12" md="4" class="left-panel d-flex align-center justify-center">
         <div class="text-center">
-          <h1 class="logo-text text-h3 font-weight-bold text-white">
+          <h1 class="logo-text text-h3 font-weight-bold text-white" :class="{ 'text-h4': $vuetify.display.smAndDown, 'text-h5': $vuetify.display.xs }">
             GEOASISTENCIA
             <br>
             ADMIN
@@ -379,15 +379,32 @@ export default {
 /* Responsive */
 @media (max-width: 960px) {
   .left-panel {
-    min-height: 200px;
+    min-height: 100px;
   }
   
   .logo-text {
-    font-size: 1.5rem !important;
+    font-size: 1.25rem !important;
+    line-height: 1.2 !important;
+    margin: 0.5rem 0 !important;
+    letter-spacing: 1px !important;
   }
   
   .login-card {
     margin: 1rem;
+  }
+}
+
+/* Responsive para pantallas muy pequeñas */
+@media (max-width: 600px) {
+  .left-panel {
+    min-height: 120px;
+  }
+  
+  .logo-text {
+    font-size: 1rem !important;
+    line-height: 1.1 !important;
+    margin: 0.25rem 0 !important;
+    letter-spacing: 0.5px !important;
   }
 }
 
