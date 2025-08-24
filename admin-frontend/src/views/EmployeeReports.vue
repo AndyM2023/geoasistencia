@@ -44,7 +44,7 @@
 
       <!-- Estadísticas Personales -->
       <v-row class="mb-6">
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="12" sm="6" md="2">
           <v-card class="bg-dark-surface border border-blue-500/20 text-center">
             <v-card-text>
               <v-icon size="48" color="primary" class="mb-2">mdi-calendar-check</v-icon>
@@ -54,7 +54,7 @@
           </v-card>
         </v-col>
         
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="12" sm="6" md="2">
           <v-card class="bg-dark-surface border border-blue-500/20 text-center">
             <v-card-text>
               <v-icon size="48" color="success" class="mb-2">mdi-clock-in</v-icon>
@@ -64,7 +64,7 @@
           </v-card>
         </v-col>
         
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="12" sm="6" md="2">
           <v-card class="bg-dark-surface border border-blue-500/20 text-center">
             <v-card-text>
               <v-icon size="48" color="warning" class="mb-2">mdi-clock-alert</v-icon>
@@ -74,7 +74,17 @@
           </v-card>
         </v-col>
         
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="12" sm="6" md="2">
+          <v-card class="bg-dark-surface border border-blue-500/20 text-center">
+            <v-card-text>
+              <v-icon size="48" color="orange" class="mb-2">mdi-clock-out</v-icon>
+              <div class="text-h5 text-white">{{ stats.earlyExitDays || 0 }}</div>
+              <div class="text-grey-400">Salida Temprana</div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        
+        <v-col cols="12" sm="6" md="2">
           <v-card class="bg-dark-surface border border-blue-500/20 text-center">
             <v-card-text>
               <v-icon size="48" color="info" class="mb-2">mdi-percent</v-icon>

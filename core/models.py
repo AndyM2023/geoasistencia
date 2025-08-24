@@ -458,6 +458,56 @@ class Attendance(models.Model):
         print(f"   - Hora límite con tolerancia: {limit_time}")
         print(f"   - Status final: {self.status}")
     
+    def update_status_dynamically(self):
+        """Actualizar el estado de asistencia dinámicamente basado en la hora actual"""
+        if not self.area or not self.date:
+            return
+        
+        from core.services.schedule_service import ScheduleService
+        from django.utils import timezone
+        from datetime import datetime, timedelta
+        
+        # Obtener horarios esperados
+        expected_check_in, expected_check_out = ScheduleService.get_expected_times(self.area, self.date)
+        if not expected_check_in or not expected_check_out:
+            return
+        
+        # Obtener período de gracia
+        grace_period = ScheduleService.get_grace_period(self.area)
+        
+        # Hora actual
+        current_time = timezone.now().time()
+        current_date = timezone.now().date()
+        
+        # Si es un día diferente, no actualizar
+        if current_date != self.date:
+            return
+        
+        # Si no tiene entrada, verificar si ya es muy tarde
+        if not self.check_in:
+            # Calcular hora límite con tolerancia
+            limit_datetime = datetime.combine(self.date, expected_check_in)
+            limit_datetime = limit_datetime + timedelta(minutes=grace_period)
+            limit_time = limit_datetime.time()
+            
+            # Si ya pasó la hora límite y no marcó entrada, es ausente
+            if current_time > limit_time:
+                self.status = 'absent'
+                self.save()
+            return
+        
+        # Si tiene entrada pero no salida
+        if self.check_in and not self.check_out:
+            # Si ya pasó la hora de salida esperada, marcar como "presente" (completado)
+            if current_time > expected_check_out:
+                self.status = 'present'
+                self.save()
+            return
+        
+        # Si tiene entrada y salida, el estado ya está definido
+        if self.check_in and self.check_out:
+            return
+    
     def save(self, *args, **kwargs):
         """Guardar y actualizar status automáticamente"""
         # Actualizar status antes de guardar
