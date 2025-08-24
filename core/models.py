@@ -408,7 +408,7 @@ class Attendance(models.Model):
     def hours_worked(self):
         """Calcula las horas trabajadas"""
         if self.check_in and self.check_out:
-            from datetime import datetime, time
+            from datetime import datetime
             start = datetime.combine(self.date, self.check_in)
             end = datetime.combine(self.date, self.check_out)
             duration = end - start
@@ -417,7 +417,7 @@ class Attendance(models.Model):
     
     def update_status_based_on_schedule(self):
         """Actualiza el status basado en el horario del área y la hora de entrada"""
-        if not self.check_in or not self.expected_check_in:
+        if not self.check_in:
             return
         
         # Verificar si es un día laboral
@@ -426,12 +426,19 @@ class Attendance(models.Model):
             self.status = 'absent'
             return
         
+        # Obtener horarios esperados del área para esta fecha
+        expected_check_in, expected_check_out = ScheduleService.get_expected_times(self.area, self.date)
+        
+        if not expected_check_in:
+            # Sin horario definido, mantener status actual
+            return
+        
         # Obtener período de gracia del área
         grace_period = ScheduleService.get_grace_period(self.area)
         
         # Calcular hora límite con tolerancia
         from datetime import datetime, timedelta
-        limit_time = datetime.combine(self.date, self.expected_check_in)
+        limit_time = datetime.combine(self.date, expected_check_in)
         limit_time = limit_time + timedelta(minutes=grace_period)
         limit_time = limit_time.time()
         
@@ -447,6 +454,7 @@ class Attendance(models.Model):
         
         print(f"🔄 Status actualizado para {self.employee.full_name}:")
         print(f"   - Hora entrada: {self.check_in}")
+        print(f"   - Hora esperada: {expected_check_in}")
         print(f"   - Hora límite con tolerancia: {limit_time}")
         print(f"   - Status final: {self.status}")
     
@@ -461,25 +469,28 @@ class Attendance(models.Model):
     @property
     def is_late(self):
         """Verifica si llegó tarde según el horario del área"""
-        if self.check_in and hasattr(self.area, 'schedule') and self.area.schedule:
-            from datetime import datetime, timedelta
-            grace_period = self.area.schedule.grace_period_minutes if hasattr(self.area.schedule, 'grace_period_minutes') else 15
+        if not self.check_in:
+            return False
             
-            # Calcular hora límite con tolerancia (por defecto 8:00 AM)
-            default_start = time(8, 0)
-            start_time = getattr(self.area.schedule, 'monday_start', default_start)
-            
-            # Calcular hora límite con tolerancia
-            limit_time = datetime.combine(self.date, start_time)
-            limit_time = limit_time + timedelta(minutes=grace_period)
-            
-            check_in_datetime = datetime.combine(self.date, self.check_in)
-            return check_in_datetime > limit_time
-        elif self.check_in:
-            # Fallback: verificar si llegó tarde (después de las 8:30 AM)
+        # Usar ScheduleService para obtener horarios esperados
+        from core.services.schedule_service import ScheduleService
+        expected_check_in, _ = ScheduleService.get_expected_times(self.area, self.date)
+        
+        if not expected_check_in:
+            # Sin horario definido, usar fallback (8:30 AM)
             from datetime import time
             return self.check_in > time(8, 30)
-        return False
+        
+        # Obtener período de gracia del área
+        grace_period = ScheduleService.get_grace_period(self.area)
+        
+        # Calcular hora límite con tolerancia
+        from datetime import datetime, timedelta
+        limit_time = datetime.combine(self.date, expected_check_in)
+        limit_time = limit_time + timedelta(minutes=grace_period)
+        
+        check_in_datetime = datetime.combine(self.date, self.check_in)
+        return check_in_datetime > limit_time
 
 class PasswordResetToken(models.Model):
     """Token para recuperación de contraseña del administrador"""

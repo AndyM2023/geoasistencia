@@ -51,11 +51,17 @@ class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def employee_login(self, request):
         """Endpoint para login de empleados - USADO EN RECONOCIMIENTO FACIAL"""
+        print(f"🔍 EMPLOYEE_LOGIN - Datos recibidos:")
+        print(f"   - Request data: {request.data}")
+        print(f"   - Content type: {request.content_type}")
+        
         from .serializers import EmployeeLoginSerializer
         
         serializer = EmployeeLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
+            print(f"✅ Login exitoso para usuario: {user.username} (rol: {user.role})")
+            
             refresh = RefreshToken.for_user(user)
             
             return Response({
@@ -63,7 +69,10 @@ class AuthViewSet(viewsets.ViewSet):
                 'refresh': str(refresh),
                 'user': UserSerializer(user).data
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            print(f"❌ Error de validación en login:")
+            print(f"   - Errores: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['get'])
     def me(self, request):
@@ -389,11 +398,154 @@ class DashboardViewSet(viewsets.ViewSet):
             'lastUpdate': timezone.now().isoformat()
         })
 
+    @action(detail=False, methods=['get'])
+    def employee_info(self, request):
+        """Obtener información del empleado autenticado"""
+        try:
+            # Obtener el empleado asociado al usuario autenticado
+            employee = Employee.objects.get(user=request.user)
+            
+            employee_data = {
+                'fullName': employee.full_name,
+                'employeeId': employee.employee_id,
+                'position': employee.position or 'Sin cargo asignado',
+                'area': employee.area.name if employee.area else 'Sin área asignada',
+                'hireDate': employee.hire_date.strftime('%d/%m/%Y') if employee.hire_date else 'No especificada'
+            }
+            
+            return Response(employee_data)
+        except Employee.DoesNotExist:
+            return Response(
+                {'error': 'Empleado no encontrado para este usuario'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo información del empleado: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
+    def employee_stats(self, request):
+        """Obtener estadísticas del empleado autenticado"""
+        try:
+            # Obtener el empleado asociado al usuario autenticado
+            employee = Employee.objects.get(user=request.user)
+            
+            # Obtener todas las asistencias del empleado
+            attendances = Attendance.objects.filter(employee=employee)
+            
+            # Calcular estadísticas
+            total_days = attendances.count()
+            
+            # Días a tiempo (asumiendo que a tiempo significa que llegó antes de las 8:00 AM)
+            on_time_days = 0
+            late_days = 0
+            
+            for attendance in attendances:
+                if attendance.check_in:
+                    # Convertir hora de entrada a datetime para comparar
+                    check_in_time = attendance.check_in
+                    if isinstance(check_in_time, str):
+                        # Si es string, parsear
+                        from datetime import datetime
+                        try:
+                            check_in_time = datetime.strptime(check_in_time, '%H:%M:%S').time()
+                        except ValueError:
+                            check_in_time = datetime.strptime(check_in_time, '%H:%M').time()
+                    
+                    # Comparar con hora límite (8:00 AM)
+                    from datetime import time
+                    limit_time = time(8, 0)
+                    
+                    if check_in_time <= limit_time:
+                        on_time_days += 1
+                    else:
+                        late_days += 1
+            
+            # Calcular tasa de asistencia (días trabajados vs días laborables del mes)
+            current_month = timezone.now().month
+            current_year = timezone.now().year
+            from calendar import monthrange
+            _, days_in_month = monthrange(current_year, current_month)
+            # Asumir 22 días laborables por mes
+            working_days = min(22, days_in_month)
+            
+            attendance_rate = 0
+            if working_days > 0:
+                attendance_rate = round((total_days / working_days) * 100, 1)
+            
+            stats = {
+                'totalDays': total_days,
+                'onTimeDays': on_time_days,
+                'lateDays': late_days,
+                'attendanceRate': attendance_rate
+            }
+            
+            return Response(stats)
+        except Employee.DoesNotExist:
+            return Response(
+                {'error': 'Empleado no encontrado para este usuario'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo estadísticas del empleado: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
+    def employee_attendances(self, request):
+        """Obtener historial de asistencias del empleado autenticado"""
+        try:
+            # Obtener el empleado asociado al usuario autenticado
+            employee = Employee.objects.get(user=request.user)
+            
+            # Obtener todas las asistencias del empleado ordenadas por fecha descendente
+            attendances = Attendance.objects.filter(
+                employee=employee
+            ).select_related('area').order_by('-date')
+            
+            # Serializar las asistencias
+            attendance_data = []
+            for attendance in attendances:
+                attendance_data.append({
+                    'id': attendance.id,
+                    'date': attendance.date.strftime('%Y-%m-%d'),
+                    'check_in': attendance.check_in.strftime('%H:%M:%S') if attendance.check_in else None,
+                    'check_out': attendance.check_out.strftime('%H:%M:%S') if attendance.check_out else None,
+                    'status': attendance.status,
+                    'area': attendance.area.name if attendance.area else 'Sin área',
+                    'created_at': attendance.created_at.isoformat()
+                })
+            
+            return Response({
+                'attendances': attendance_data,
+                'total': len(attendance_data)
+            })
+        except Employee.DoesNotExist:
+            return Response(
+                {'error': 'Empleado no encontrado para este usuario'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo historial de asistencias: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 class EmployeeViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de empleados"""
     queryset = Employee.objects.select_related('user', 'area').all()
     serializer_class = EmployeeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        """Permitir acceso público para listar empleados, pero requerir autenticación para otras operaciones"""
+        if self.action == 'list':
+            permission_classes = [permissions.AllowAny]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
     
     def update(self, request, *args, **kwargs):
         """Override update method to add debugging"""
@@ -723,7 +875,14 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de asistencias"""
     queryset = Attendance.objects.select_related('employee__user', 'area').all()
     serializer_class = AttendanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        """Permitir acceso público para marcar asistencia, pero requerir autenticación para otras operaciones"""
+        if self.action == 'mark_attendance':
+            permission_classes = [permissions.AllowAny]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self):
         queryset = Attendance.objects.select_related('employee__user', 'area').all()
@@ -902,7 +1061,26 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             print(f"   - Período de gracia: {grace_period} minutos")
             
             # Validar si es un día laboral
-            if not ScheduleService.is_work_day(area, today):
+            print(f"🔍 Validando día laboral para área {area.name}:")
+            print(f"   - Fecha: {today} (weekday: {today.weekday()})")
+            print(f"   - ¿Tiene schedule?: {hasattr(area, 'schedule')}")
+            
+            if hasattr(area, 'schedule'):
+                schedule = area.schedule
+                print(f"   - Schedule ID: {schedule.id}")
+                print(f"   - Schedule type: {schedule.schedule_type}")
+                print(f"   - Lunes activo: {schedule.monday_active}")
+                print(f"   - Martes activo: {schedule.tuesday_active}")
+                print(f"   - Miércoles activo: {schedule.wednesday_active}")
+                print(f"   - Jueves activo: {schedule.thursday_active}")
+                print(f"   - Viernes activo: {schedule.friday_active}")
+                print(f"   - Sábado activo: {schedule.saturday_active}")
+                print(f"   - Domingo activo: {schedule.sunday_active}")
+            
+            is_work_day = ScheduleService.is_work_day(area, today)
+            print(f"   - ¿Es día laboral?: {is_work_day}")
+            
+            if not is_work_day:
                 print(f"❌ NO ES DÍA LABORAL para el área {area.name}")
                 return Response({
                     'success': False,
@@ -1024,9 +1202,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                     status=initial_status,
                     latitude=latitude,
                     longitude=longitude,
-                    face_verified=face_verified,
-                    expected_check_in=expected_check_in,
-                    expected_check_out=expected_check_out
+                    face_verified=face_verified
                 )
                 
                 print(f"✅ NUEVA asistencia creada para {employee.full_name}")
@@ -1063,8 +1239,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 'status': attendance.status,
                 'status_display': attendance.get_status_display(),
                 'is_late': attendance.is_late,
-                'expected_check_in': attendance.expected_check_in,
-                'expected_check_out': attendance.expected_check_out
+                'expected_check_in': expected_check_in,
+                'expected_check_out': expected_check_out
             }
             
             print(f"🎯 RESPUESTA COMPLETA que se envía al frontend:")

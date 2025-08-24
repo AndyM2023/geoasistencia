@@ -1,17 +1,6 @@
 <template>
   <div class="notifications-overlay">
-    <!-- Botón de limpieza manual (solo visible si hay notificaciones) -->
-    <div v-if="notifications.length > 0" class="clear-all-button">
-      <v-btn
-        size="x-small"
-        color="grey"
-        variant="tonal"
-        icon="mdi-broom"
-        @click="clearAllNotifications"
-        title="Limpiar todas las notificaciones"
-        class="clear-btn"
-      ></v-btn>
-    </div>
+    <!-- Botón de limpieza manual removido - las notificaciones se auto-ocultan -->
     
     <transition-group name="slide-down" tag="div">
       <div
