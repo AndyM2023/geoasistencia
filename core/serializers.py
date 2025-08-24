@@ -864,12 +864,13 @@ class AreaWithScheduleSerializer(serializers.ModelSerializer):
     schedule = AreaScheduleSerializer(read_only=True)
     schedule_id = serializers.IntegerField(source='schedule.id', read_only=True)
     has_schedule = serializers.SerializerMethodField()
+    employee_count = serializers.ReadOnlyField()
     
     class Meta:
         model = Area
         fields = [
             'id', 'name', 'description', 'latitude', 'longitude', 'radius', 'status',
-            'schedule', 'schedule_id', 'has_schedule', 'created_at', 'updated_at'
+            'schedule', 'schedule_id', 'has_schedule', 'employee_count', 'created_at', 'updated_at'
         ]
     
     def get_has_schedule(self, obj):
