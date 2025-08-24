@@ -26,7 +26,11 @@
             variant="outlined"
             density="compact"
             color="blue-400"
-            class="text-white"
+            class="text-white search-field-responsive"
+            :class="{
+              'search-field-mobile': $vuetify.display.smAndDown,
+              'search-field-tablet': $vuetify.display.mdAndDown && !$vuetify.display.smAndDown
+            }"
           ></v-text-field>
         </div>
       </v-card-title>
@@ -48,27 +52,29 @@
         </template>
         
                  <template v-slot:item.actions="{ item }">
-           <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editArea(item)" title="Editar área"></v-btn>
-           
-           <!-- Botón dinámico según el estado del área -->
-           <v-btn 
-             v-if="item.status === 'active'"
-             icon="mdi-account-off" 
-             size="small" 
-             :color="item.employee_count > 0 ? 'grey-400' : 'red-400'"
-             @click="item.employee_count > 0 ? null : deleteArea(item)"
-             :disabled="item.employee_count > 0"
-             :title="item.employee_count > 0 ? 'No se puede desactivar: tiene empleados asignados' : 'Desactivar área'"
-           ></v-btn>
-           
-           <v-btn 
-             v-else
-             icon="mdi-account-check" 
-             size="small" 
-             color="green-400" 
-             @click="activateArea(item)"
-             title="Reactivar área"
-           ></v-btn>
+           <div class="d-flex flex-nowrap gap-1 actions-container">
+             <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editArea(item)" title="Editar área"></v-btn>
+             
+             <!-- Botón dinámico según el estado del área -->
+             <v-btn 
+               v-if="item.status === 'active'"
+               icon="mdi-account-off" 
+               size="small" 
+               :color="item.employee_count > 0 ? 'grey-400' : 'red-400'"
+               @click="item.employee_count > 0 ? null : deleteArea(item)"
+               :disabled="item.employee_count > 0"
+               :title="item.employee_count > 0 ? 'No se puede desactivar: tiene empleados asignados' : 'Desactivar área'"
+             ></v-btn>
+             
+             <v-btn 
+               v-else
+               icon="mdi-account-check" 
+               size="small" 
+               color="green-400" 
+               @click="activateArea(item)"
+               title="Reactivar área"
+             ></v-btn>
+           </div>
          </template>
         
         <template v-slot:item.latitude="{ item }">
@@ -80,40 +86,48 @@
         </template>
         
         <template v-slot:item.description="{ item }">
-          {{ item.description }}
+          <div class="description-cell">
+            <span v-for="(line, index) in formatDescription(item.description)" :key="index" class="description-line">
+              {{ line }}
+            </span>
+          </div>
         </template>
         
         <template v-slot:item.employee_count="{ item }">
-          <v-chip 
-            :color="item.employee_count > 0 ? 'green-500' : 'grey-500'" 
-            size="small" 
-            variant="tonal"
-          >
-            {{ item.employee_count || 0 }}
-          </v-chip>
+          <div class="d-flex justify-center">
+            <v-chip 
+              :color="item.employee_count > 0 ? 'green-500' : 'grey-500'" 
+              size="small" 
+              variant="tonal"
+            >
+              {{ item.employee_count || 0 }}
+            </v-chip>
+          </div>
         </template>
         
         <template v-slot:item.schedule_info="{ item }">
-          <v-chip 
-            v-if="item.schedule"
-            :color="getScheduleColor(item.schedule)" 
-            size="small" 
-            variant="tonal"
-            :title="getScheduleTooltip(item.schedule)"
-          >
-            <v-icon left size="small">{{ getScheduleIcon(item.schedule) }}</v-icon>
-            {{ getScheduleText(item.schedule) }}
-          </v-chip>
-          <v-chip 
-            v-else
-            color="grey-500" 
-            size="small" 
-            variant="tonal"
-            title="Sin horario configurado"
-          >
-            <v-icon left size="small">mdi-close-circle</v-icon>
-            Sin horario
-          </v-chip>
+          <div class="d-flex justify-center">
+            <v-chip 
+              v-if="item.schedule"
+              :color="getScheduleColor(item.schedule)" 
+              size="small" 
+              variant="tonal"
+              :title="getScheduleTooltip(item.schedule)"
+            >
+              <v-icon left size="small">{{ getScheduleIcon(item.schedule) }}</v-icon>
+              {{ getScheduleText(item.schedule) }}
+            </v-chip>
+            <v-chip 
+              v-else
+              color="grey-500" 
+              size="small" 
+              variant="tonal"
+              title="Sin horario"
+            >
+              <v-icon left size="small">mdi-close-circle</v-icon>
+              Sin horario
+            </v-chip>
+          </div>
         </template>
         
         <template v-slot:item.status="{ item }">
@@ -1259,10 +1273,10 @@ export default {
         console.log('🎯 Usando schedule_type del backend:', schedule.schedule_type)
         if (schedule.schedule_type === 'default') {
           console.log('✅ Horario estándar detectado por schedule_type')
-          return 'Horario Estándar'
+          return 'Estándar'
         } else if (schedule.schedule_type === 'custom') {
           console.log('🔧 Horario personalizado detectado por schedule_type')
-          return 'Horario Personalizado'
+          return 'Personalizado'
         } else if (schedule.schedule_type === 'none') {
           console.log('❌ Sin horario por schedule_type')
           return 'Sin Horario'
@@ -1278,10 +1292,10 @@ export default {
       
       if (activeDays.length === 5 && !schedule.saturday_active && !schedule.sunday_active) {
         console.log('✅ Horario estándar detectado por fallback')
-        return 'Horario Estándar'
+        return 'Estándar'
         } else if (activeDays.length > 0) {
         console.log('🔧 Horario personalizado detectado por fallback:', activeDays.length, 'días')
-        return 'Horario Personalizado'
+        return 'Personalizado'
       } else {
         console.log('⚠️ Horario vacío detectado por fallback')
         return 'Sin Horario'
@@ -1289,7 +1303,7 @@ export default {
     }
     
     const getScheduleTooltip = (schedule) => {
-      if (!schedule) return 'Sin horario configurado'
+      if (!schedule) return 'Sin horario'
       
       const activeDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
         .filter(day => schedule[`${day}_active`])
@@ -1312,6 +1326,59 @@ export default {
       const tolerance = schedule.grace_period_minutes || 0
       
       return `${activeDayNames} - Tolerancia: ${tolerance} min`
+    }
+
+    // Función para formatear la descripción en múltiples líneas
+    const formatDescription = (description) => {
+      if (!description) return ['']
+      
+      // Limitar a máximo 30 caracteres
+      const maxTotalLength = 30
+      const maxLineLength = 15
+      
+      // Truncar si excede los 30 caracteres
+      let truncatedDescription = description
+      if (description.length > maxTotalLength) {
+        truncatedDescription = description.substring(0, maxTotalLength) + '...'
+      }
+      
+      const words = truncatedDescription.split(' ')
+      const lines = []
+      let currentLine = ''
+      
+      for (const word of words) {
+        // Si la palabra es más larga que el límite de línea, dividirla
+        if (word.length > maxLineLength) {
+          if (currentLine) {
+            lines.push(currentLine.trim())
+            currentLine = ''
+          }
+          
+          // Dividir la palabra larga en partes de maxLineLength
+          for (let i = 0; i < word.length; i += maxLineLength) {
+            lines.push(word.substring(i, i + maxLineLength))
+          }
+        } else {
+          // Si agregar esta palabra excede el límite de línea, crear nueva línea
+          if ((currentLine + ' ' + word).length > maxLineLength) {
+            if (currentLine) {
+              lines.push(currentLine.trim())
+              currentLine = word
+            } else {
+              currentLine = word
+            }
+          } else {
+            currentLine = currentLine ? currentLine + ' ' + word : word
+          }
+        }
+      }
+      
+      // Agregar la última línea si hay contenido
+      if (currentLine) {
+        lines.push(currentLine.trim())
+      }
+      
+      return lines.length > 0 ? lines : ['']
     }
 
          // Función para reordenar la lista actual
@@ -2406,8 +2473,9 @@ export default {
        loadScheduleFromArea,
        getScheduleColor,
        getScheduleIcon,
-       getScheduleText,
-       getScheduleTooltip,
+             getScheduleText,
+      getScheduleTooltip,
+      formatDescription,
        // Funciones de validación
        validateField,
        validateScheduleField,
@@ -2887,6 +2955,41 @@ export default {
   
      .area-form-scroll-wrapper:hover::after {
      opacity: 1;
+   }
+   
+   /* Estilos específicos para el input de búsqueda */
+   .search-field-responsive {
+     min-width: 200px !important;
+     max-width: 300px !important;
+     width: 150px !important;
+   }
+   
+   .search-field-responsive .v-field__input {
+     min-width: 200px !important;
+     max-width: 300px !important;
+     width: 500px !important;
+   }
+   
+   /* Responsive para tablets */
+   .search-field-tablet {
+     min-width: 200px !important;
+     width: 200px !important;
+     max-width: 300px !important;
+   }
+   
+   /* Responsive para móviles */
+   .search-field-mobile {
+     min-width: 200px !important;
+     width: 300px !important;
+     max-width: 70% !important;
+   }
+   
+   /* Responsive para pantallas muy pequeñas */
+   @media (max-width: 480px) {
+     .search-field-mobile {
+       min-width: 50% !important;
+       width: 50% !important;
+     }
    }
    
 

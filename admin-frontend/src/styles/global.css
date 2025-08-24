@@ -249,22 +249,57 @@ body.dashboard-page .v-application {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  transition: all 0.2s ease !important;
 }
 
 body.dashboard-page .v-application__wrap {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  transition: all 0.2s ease !important;
 }
 
 body.dashboard-page .v-main {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  transition: all 0.2s ease !important;
 }
 
 body.dashboard-page .v-container {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Permitir scroll en responsive para el dashboard */
+@media (max-width: 960px) {
+  body.dashboard-page .v-application {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  body.dashboard-page .v-application__wrap {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  body.dashboard-page .v-main {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  body.dashboard-page .v-container {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
 }

@@ -250,6 +250,7 @@ export default {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  transition: all 0.2s ease !important;
 }
 
 .v-card {
@@ -286,6 +287,34 @@ export default {
 @media (max-width: 960px) {
   .v-card-text {
     padding: 0.75rem;
+  }
+  
+  /* Asegurar que las actividades recientes sean visibles en responsive */
+  .dashboard-content {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  /* Estilos específicos para la columna de actividades recientes */
+  .v-col[md="4"] {
+    height: auto !important;
+    min-height: auto !important;
+  }
+  
+  /* Estilos para la tarjeta de actividades */
+  .v-col[md="4"] .v-card {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Estilos para la lista de actividades */
+  .v-col[md="4"] .v-list {
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
   }
 }
 </style>

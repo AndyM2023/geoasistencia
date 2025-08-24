@@ -84,26 +84,28 @@
           </div>
         </template>
         <template v-slot:item.actions="{ item }">
-          <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editEmployee(item)"></v-btn>
-          
-          <!-- Botón dinámico según el estado del empleado -->
-          <v-btn 
-            v-if="item.user.is_active"
-            icon="mdi-account-off" 
-            size="small" 
-            color="red-400" 
-            @click="deleteEmployee(item)"
-            title="Desactivar empleado"
-          ></v-btn>
-          
-          <v-btn 
-            v-else
-            icon="mdi-account-check" 
-            size="small" 
-            color="green-400" 
-            @click="activateEmployee(item)"
-            title="Reactivar empleado"
-          ></v-btn>
+          <div class="d-flex flex-nowrap gap-1 actions-container">
+            <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="editEmployee(item)"></v-btn>
+            
+            <!-- Botón dinámico según el estado del empleado -->
+            <v-btn 
+              v-if="item.user.is_active"
+              icon="mdi-account-off" 
+              size="small" 
+              color="red-400" 
+              @click="deleteEmployee(item)"
+              title="Desactivar empleado"
+            ></v-btn>
+            
+            <v-btn 
+              v-else
+              icon="mdi-account-check" 
+              size="small" 
+              color="green-400" 
+              @click="activateEmployee(item)"
+              title="Reactivar empleado"
+            ></v-btn>
+          </div>
         </template>
       </v-data-table>
       
@@ -150,31 +152,33 @@
               
               <!-- Acciones -->
               <v-card-actions class="justify-center pa-4">
-                <v-btn 
-                  icon="mdi-pencil" 
-                  size="small" 
-                  color="blue-400" 
-                  @click="editEmployee(employee)"
-                  title="Editar"
-                ></v-btn>
-                
-                <v-btn 
-                  v-if="employee.user.is_active"
-                  icon="mdi-account-off" 
-                  size="small" 
-                  color="red-400" 
-                  @click="deleteEmployee(employee)"
-                  title="Desactivar"
-                ></v-btn>
-                
-                <v-btn 
-                  v-else
-                  icon="mdi-account-check" 
-                  size="small" 
-                  color="green-400" 
-                  @click="activateEmployee(employee)"
-                  title="Reactivar"
-                ></v-btn>
+                <div class="d-flex flex-nowrap gap-1 actions-container">
+                  <v-btn 
+                    icon="mdi-pencil" 
+                    size="small" 
+                    color="blue-400" 
+                    @click="editEmployee(employee)"
+                    title="Editar"
+                  ></v-btn>
+                  
+                  <v-btn 
+                    v-if="employee.user.is_active"
+                    icon="mdi-account-off" 
+                    size="small" 
+                    color="red-400" 
+                    @click="deleteEmployee(employee)"
+                    title="Desactivar"
+                  ></v-btn>
+                  
+                  <v-btn 
+                    v-else
+                    icon="mdi-account-check" 
+                    size="small" 
+                    color="green-400" 
+                    @click="activateEmployee(employee)"
+                    title="Reactivar"
+                  ></v-btn>
+                </div>
               </v-card-actions>
             </v-card>
           </v-col>

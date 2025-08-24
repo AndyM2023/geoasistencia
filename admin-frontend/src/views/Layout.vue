@@ -128,6 +128,7 @@ export default {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  transition: all 0.2s ease !important;
 }
 
 .dashboard-container {
@@ -136,6 +137,24 @@ export default {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Permitir scroll en responsive para el dashboard */
+@media (max-width: 960px) {
+  .dashboard-main {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .dashboard-container {
+    overflow-y: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    transition: all 0.2s ease !important;
+  }
 }
 
 .no-top-padding {
