@@ -116,8 +116,7 @@ class AttendanceAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Información de Asistencia', {'fields': ('employee', 'date', 'status')}),
-        ('Horarios Reales', {'fields': ('check_in', 'check_out')}),
-        ('Horarios Esperados', {'fields': ('expected_check_in', 'expected_check_out')}),
+        ('Horarios', {'fields': ('check_in', 'check_out')}),
         ('Ubicación', {'fields': ('area', 'latitude', 'longitude')}),
         ('Verificación', {'fields': ('face_verified',)}),
     )

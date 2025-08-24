@@ -129,7 +129,7 @@
             </v-alert>
 
             <!-- Credenciales de demo -->
-            
+          
           </v-card-text>
         </v-card>
       </v-col>
@@ -195,7 +195,15 @@ export default {
           error.value = result.error
         }
       } catch (err) {
-        error.value = 'Ocurrió un error. Por favor intenta de nuevo.'
+        console.error('💥 Login - Error capturado:', err)
+        
+        // Si ya tenemos un error del auth store, usarlo
+        if (err.error) {
+          error.value = err.error
+        } else {
+          // Fallback para errores inesperados
+          error.value = 'Ocurrió un error inesperado. Por favor intenta de nuevo.'
+        }
       } finally {
         loading.value = false
       }

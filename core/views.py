@@ -132,6 +132,84 @@ class AuthViewSet(viewsets.ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=False, methods=['put'])
+    def update_profile(self, request):
+        """Actualizar perfil del usuario autenticado"""
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'No autenticado'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        try:
+            user = request.user
+            data = request.data.copy()
+            
+            # Validar campos requeridos
+            required_fields = ['first_name', 'last_name', 'email', 'username']
+            for field in required_fields:
+                if not data.get(field):
+                    return Response(
+                        {'error': f'El campo {field} es requerido'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Verificar que el username no esté en uso por otro usuario
+            if User.objects.filter(username=data['username']).exclude(id=user.id).exists():
+                return Response(
+                    {'error': 'Ya existe un usuario con ese nombre de usuario'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Verificar que el email no esté en uso por otro usuario
+            if User.objects.filter(email=data['email']).exclude(id=user.id).exists():
+                return Response(
+                    {'error': 'Ya existe un usuario con ese email'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar formato de email
+            import re
+            if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', data['email']):
+                return Response(
+                    {'error': 'Formato de email inválido'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validar longitud del username
+            if len(data['username']) < 3:
+                return Response(
+                    {'error': 'El nombre de usuario debe tener al menos 3 caracteres'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Actualizar campos del usuario
+            user.first_name = data['first_name']
+            user.last_name = data['last_name']
+            user.email = data['email']
+            user.username = data['username']
+            
+            # Guardar cambios
+            user.save()
+            
+            # Actualizar timestamp de modificación
+            user.updated_at = timezone.now()
+            user.save(update_fields=['updated_at'])
+            
+            print(f"✅ Perfil actualizado para usuario {user.username}")
+            
+            return Response({
+                'message': 'Perfil actualizado exitosamente',
+                'user': UserSerializer(user).data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            print(f"❌ Error actualizando perfil: {e}")
+            return Response(
+                {'error': f'Error durante la actualización: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 class DashboardViewSet(viewsets.ViewSet):
     """ViewSet para estadísticas del dashboard"""
     permission_classes = [permissions.IsAuthenticated]

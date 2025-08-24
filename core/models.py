@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 import uuid
-from datetime import timedelta
+from datetime import timedelta, time
 
 class User(AbstractUser):
     """Usuario base del sistema (Admin o Empleado)"""
@@ -207,7 +207,6 @@ class AreaSchedule(models.Model):
     
     def __str__(self):
         return f"Horario - {self.area.name}"
-
 class Employee(models.Model):
     """Empleado del sistema"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
@@ -393,11 +392,6 @@ class Attendance(models.Model):
         verbose_name='Longitud de Entrada'
     )
     face_verified = models.BooleanField(default=False, verbose_name='Rostro Verificado')
-    
-    # Nuevos campos para control de horarios
-    expected_check_in = models.TimeField(null=True, blank=True, verbose_name='Hora Esperada de Entrada')
-    expected_check_out = models.TimeField(null=True, blank=True, verbose_name='Hora Esperada de Salida')
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -467,16 +461,24 @@ class Attendance(models.Model):
     @property
     def is_late(self):
         """Verifica si llegó tarde según el horario del área"""
-        if self.check_in and self.expected_check_in:
+        if self.check_in and hasattr(self.area, 'schedule') and self.area.schedule:
             from datetime import datetime, timedelta
-            grace_period = self.area.schedule.grace_period_minutes if hasattr(self.area, 'schedule') else 15
+            grace_period = self.area.schedule.grace_period_minutes if hasattr(self.area.schedule, 'grace_period_minutes') else 15
+            
+            # Calcular hora límite con tolerancia (por defecto 8:00 AM)
+            default_start = time(8, 0)
+            start_time = getattr(self.area.schedule, 'monday_start', default_start)
             
             # Calcular hora límite con tolerancia
-            limit_time = datetime.combine(self.date, self.expected_check_in)
+            limit_time = datetime.combine(self.date, start_time)
             limit_time = limit_time + timedelta(minutes=grace_period)
             
             check_in_datetime = datetime.combine(self.date, self.check_in)
             return check_in_datetime > limit_time
+        elif self.check_in:
+            # Fallback: verificar si llegó tarde (después de las 8:30 AM)
+            from datetime import time
+            return self.check_in > time(8, 30)
         return False
 
 class PasswordResetToken(models.Model):

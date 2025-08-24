@@ -36,16 +36,6 @@
 
     <!-- Acciones de usuario -->
     <div class="d-flex align-center">
-      <!-- Botón de notificaciones (en rutas /app/* y /employee/*) -->
-      <v-btn
-        v-if="showMenuButton"
-        icon
-        color="blue-400"
-        class="mr-2"
-      >
-
-      </v-btn>
-      
       <!-- Botón dinámico según la ruta -->
       <template v-if="!showMenuButton">
         <!-- En página de reconocimiento (/): Botón ADMIN -->
@@ -162,8 +152,12 @@ export default {
     const isAppRoute = computed(() => route.path.startsWith('/app'))
     const isEmployeeRoute = computed(() => route.path.startsWith('/employee'))
     
-    // Mostrar botón de menú en rutas /app/* y /employee/*
-    const showMenuButton = computed(() => isAppRoute.value || isEmployeeRoute.value)
+    // Mostrar botón de menú en rutas /app/* y /employee/* solo si está autenticado
+    const showMenuButton = computed(() => {
+      if (isAppRoute.value) return true
+      if (isEmployeeRoute.value) return authStore.isAuthenticated
+      return false
+    })
     
     // Computed para mostrar el nombre del usuario
     const displayUserName = computed(() => {

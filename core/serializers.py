@@ -683,7 +683,7 @@ class LoginSerializer(serializers.Serializer):
             if user.role != 'admin':
                 raise serializers.ValidationError(
                     'Acceso denegado. Solo los administradores pueden acceder al panel de administración. '
-                    'Los empleados deben usar el reconocimiento facial desde la página principal.'
+                    
                 )
             
             attrs['user'] = user

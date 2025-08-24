@@ -367,6 +367,7 @@ import { attendanceService } from '../services/attendanceService'
 import { employeeService } from '../services/employeeService'
 import areaService from '../services/areaService'
 import { useAuthStore } from '../stores/auth'
+import { useNotifications } from '../composables/useNotifications'
 import * as XLSX from 'xlsx'
 
 export default {
@@ -376,6 +377,7 @@ export default {
   },
   setup() {
     const authStore = useAuthStore()
+    const { showSuccess, showError, showInfo, showWarning } = useNotifications()
     
     // Verificar autenticación
     if (!authStore.isAuthenticated) {
@@ -614,7 +616,10 @@ export default {
     const generateReport = async () => {
       // Verificar autenticación antes de proceder
       if (!authStore.isAuthenticated) {
-        alert('❌ No estás autenticado. Por favor, inicia sesión.')
+        showError('No estás autenticado. Por favor, inicia sesión.', {
+          title: '❌ No Autenticado',
+          icon: 'mdi-account-lock'
+        })
         return
       }
       
@@ -743,7 +748,10 @@ export default {
         
         // Mostrar mensaje de error al usuario
         reportData.value = [];
-        alert(errorMessage);
+        showError(errorMessage, {
+          title: '❌ Error de Generación',
+          icon: 'mdi-chart-line-off'
+        })
       } finally {
         generating.value = false;
         loading.value = false;
@@ -769,7 +777,10 @@ export default {
     const exportReport = async () => {
       try {
         if (!reportData.value.length) {
-          alert('No hay datos para exportar');
+          showWarning('No hay datos para exportar', {
+          title: '⚠️ Sin Datos',
+          icon: 'mdi-database-off'
+        })
           return;
         }
 
@@ -827,11 +838,17 @@ export default {
         console.log('✅ Reporte exportado exitosamente:', fileName);
         
         // Mostrar mensaje de éxito
-        alert(`Reporte exportado exitosamente como: ${fileName}`);
+        showSuccess(`Reporte exportado exitosamente como: ${fileName}`, {
+          title: '✅ Exportación Exitosa',
+          icon: 'mdi-file-excel'
+        })
 
       } catch (error) {
         console.error('❌ Error exportando reporte:', error);
-        alert('Error al exportar el reporte. Por favor, inténtalo de nuevo.');
+        showError('Error al exportar el reporte. Por favor, inténtalo de nuevo.', {
+          title: '❌ Error de Exportación',
+          icon: 'mdi-file-excel-off'
+        })
       } finally {
         // Restaurar el botón
         const exportBtn = document.querySelector('[data-export-btn]');
@@ -1007,16 +1024,28 @@ export default {
           console.log('🔑 Token expirado:', now > exp);
           
           if (now > exp) {
-            alert('⚠️ El token ha expirado. Por favor, inicia sesión nuevamente.');
+            showWarning('El token ha expirado. Por favor, inicia sesión nuevamente.', {
+              title: '⚠️ Token Expirado',
+              icon: 'mdi-shield-clock'
+            });
           } else {
-            alert('✅ Token válido. Estado de autenticación (consola)');
+            showInfo('Token válido. Estado de autenticación (consola)', {
+          title: '✅ Token Válido',
+          icon: 'mdi-shield-check'
+        });
           }
         } catch (e) {
           console.error('Error decodificando token:', e);
-          alert('❌ Error decodificando token');
+          showError('Error decodificando token', {
+          title: '❌ Error de Token',
+          icon: 'mdi-shield-alert'
+        });
         }
       } else {
-        alert('❌ No hay token disponible');
+        showError('No hay token disponible', {
+          title: '❌ Sin Token',
+          icon: 'mdi-shield-off'
+        });
       }
     };
 
@@ -1039,16 +1068,25 @@ export default {
         if (response.ok) {
           const data = await response.json();
           console.log('✅ Respuesta de prueba del backend:', data);
-          alert('✅ Conexión con el backend exitosa!');
+          showSuccess('Conexión con el backend exitosa!', {
+          title: '✅ Conexión Exitosa',
+          icon: 'mdi-server-network'
+        });
         } else {
           console.error('❌ Error HTTP:', response.status, response.statusText);
           const errorText = await response.text();
           console.error('❌ Respuesta de error:', errorText);
-          alert(`❌ Error HTTP ${response.status}: ${response.statusText}`);
+          showError(`Error HTTP ${response.status}: ${response.statusText}`, {
+          title: '❌ Error HTTP',
+          icon: 'mdi-server-network-off'
+        });
         }
       } catch (error) {
         console.error('❌ Error de conexión con el backend:', error);
-        alert('❌ Error de conexión con el backend. Verifica la configuración de la URL y el backend.');
+        showError('Error de conexión con el backend. Verifica la configuración de la URL y el backend.', {
+          title: '❌ Error de Conexión',
+          icon: 'mdi-server-off'
+        });
       }
     };
 
@@ -1060,7 +1098,10 @@ export default {
         // Intentar obtener todas las asistencias
         const response = await attendanceService.getAll();
         console.log('📊 Respuesta del servicio de asistencia (getAll):', response);
-        alert('✅ Servicio de asistencia (getAll) funcionando correctamente!');
+        showSuccess('Servicio de asistencia (getAll) funcionando correctamente!', {
+          title: '✅ Servicio Funcionando',
+          icon: 'mdi-database-check'
+        });
       } catch (error) {
         console.error('❌ Error al probar el servicio de asistencia:', error);
         console.error('📡 Detalles del error:', {
@@ -1070,7 +1111,10 @@ export default {
           data: error.response?.data,
           config: error.config
         });
-        alert('❌ Servicio de asistencia (getAll) no está funcionando. Verifica la configuración del backend.');
+        showError('Servicio de asistencia (getAll) no está funcionando. Verifica la configuración del backend.', {
+          title: '❌ Servicio No Funciona',
+          icon: 'mdi-database-off'
+        });
       }
     };
 
