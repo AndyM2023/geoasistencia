@@ -130,7 +130,31 @@
       </v-data-table>
     </v-card>
 
-    <!-- Dialog para Crear/Editar Área -->
+    <!-- Dialog para Crear/Editar Área (Original - TEMPORALMENTE OCULTO) -->
+    <div style="display: none;">
+    <!-- Se ocultó temporalmente para probar AreaForm -->
+    
+    <!-- NUEVO COMPONENTE AreaForm -->
+    <AreaForm
+      v-model:showDialog="showDialog"
+      v-model:areaForm="areaForm"
+      v-model:scheduleType="scheduleType"
+      v-model:schedule="schedule"
+      :editingArea="editingArea"
+      :formErrors="formErrors"
+      :saving="saving"
+      @save="saveArea"
+      @cancel="cancelDialog"
+      @showMapSelector="showMapSelectorModal"
+      @validateField="validateField"
+      @sanitizeName="sanitizeName"
+      @sanitizeDescription="sanitizeDescription"
+      @createDefaultSchedule="createDefaultSchedule"
+      @validateScheduleField="validateScheduleField"
+      @getScheduleSummary="getScheduleSummary"
+    />
+    
+    <!-- Dialog para Crear/Editar Área (Original)
     <v-dialog v-model="showDialog" max-width="700px" class="area-dialog">
       <v-card class="bg-dark-surface border border-blue-500/20">
         <v-card-title class="text-white">
@@ -478,6 +502,8 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    -->
+    </div>
 
     <!-- Dialog del Selector de Mapa -->
     <v-dialog v-model="showMapSelector" max-width="1200px" persistent>
@@ -696,9 +722,13 @@
 import areaService from '../services/areaService'
 import useOptimizedMap from '../composables/useOptimizedMap'
 import { useNotifications } from '../composables/useNotifications'
+import AreaForm from '../components/areas/AreaForm.vue'
 
 export default {
   name: 'Areas',
+  components: {
+    AreaForm
+  },
   setup() {
     const { showSuccess, showError, showWarning, showInfo, showLocationStatus } = useNotifications()
     
