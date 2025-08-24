@@ -11,11 +11,6 @@ body {
   font-family: 'Roboto', sans-serif;
   background: #0a0a0f;
   color: #ffffff;
-  overflow-x: hidden;
-}
-
-html {
-  overflow-x: hidden;
 }
 
 /* ===== GRADIENTES DE FONDO ===== */
@@ -32,7 +27,24 @@ html {
 }
 
 /* ===== PERSONALIZACIÓN DE SCROLLBAR ===== */
-/* Solo mantener scrollbar para el drawer de navegación */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00d4ff;
+}
+
+/* Scrollbar específico para el drawer */
 .v-navigation-drawer ::-webkit-scrollbar {
   width: 6px;
 }
@@ -86,69 +98,6 @@ html {
 .neon-border {
   box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
-
-/* ===== DASHBOARD SPACING OVERRIDES ===== */
-/* Eliminar espacios no deseados en el dashboard */
-.dashboard-stats-row {
-  margin-bottom: 0 !important;
-}
-
-.v-row.g-0 {
-  margin: 0 !important;
-}
-
-.v-row.g-0 .v-col {
-  padding: 0;
-}
-
-/* Asegurar que las tarjetas del dashboard no tengan espacios adicionales */
-.dashboard-stats-row + .v-row {
-  margin-top: 0 !important;
-}
-
-/* Eliminar completamente espacios entre tarjetas KPI */
-.dashboard-stats-row .v-col {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.dashboard-stats-row .v-col > * {
-  margin: 0 !important;
-  border-radius: 0 !important;
-}
-
-/* Primera tarjeta - solo bordes redondeados superiores */
-.dashboard-stats-row .v-col:first-child > * {
-  border-top-left-radius: 12px !important;
-  border-top-right-radius: 12px !important;
-}
-
-/* Última tarjeta - solo bordes redondeados inferiores */
-.dashboard-stats-row .v-col:last-child > * {
-  border-bottom-left-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
-}
-
-/* Eliminar bordes internos entre tarjetas */
-.dashboard-stats-row .v-col:not(:last-child) > * {
-  border-right: none !important;
-}
-
-.dashboard-stats-row .v-col:not(:first-child) > * {
-  border-left: none !important;
-}
-
-/* ===== ELIMINAR SCROLL INNECESARIO ===== */
-/* Los estilos específicos del dashboard están en dashboard-specific.css */
-
-/* ===== ELIMINAR SCROLL COMPLETAMENTE ===== */
-/* Los estilos específicos del dashboard están en dashboard-specific.css */
-
-/* ===== OVERRIDE FINAL PARA EL DASHBOARD ===== */
-/* Los estilos específicos del dashboard están en dashboard-specific.css */
-
-/* ===== SOLUCIÓN AGRESIVA PARA ELIMINAR SCROLL ===== */
-/* Los estilos específicos del dashboard están en dashboard-specific.css */
 
 .text-blue-400 {
   text-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
