@@ -1,14 +1,13 @@
 <template>
   <div>
-    <v-container fluid>
-      <v-row class="page-header reports-header">
-        <v-col>
-          <h1 class="reports-title">Reportes de Asistencia</h1>
-        </v-col>
-      </v-row>
+    <v-row>
+      <v-col cols="12">
+        <h1 class="text-h4 mb-4 text-white">Reportes de Asistencia</h1>
+      </v-col>
+    </v-row>
 
     <!-- Filtros -->
-    <v-card class="reports-filters-container">
+    <v-card class="mb-6">
       <v-card-title class="d-flex align-center justify-space-between">
         <span>Filtros</span>
         <div class="d-flex align-center">
