@@ -502,7 +502,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    -->
+    <!-- Fin del dialog original comentado -->
     </div>
 
     <!-- Dialog del Selector de Mapa -->
