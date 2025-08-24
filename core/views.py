@@ -435,33 +435,81 @@ class DashboardViewSet(viewsets.ViewSet):
             # Obtener todas las asistencias del empleado
             attendances = Attendance.objects.filter(employee=employee)
             
-            # Calcular estadísticas
+            # ACTUALIZAR ESTADOS DINÁMICAMENTE antes de calcular
+            print(f"🔄 Actualizando estados dinámicamente para {employee.full_name}...")
+            for attendance in attendances:
+                try:
+                    old_status = attendance.status
+                    attendance.update_status_dynamically()
+                    if attendance.status != old_status:
+                        print(f"   ✅ Estado actualizado: {old_status} → {attendance.status}")
+                except Exception as e:
+                    print(f"   ⚠️ Error actualizando estado: {e}")
+            
+            # Recalcular estadísticas con estados actualizados
             total_days = attendances.count()
             
-            # Días a tiempo (asumiendo que a tiempo significa que llegó antes de las 8:00 AM)
+            # Contadores para diferentes tipos de asistencia
             on_time_days = 0
             late_days = 0
+            early_exit_days = 0
             
             for attendance in attendances:
-                if attendance.check_in:
-                    # Convertir hora de entrada a datetime para comparar
-                    check_in_time = attendance.check_in
-                    if isinstance(check_in_time, str):
-                        # Si es string, parsear
-                        from datetime import datetime
-                        try:
-                            check_in_time = datetime.strptime(check_in_time, '%H:%M:%S').time()
-                        except ValueError:
-                            check_in_time = datetime.strptime(check_in_time, '%H:%M').time()
-                    
-                    # Comparar con hora límite (8:00 AM)
-                    from datetime import time
-                    limit_time = time(8, 0)
-                    
-                    if check_in_time <= limit_time:
-                        on_time_days += 1
-                    else:
-                        late_days += 1
+                if not attendance.check_in or not attendance.area:
+                    continue
+                
+                # Obtener horarios esperados para esta área y fecha
+                from core.services.schedule_service import ScheduleService
+                expected_check_in, expected_check_out = ScheduleService.get_expected_times(
+                    attendance.area, attendance.date
+                )
+                
+                if not expected_check_in or not expected_check_out:
+                    # Sin horario configurado, considerar como a tiempo
+                    on_time_days += 1
+                    continue
+                
+                # Obtener período de gracia
+                grace_period = ScheduleService.get_grace_period(attendance.area)
+                
+                # Convertir horas a objetos time para comparar
+                check_in_time = attendance.check_in
+                check_out_time = attendance.check_out
+                
+                if isinstance(check_in_time, str):
+                    from datetime import datetime
+                    try:
+                        check_in_time = datetime.strptime(check_in_time, '%H:%M:%S').time()
+                    except ValueError:
+                        check_in_time = datetime.strptime(check_in_time, '%H:%M').time()
+                
+                if isinstance(check_out_time, str):
+                    from datetime import datetime
+                    try:
+                        check_out_time = datetime.strptime(check_out_time, '%H:%M:%S').time()
+                    except ValueError:
+                        check_out_time = datetime.strptime(check_out_time, '%H:%M').time()
+                
+                # Calcular hora límite de entrada (con período de gracia)
+                from datetime import datetime, timedelta
+                limit_datetime = datetime.combine(attendance.date, expected_check_in)
+                limit_datetime = limit_datetime + timedelta(minutes=grace_period)
+                limit_time = limit_datetime.time()
+                
+                # Verificar entrada
+                is_late_entry = check_in_time > limit_time
+                
+                # Verificar salida
+                is_early_exit = check_out_time < expected_check_out if check_out_time else False
+                
+                # Clasificar el día de manera simple: solo entrada y salida
+                if is_late_entry:
+                    late_days += 1
+                elif is_early_exit:
+                    early_exit_days += 1
+                else:
+                    # A tiempo: entrada a tiempo Y salida a tiempo (o sin salida)
+                    on_time_days += 1
             
             # Calcular tasa de asistencia (días trabajados vs días laborables del mes)
             current_month = timezone.now().month
@@ -479,6 +527,7 @@ class DashboardViewSet(viewsets.ViewSet):
                 'totalDays': total_days,
                 'onTimeDays': on_time_days,
                 'lateDays': late_days,
+                'earlyExitDays': early_exit_days,
                 'attendanceRate': attendance_rate
             }
             
