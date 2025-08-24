@@ -1,0 +1,45 @@
+/* ===== ESTILOS ESPECÍFICOS PARA LA PÁGINA DEL DASHBOARD ===== */
+
+/* ===== HEADER DEL DASHBOARD ===== */
+/* Los estilos del header están ahora en page-titles.css */
+
+/* ===== TARJETAS DE ESTADÍSTICAS ===== */
+.dashboard-stats-row {
+  margin-top: 0 !important;
+  margin-bottom: 1rem !important;
+}
+
+.dashboard-stats-row .v-col {
+  padding: 0.25rem !important;
+}
+
+/* ===== GRÁFICOS Y ACTIVIDAD RECIENTE ===== */
+.dashboard-charts-row {
+  margin-top: 0 !important;
+}
+
+.dashboard-charts-row .v-col {
+  padding: 0.25rem !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .dashboard-stats-row .v-col,
+  .dashboard-charts-row .v-col {
+    padding: 0.125rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-stats-row .v-col,
+  .dashboard-charts-row .v-col {
+    padding: 0.125rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-stats-row .v-col,
+  .dashboard-charts-row .v-col {
+    padding: 0.125rem !important;
+  }
+}

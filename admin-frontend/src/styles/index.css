@@ -14,6 +14,10 @@
 @import './areas.css';
 @import './leaflet.css';
 @import './auth-initializer.css';
+@import './dashboard-specific.css';
+@import './page-titles.css';
+@import './reports.css';
+@import './dashboard.css';
 
 /* Importar sobrescritura de notificaciones DESPUÉS de Vuetify */
 @import './notifications-override.css';

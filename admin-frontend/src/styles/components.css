@@ -9,7 +9,7 @@
 .stats-card {
   border-radius: 12px;
   overflow: hidden;
-  height: 120px;
+  height: 100px;
   display: flex;
   flex-direction: column;
 }
@@ -51,6 +51,62 @@
 .dashboard-stats-row .v-col > * {
   width: 100%;
 }
+
+/* Eliminar espacios entre filas del dashboard */
+.dashboard-stats-row {
+  margin-bottom: 0 !important;
+}
+
+.v-row.g-0 {
+  margin: 0 !important;
+}
+
+.v-row.g-0 .v-col {
+  padding: 0;
+}
+
+/* Asegurar que no haya espacios entre las tarjetas KPI y las secciones del gráfico */
+.dashboard-stats-row + .v-row {
+  margin-top: 0 !important;
+}
+
+/* Eliminar completamente espacios entre tarjetas KPI */
+.dashboard-stats-row .v-col {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.dashboard-stats-row .v-col > * {
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Primera tarjeta - solo bordes redondeados superiores */
+.dashboard-stats-row .v-col:first-child > * {
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+}
+
+/* Última tarjeta - solo bordes redondeados inferiores */
+.dashboard-stats-row .v-col:last-child > * {
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+/* Eliminar bordes internos entre tarjetas */
+.dashboard-stats-row .v-col:not(:last-child) > * {
+  border-right: none !important;
+}
+
+.dashboard-stats-row .v-col:not(:first-child) > * {
+  border-left: none !important;
+}
+
+/* ===== ELIMINAR SCROLL INNECESARIO ===== */
+/* Los estilos específicos del dashboard están en dashboard-specific.css */
+
+/* ===== ELIMINAR SCROLL COMPLETAMENTE ===== */
+/* Los estilos específicos del dashboard están en dashboard-specific.css */
 
 /* ===== DATA TABLE COMPONENT ===== */
 .data-table-container {

@@ -37,16 +37,7 @@
 }
 
 /* ===== HEADER DE EMPLEADOS ===== */
-.employee-header {
-  margin-top: 0.5rem !important;
-  margin-bottom: 1rem !important;
-}
-
-/* Contenedor principal con espaciado reducido */
-.employee-header .v-col {
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-}
+/* Los estilos del header están ahora en page-titles.css */
 
 /* Asegurar que el contenedor principal tenga el espaciado correcto */
 .employee-header .d-flex {
@@ -54,17 +45,20 @@
   min-height: 48px !important;
 }
 
-/* Asegurar que el título tenga el espaciado correcto */
-.employee-header h1 {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1.2 !important;
-}
-
 /* Asegurar que el botón tenga el espaciado correcto */
 .employee-header .v-btn {
   margin: 0 !important;
   padding: 0.5rem 1rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.employee-header .v-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4) !important;
 }
 
 /* ===== TABLA DE EMPLEADOS ===== */

@@ -20,7 +20,7 @@
         @update:model-value="handleDrawerUpdate"
       />
       <v-main class="bg-dark-background">
-        <v-container fluid class="pa-6">
+        <v-container fluid class="pa-4 dashboard-main-container">
           <router-view />
         </v-container>
       </v-main>
@@ -122,4 +122,23 @@ export default {
 .bg-dark-background {
   background-color: #0f172a;
 }
+
+/* ===== ELIMINAR SCROLL EN EL LAYOUT ===== */
+.v-main {
+  overflow: hidden !important;
+}
+
+.dashboard-main-container {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+/* Asegurar que no haya scroll en el contenedor principal */
+.v-container {
+  overflow: hidden !important;
+}
+
+/* ===== SOLUCIÓN AGRESIVA PARA ELIMINAR SCROLL ===== */
+/* Los estilos específicos del dashboard están en dashboard-specific.css */
 </style>

@@ -1,0 +1,135 @@
+/* ===== ESTILOS ESTÁNDAR PARA TÍTULOS DE PÁGINAS ===== */
+
+/* ===== TÍTULO PRINCIPAL DE PÁGINA ===== */
+.page-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3) !important;
+  letter-spacing: 0.5px !important;
+  color: #ffffff !important;
+  font-size: 2.125rem !important; /* text-h4 */
+}
+
+/* ===== HEADER ESTÁNDAR DE PÁGINA ===== */
+.page-header {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  position: relative !important;
+  top: -0.25rem !important;
+}
+
+/* Contenedor del header */
+.page-header .v-col {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Contenedor principal con espaciado reducido */
+.page-header + * {
+  margin-top: 0.5rem !important;
+}
+
+/* ===== HEADER ESPECÍFICO PARA DASHBOARD ===== */
+.dashboard-title {
+  margin-bottom: 0.25rem !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3) !important;
+  letter-spacing: 0.5px !important;
+  color: #ffffff !important;
+  font-size: 2.125rem !important;
+}
+
+/* Header específico para dashboard */
+.dashboard-header {
+  margin-top: 0 !important;
+  margin-bottom: 0.25rem !important;
+  position: relative !important;
+  top: -0.5rem !important;
+}
+
+.dashboard-header .v-col {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.dashboard-header + * {
+  margin-top: 0.25rem !important;
+}
+
+/* ===== HEADER ESPECÍFICO PARA EMPLEADOS ===== */
+.employee-header h1 {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3) !important;
+  letter-spacing: 0.5px !important;
+  color: #ffffff !important;
+  font-size: 2.125rem !important;
+}
+
+/* ===== HEADER ESPECÍFICO PARA ÁREAS ===== */
+.areas-header h1 {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3) !important;
+  letter-spacing: 0.5px !important;
+  color: #ffffff !important;
+  font-size: 2.125rem !important;
+}
+
+/* ===== HEADER ESPECÍFICO PARA REPORTES ===== */
+.reports-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3) !important;
+  letter-spacing: 0.5px !important;
+  color: #ffffff !important;
+  font-size: 2.125rem !important;
+}
+
+/* Header específico para reportes */
+.reports-header {
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  position: relative !important;
+  top: -0.25rem !important;
+}
+
+.reports-header .v-col {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.reports-header + * {
+  margin-top: 0.5rem !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .page-title,
+  .dashboard-title,
+  .employee-header h1,
+  .areas-header h1,
+  .reports-title {
+    font-size: 1.75rem !important; /* text-h5 */
+    letter-spacing: 0.25px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title,
+  .dashboard-title,
+  .employee-header h1,
+  .areas-header h1,
+  .reports-title {
+    font-size: 1.5rem !important; /* text-h6 */
+    letter-spacing: 0.25px !important;
+  }
+}

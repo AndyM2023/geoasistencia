@@ -1,9 +1,9 @@
 <template>
   <div class="areas-container">
-    <v-row class="mt-2 areas-header">
+    <v-row class="page-header areas-header">
       <v-col cols="12">
         <div class="d-flex justify-space-between align-center">
-          <h1 class="text-h4 text-white">Gestión de Áreas</h1>
+          <h1 class="page-title">Gestión de Áreas</h1>
           <div class="d-flex gap-2">
             <v-btn color="blue-400" prepend-icon="mdi-plus" @click="openNewAreaDialog" class="neon-border">
               Nueva Área
@@ -26,7 +26,7 @@
             variant="outlined"
             density="compact"
             color="blue-400"
-            class="text-white"
+            class="text-white areas-search-field"
           ></v-text-field>
         </div>
       </v-card-title>
