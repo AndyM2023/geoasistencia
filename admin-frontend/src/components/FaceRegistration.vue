@@ -14,7 +14,7 @@
     <v-card class="bg-dark-surface border border-blue-500/20">
       <v-card-title class="text-white d-flex align-center">
         <v-icon color="blue-400" class="mr-2">mdi-camera</v-icon>
-        �� Registro de Rostro - {{ employeeName }}
+        📷 Registro de Rostro - {{ displayEmployeeName }}
         <v-spacer></v-spacer>
         <v-btn 
           icon="mdi-close" 
@@ -34,6 +34,7 @@
             playsinline 
             muted 
             class="camera-video"
+            :class="{ 'capturing': isCapturing }"
             style="width: 100%; max-width: 640px; height: auto; max-height: 400px;"
           ></video>
           
@@ -103,6 +104,13 @@
           </p>
         </div>
 
+        <!-- Debug: Estado de procesamiento -->
+        <!-- <div v-if="isProcessing" class="debug-processing mb-3">
+          <v-alert type="info" variant="tonal" class="text-center">
+            🔍 DEBUG: isProcessing = {{ isProcessing }} | Fotos: {{ fotosCapturadas }}/{{ targetCount }}
+          </v-alert>
+        </div> -->
+
         <!-- Mensaje -->
         <v-alert
           v-if="mensaje"
@@ -112,6 +120,29 @@
         >
           {{ mensaje.texto }}
         </v-alert>
+
+        <!-- Mensaje de Procesamiento Prominente -->
+        <div v-if="isProcessing" class="processing-overlay">
+          <div class="processing-content">
+            <v-progress-circular
+              indeterminate
+              color="blue-400"
+              size="60"
+              width="6"
+              class="mb-3"
+            ></v-progress-circular>
+            <h4 class="text-blue-400 text-h6 mb-2">Procesando Fotos</h4>
+            <p class="text-grey-300 text-center text-sm">
+              Procesando {{ fotosCapturadas }} fotos...
+            </p>
+            <div class="processing-steps mt-3">
+              <div class="step">
+                <v-icon color="green-400" size="16">mdi-check</v-icon>
+                <span class="text-green-400 text-sm ml-2">{{ fotosCapturadas }}/{{ targetCount }} fotos</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </v-card-text>
       
       <v-card-actions class="justify-center pa-4">
@@ -166,6 +197,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { faceService } from '../services/faceService';
+import { capitalizeFullName } from '../utils/nameUtils';
 
 const props = defineProps({
   showDialog: {
@@ -198,6 +230,11 @@ const videoElement = ref(null);
 const stream = ref(null);
 const captureInterval = ref(null);
 const faceDetected = ref(false);
+
+// Computed para nombre capitalizado
+const displayEmployeeName = computed(() => {
+  return capitalizeFullNameString(props.employeeName);
+});
 
 // Función para detectar rostro en el video
 const detectFace = async () => {
@@ -409,7 +446,9 @@ const captureFace = async () => {
 // Función para procesar fotos
 const processPhotos = async () => {
   try {
+    console.log('🔄 Iniciando procesamiento de fotos...');
     isProcessing.value = true;
+    console.log('✅ isProcessing.value =', isProcessing.value);
     mensaje.value = { tipo: 'info', texto: 'Procesando fotos...' };
     
     const result = await faceService.registerFace(
@@ -429,7 +468,9 @@ const processPhotos = async () => {
     mensaje.value = { tipo: 'error', texto: `Error: ${error.message}` };
     emit('registro-error', error);
   } finally {
+    console.log('🔄 Finalizando procesamiento...');
     isProcessing.value = false;
+    console.log('✅ isProcessing.value =', isProcessing.value);
   }
 };
 
@@ -548,24 +589,23 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .video-container {
-  width: 100%;
+  position: relative;
   border-radius: 8px;
   overflow: hidden;
   background: #000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
-  position: relative;
 }
 
 .camera-video {
-  width: 100%;
-  max-width: 640px;
-  height: auto;
-  max-height: 400px;
-  object-fit: contain;
   border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  filter: brightness(1.2) contrast(1.1) saturate(1.05);
+}
+
+.camera-video.capturing {
+  filter: brightness(1.5) contrast(1.4) saturate(1.2) hue-rotate(0deg);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  transform: scale(1.01);
+  transition: all 0.3s ease-in-out;
 }
 
 .camera-status-overlay,
@@ -576,25 +616,67 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 10;
+  border-radius: 8px;
 }
 
 .capture-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  text-align: center;
+  color: white;
 }
 
 .progress-section {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 16px;
+  margin-top: 20px;
+}
+
+.processing-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  border-radius: 16px;
+}
+
+.processing-content {
+  text-align: center;
+  color: white;
+  background: rgba(30, 41, 59, 0.98);
+  padding: 25px;
+  border-radius: 16px;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+  max-width: 350px;
+  backdrop-filter: blur(10px);
+}
+
+.processing-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
   border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.step .v-icon {
+  margin-right: 8px;
 }
 </style>
 

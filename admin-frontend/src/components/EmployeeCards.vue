@@ -42,7 +42,7 @@
             <div class="employee-info">
               <!-- Nombre del empleado -->
               <h3 class="employee-name">
-                {{ employee.user.first_name }} {{ employee.user.last_name }}
+                {{ getCapitalizedName(employee) }}
               </h3>
               
               <!-- Posición -->
@@ -111,6 +111,7 @@
 <script>
 import { ref } from 'vue'
 import EmployeePhotoModal from './EmployeePhotoModal.vue'
+import { capitalizeFullName } from '../utils/nameUtils'
 
 export default {
   name: 'EmployeeCards',
@@ -127,14 +128,14 @@ export default {
       default: false
     }
   },
-  emits: ['edit', 'delete'],
+  emits: ['edit', 'delete', 'face-registration'],
   setup() {
     const showPhotoModal = ref(false)
     const selectedPhotoUrl = ref(null)
     
     // Métodos de utilidad
     const getPositionLabel = (position) => {
-      const labels = {
+      const positionLabels = {
         'desarrollador': 'Desarrollador',
         'disenador': 'Diseñador',
         'secretario': 'Secretario/a',
@@ -142,21 +143,24 @@ export default {
         'analista': 'Analista',
         'ingeniero': 'Ingeniero',
         'contador': 'Contador',
-        'recursos_humanos': 'RRHH',
+        'recursos_humanos': 'Recursos Humanos',
         'marketing': 'Marketing',
         'ventas': 'Ventas',
-        'soporte': 'Soporte',
+        'soporte': 'Soporte Técnico',
         'administrativo': 'Administrativo',
         'operativo': 'Operativo',
-        'otro': 'Otro',
-        'administrador_personal': 'Administrador Personal'
+        'otro': 'Otro'
       }
-      return labels[position] || position
+      return positionLabels[position] || position
     }
-    
+
+    const getCapitalizedName = (employee) => {
+      return capitalizeFullName(employee.user?.first_name, employee.user?.last_name)
+    }
+
     const openPhotoModal = (photoUrl) => {
-      selectedPhotoUrl.value = photoUrl
-      showPhotoModal.value = true
+      // Implementar lógica para abrir modal de foto
+      console.log('Abriendo modal de foto:', photoUrl)
     }
     
     return {
@@ -166,6 +170,7 @@ export default {
       
       // Métodos
       getPositionLabel,
+      getCapitalizedName,
       openPhotoModal
     }
   }

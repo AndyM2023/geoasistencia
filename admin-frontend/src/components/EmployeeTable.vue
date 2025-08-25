@@ -12,7 +12,7 @@
       <!-- Nombre Completo -->
       <template v-slot:item.name="{ item }">
         <div class="employee-name-cell">
-          {{ item.user?.first_name }} {{ item.user?.last_name }}
+          {{ getCapitalizedName(item) }}
         </div>
       </template>
 
@@ -80,6 +80,8 @@
 </template>
 
 <script>
+import { capitalizeFullName } from '../utils/nameUtils'
+
 export default {
   name: 'EmployeeTable',
   props: {
@@ -141,7 +143,7 @@ export default {
 
     // Métodos de utilidad
     const getPositionLabel = (position) => {
-      const labels = {
+      const positionLabels = {
         'desarrollador': 'Desarrollador',
         'disenador': 'Diseñador',
         'secretario': 'Secretario/a',
@@ -149,21 +151,25 @@ export default {
         'analista': 'Analista',
         'ingeniero': 'Ingeniero',
         'contador': 'Contador',
-        'recursos_humanos': 'RRHH',
+        'recursos_humanos': 'Recursos Humanos',
         'marketing': 'Marketing',
         'ventas': 'Ventas',
-        'soporte': 'Soporte',
+        'soporte': 'Soporte Técnico',
         'administrativo': 'Administrativo',
         'operativo': 'Operativo',
-        'otro': 'Otro',
-        'administrador_personal': 'Administrador Personal'
+        'otro': 'Otro'
       }
-      return labels[position] || position
+      return positionLabels[position] || position
+    }
+
+    const getCapitalizedName = (employee) => {
+      return capitalizeFullName(employee.user?.first_name, employee.user?.last_name)
     }
 
     return {
       headers,
-      getPositionLabel
+      getPositionLabel,
+      getCapitalizedName
     }
   }
 }

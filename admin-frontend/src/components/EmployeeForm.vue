@@ -407,6 +407,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import EmployeePhotoModal from './EmployeePhotoModal.vue'
 import { faceService } from '../services/faceService'
+import { capitalizeFullName } from '../utils/nameUtils'
 
 export default {
   name: 'EmployeeForm',
@@ -675,6 +676,10 @@ export default {
       }
     }
     
+    const getCapitalizedName = (firstName, lastName) => {
+      return capitalizeFullName(firstName, lastName)
+    }
+    
     // Función de guardado
     const saveEmployee = async () => {
       if (form.value?.validate()) {
@@ -809,7 +814,8 @@ export default {
       shouldShowDeletePhotoButton,
       getPhotoUrl,
       openPhotoModal,
-      saveEmployee
+      saveEmployee,
+      getCapitalizedName
     }
   }
 }

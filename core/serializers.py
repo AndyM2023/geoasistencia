@@ -468,6 +468,18 @@ class EmployeeSerializer(serializers.ModelSerializer):
             )
         return value
     
+    def validate_first_name(self, value):
+        """Capitalizar automáticamente el primer nombre"""
+        if value:
+            return value.strip().title()
+        return value
+    
+    def validate_last_name(self, value):
+        """Capitalizar automáticamente el apellido"""
+        if value:
+            return value.strip().title()
+        return value
+    
     # Campo para leer la cédula del usuario
     cedula_display = serializers.CharField(source='user.cedula', read_only=True)
     
