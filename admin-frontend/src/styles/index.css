@@ -12,6 +12,7 @@
 /* Importar estilos específicos de páginas */
 @import './employees.css';
 @import './areas.css';
+@import './map-selector.css';
 @import './leaflet.css';
 @import './auth-initializer.css';
 

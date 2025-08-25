@@ -272,3 +272,143 @@
    transform: translateY(-2px) !important;
    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
  }
+ 
+ /* ===== CELDA: DESCRIPCIÓN EN TABLA DE ÁREAS ===== */
+ /*
+  Reglas:
+  - Forzar salto de línea cada ~15 caracteres usando ancho en ch
+  - Limitar a un máximo de 2 líneas (≈ 30 caracteres) y truncar el resto
+*/
+.area-description-wrap {
+  display: -webkit-box !important;
+  width: 15ch !important;              /* ~15 caracteres por línea */
+  white-space: normal !important;      /* permitir saltos de línea */
+  word-break: break-word !important;   /* cortar palabras largas si es necesario */
+  overflow: hidden !important;         /* ocultar exceso */
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;    /* máximo 2 líneas => ~30 caracteres */
+}
+
+/* ===== ACCIONES EN TABLA DE ÁREAS ===== */
+.areas-actions {
+  display: inline-flex !important;
+  gap: 6px !important;
+  align-items: center !important;
+  white-space: nowrap !important; /* evitar saltos de línea entre los botones */
+}
+
+/* Asegurar consistencia en pantallas medianas y pequeñas */
+@media (max-width: 1024px) {
+  .areas-actions {
+    display: inline-flex !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .areas-actions {
+    display: inline-flex !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ===== CELDA DE ACCIONES EN TABLA DE ÁREAS ===== */
+.areas-actions-cell {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  align-items: center !important;
+}
+
+/* Botones de acción - Hacer más específicos para sobrescribir Vuetify */
+.areas-actions-cell .action-btn {
+  transition: all 0.3s ease !important;
+  border-radius: 50% !important;
+  min-width: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+}
+
+/* Iconos dentro de los botones */
+.areas-actions-cell .action-btn .v-icon {
+  font-size: 18px !important;
+  color: white !important;
+}
+
+/* Estados del botón */
+.areas-actions-cell .action-btn:hover {
+  transform: scale(1.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Eliminar bordes y sombras por defecto */
+.areas-actions-cell .action-btn {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Estado activo/focus */
+.areas-actions-cell .action-btn:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Estado disabled */
+.areas-actions-cell .action-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Estado disabled hover */
+.areas-actions-cell .action-btn:disabled:hover {
+  transform: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Asegurar que el contenido del botón mantenga la forma circular */
+.areas-actions-cell .action-btn .v-btn__content {
+  border-radius: 50% !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Override completo de Vuetify para botones de acción */
+.areas-actions-cell .v-btn.action-btn {
+  border-radius: 50% !important;
+  min-width: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Responsive para la tabla */
+@media (max-width: 1024px) {
+  .areas-data-table .v-data-table-header th,
+  .areas-data-table .v-data-table__td {
+    padding: 0.75rem 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .areas-data-table .v-data-table-header th,
+  .areas-data-table .v-data-table__td {
+    padding: 0.5rem 0.25rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .areas-actions-cell {
+    gap: 0.25rem !important;
+  }
+}

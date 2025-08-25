@@ -558,16 +558,7 @@
   width: 100%;
 }
 
-/* Botones de acción */
-.action-btn {
-  transition: all 0.3s ease;
-  border-radius: 50%;
-}
 
-.action-btn:hover {
-  transform: scale(1.1);
-  background: rgba(255, 255, 255, 0.08) !important;
-}
 
 /* Cursor pointer para elementos clickeables */
 .cursor-pointer {
@@ -691,6 +682,13 @@
   border-top: none !important;
   border-left: none !important;
   border-right: none !important;
+  background: rgba(59, 130, 246, 0.15) !important; /* Efecto hover con fondo azul translúcido */
+  transition: background-color 0.2s ease !important; /* Transición suave para el hover */
+}
+
+/* Efecto hover para las celdas individuales */
+.employee-data-table .v-data-table__tr:hover .v-data-table__td {
+  background: transparent !important; /* Las celdas mantienen fondo transparente */
 }
 
 /* Celdas de la tabla */
@@ -740,15 +738,79 @@
   align-items: center !important;
 }
 
-/* Botones de acción */
-.action-btn {
+/* Botones de acción - Hacer más específicos para sobrescribir Vuetify */
+.employee-actions-cell .action-btn {
   transition: all 0.3s ease !important;
   border-radius: 50% !important;
+  min-width: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
 }
 
-.action-btn:hover {
+.employee-actions-cell .action-btn:hover {
   transform: scale(1.1) !important;
   background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Override completo de Vuetify para botones de acción */
+.employee-actions-cell .v-btn.action-btn {
+  border-radius: 50% !important;
+  min-width: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Iconos dentro de los botones */
+.employee-actions-cell .action-btn .v-icon {
+  font-size: 18px !important;
+  color: white !important;
+}
+
+/* Estados del botón */
+.employee-actions-cell .action-btn:hover {
+  transform: scale(1.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Eliminar bordes y sombras por defecto */
+.employee-actions-cell .action-btn {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Estado activo/focus */
+.employee-actions-cell .action-btn:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Estado disabled */
+.employee-actions-cell .action-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Estado disabled hover */
+.employee-actions-cell .action-btn:disabled:hover {
+  transform: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Asegurar que el contenido del botón mantenga la forma circular */
+.employee-actions-cell .action-btn .v-btn__content {
+  border-radius: 50% !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Paginación */

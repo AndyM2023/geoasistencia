@@ -85,29 +85,22 @@
                   <!-- Columna derecha: Botón y mensaje -->
                   <div v-if="selectedLocation" class="d-flex flex-column align-center justify-center text-center">
                     <v-btn
-                      size="x-small"
+                      size="small"
                       color="green-400"
                       variant="outlined"
-                      icon="mdi-crosshairs-gps"
+                      prepend-icon="mdi-crosshairs-gps"
                       @click="useCurrentLocation"
                       :loading="isLocating"
                       :disabled="isLocating"
                       class="use-current-location-btn"
                       title="Usar ubicación actual"
-                    ></v-btn>
-                    
-                    <!-- Mensaje informativo en líneas separadas -->
-                    <div class="mt-2 text-center">
-                      <p class="text-caption text-grey-400 text-center mb-1">
-                        Cambia la ubicación
-                      </p>
-                      <p class="text-caption text-grey-400 text-center mb-1">
-                        seleccionada por tu
-                      </p>
-                      <p class="text-caption text-grey-400 text-center mb-0">
-                        ubicación GPS actual
-                      </p>
-                    </div>
+                      block
+                    >
+                      <div class="text-content">
+                        Cambia por la ubicación<br>
+                        GPS actual
+                      </div>
+                    </v-btn>
                   </div>
                 </div>
               </div>
@@ -127,17 +120,38 @@
               </div>
               
               <!-- Instrucciones -->
-              <div class="mb-4">
-                <v-alert type="info" variant="tonal" density="compact">
+              <div class="mt-0 mb-1 instructions-container">
+                <v-alert type="info" variant="tonal" density="compact" class="compact-instructions">
                   <template v-slot:prepend>
-                    <v-icon>mdi-information</v-icon>
+                    <v-icon size="small">mdi-information</v-icon>
                   </template>
-                  <strong>Instrucciones:</strong> 
-                  <br>• Escribe el nombre del lugar y presiona ENTER
-                  <br>• Haz clic en el mapa para marcar la ubicación
-                  <br>• Ajusta el radio con el control deslizante
-                  <br>• Las coordenadas se llenarán automáticamente
+                  <div class="instructions-content">
+                    <strong class="text-caption">Instrucciones:</strong> 
+                    <br><span class="text-caption">• Escribe el nombre del lugar y presiona ENTER</span>
+                    <br><span class="text-caption">• Haz clic en el mapa para marcar la ubicación</span>
+                    <br><span class="text-caption">• Ajusta el radio con el control deslizante</span>
+                    <br><span class="text-caption">• Las coordenadas se llenarán automáticamente</span>
+                  </div>
                 </v-alert>
+              </div>
+              
+              <!-- Botones de acción -->
+              <div class="mt-6 mb-2">
+                <div class="d-flex justify-center gap-3">
+                  <v-btn color="grey-400" variant="outlined" @click="$emit('cancel')" class="action-btn">
+                    Cancelar
+                  </v-btn>
+                  <v-btn 
+                    color="blue-400" 
+                    variant="flat" 
+                    @click="confirmLocation"
+                    :disabled="!selectedLocation"
+                    :loading="confirming"
+                    class="action-btn"
+                  >
+                    Confirmar Ubicación
+                  </v-btn>
+                </div>
               </div>
               
               <!-- Mensaje sobre mapa -->
@@ -155,21 +169,7 @@
         </v-row>
       </v-card-text>
       
-      <v-card-actions class="pa-4">
-        <v-spacer></v-spacer>
-        <v-btn color="grey-400" variant="outlined" @click="$emit('cancel')">
-          Cancelar
-        </v-btn>
-        <v-btn 
-          color="blue-400" 
-          variant="flat" 
-          @click="confirmLocation"
-          :disabled="!selectedLocation"
-          :loading="confirming"
-        >
-          Confirmar Ubicación
-        </v-btn>
-      </v-card-actions>
+      <!-- Eliminamos el v-card-actions ya que movimos los botones arriba -->
     </v-card>
   </v-dialog>
 </template>
@@ -249,86 +249,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.map-container {
-  position: relative;
-  width: 100%;
-  height: 500px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 2px solid rgba(59, 130, 246, 0.3);
-}
-
-.map-wrapper-full {
-  width: 100%;
-  height: 100%;
-  background: #1e293b;
-}
-
-.map-controls {
-  height: 100%;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-
-.radius-label {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.radius-chip {
-  min-width: 60px;
-  justify-content: center;
-}
-
-.radius-slider-compact {
-  margin: 0;
-}
-
-.location-chip {
-  text-align: center;
-  min-width: 140px;
-}
-
-.use-current-location-btn {
-  min-width: 40px;
-  height: 40px;
-}
-
-.search-btn {
-  min-width: 48px;
-  height: 48px;
-}
-
-/* Scrollbar personalizado para los controles */
-.map-controls::-webkit-scrollbar {
-  width: 6px;
-}
-
-.map-controls::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.3);
-  border-radius: 3px;
-}
-
-.map-controls::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.6);
-  border-radius: 3px;
-}
-
-.map-controls::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.8);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .map-container {
-    height: 300px;
-  }
-  
-  .map-controls {
-    margin-top: 16px;
-    padding-right: 0;
-  }
-}
-</style>
