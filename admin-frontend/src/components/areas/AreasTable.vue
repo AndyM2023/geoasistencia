@@ -1,19 +1,18 @@
 <template>
-  <v-card class="bg-dark-surface border border-blue-500/20">
-    <v-card-title class="text-white">
-      <div class="d-flex align-center gap-3">
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Buscar área"
-          single-line
-          hide-details
-          variant="outlined"
-          density="compact"
-          color="blue-400"
-          class="text-white"
-        ></v-text-field>
-      </div>
+  <v-card class="bg-dark-surface border border-blue-500/20 areas-table-card">
+    <v-card-title class="text-white d-flex align-center">
+      <!-- Input de búsqueda -->
+      <v-text-field
+        v-model="search"
+        label="Buscar área"
+        placeholder="Buscar área"
+        prepend-inner-icon="mdi-magnify"
+        variant="outlined"
+        color="blue-400"
+        bg-color="dark-surface"
+        clearable
+        class="search-input"
+      ></v-text-field>
     </v-card-title>
 
     <v-data-table
@@ -23,92 +22,131 @@
       :search="search"
       :loading="loading"
       :sort-by="[{ key: 'name', order: 'asc' }]"
-      class="elevation-1 bg-dark-surface"
+      class="areas-data-table"
       theme="dark"
       :no-data-text="loading ? 'Cargando áreas...' : 'No hay áreas registradas'"
       :no-results-text="'No se encontraron áreas que coincidan con la búsqueda'"
     >
-      <template v-slot:item.radius="{ item }">
-        {{ item.radius }}m
+      <!-- Nombre -->
+      <template v-slot:item.name="{ item }">
+        <div class="area-name-cell">
+          {{ item.name }}
+        </div>
       </template>
-      
-      <template v-slot:item.actions="{ item }">
-        <v-btn icon="mdi-pencil" size="small" color="blue-400" @click="$emit('edit', item)" title="Editar área"></v-btn>
-        
-        <!-- Botón dinámico según el estado del área -->
-        <v-btn 
-          v-if="item.status === 'active'"
-          icon="mdi-account-off" 
-          size="small" 
-          :color="item.employee_count > 0 ? 'grey-400' : 'red-400'"
-          @click="item.employee_count > 0 ? null : $emit('delete', item)"
-          :disabled="item.employee_count > 0"
-          :title="item.employee_count > 0 ? 'No se puede desactivar: tiene empleados asignados' : 'Desactivar área'"
-        ></v-btn>
-        
-        <v-btn 
-          v-else
-          icon="mdi-account-check" 
-          size="small" 
-          color="green-400" 
-          @click="$emit('activate', item)"
-          title="Reactivar área"
-        ></v-btn>
-      </template>
-      
-      <template v-slot:item.latitude="{ item }">
-        <span :title="item.latitude">{{ formatCoordinate(item.latitude) }}</span>
-      </template>
-      
-      <template v-slot:item.longitude="{ item }">
-        <span :title="item.longitude">{{ formatCoordinate(item.longitude) }}</span>
-      </template>
-      
+
+      <!-- Descripción -->
       <template v-slot:item.description="{ item }">
-        {{ item.description }}
+        <div class="area-description-cell">
+          <span class="area-description-wrap" :title="item.description">{{ item.description }}</span>
+        </div>
       </template>
-      
+
+      <!-- Latitud -->
+      <template v-slot:item.latitude="{ item }">
+        <div class="area-coordinate-cell">
+          <span :title="item.latitude">{{ formatCoordinate(item.latitude) }}</span>
+        </div>
+      </template>
+
+      <!-- Longitud -->
+      <template v-slot:item.longitude="{ item }">
+        <div class="area-coordinate-cell">
+          <span :title="item.longitude">{{ formatCoordinate(item.longitude) }}</span>
+        </div>
+      </template>
+
+      <!-- Radio -->
+      <template v-slot:item.radius="{ item }">
+        <div class="area-radius-cell">
+          {{ item.radius }}m
+        </div>
+      </template>
+
+      <!-- Empleados -->
       <template v-slot:item.employee_count="{ item }">
-        <v-chip 
-          :color="item.employee_count > 0 ? 'green-500' : 'grey-500'" 
-          size="small" 
-          variant="tonal"
-        >
-          {{ item.employee_count || 0 }}
-        </v-chip>
+        <div class="area-employee-count-cell">
+          <v-chip 
+            :color="item.employee_count > 0 ? 'green-500' : 'grey-500'" 
+            size="small" 
+            variant="tonal"
+          >
+            {{ item.employee_count || 0 }}
+          </v-chip>
+        </div>
       </template>
-      
+
+      <!-- Horario -->
       <template v-slot:item.schedule_info="{ item }">
-        <v-chip 
-          v-if="item.schedule"
-          :color="getScheduleColor(item.schedule)" 
-          size="small" 
-          variant="tonal"
-          :title="getScheduleTooltip(item.schedule)"
-        >
-          <v-icon left size="small">{{ getScheduleIcon(item.schedule) }}</v-icon>
-          {{ getScheduleText(item.schedule) }}
-        </v-chip>
-        <v-chip 
-          v-else
-          color="grey-500" 
-          size="small" 
-          variant="tonal"
-          title="Sin horario configurado"
-        >
-          <v-icon left size="small">mdi-close-circle</v-icon>
-          Sin horario
-        </v-chip>
+        <div class="area-schedule-cell">
+          <v-chip 
+            v-if="item.schedule"
+            :color="getScheduleColor(item.schedule)" 
+            size="small" 
+            variant="tonal"
+            :title="getScheduleTooltip(item.schedule)"
+          >
+            <v-icon left size="small">{{ getScheduleIcon(item.schedule) }}</v-icon>
+            {{ getScheduleText(item.schedule) }}
+          </v-chip>
+          <v-chip 
+            v-else
+            color="grey-500" 
+            size="small" 
+            variant="tonal"
+            title="Sin horario configurado"
+          >
+            <v-icon left size="small">mdi-close-circle</v-icon>
+            Sin horario
+          </v-chip>
+        </div>
       </template>
-      
-      <template v-slot:item.status="{ item }">
-        <v-chip 
-          :color="item.status === 'active' ? 'green-500' : 'red-500'" 
-          size="small" 
-          variant="tonal"
-        >
-          {{ item.status === 'active' ? 'Activa' : 'Inactiva' }}
-        </v-chip>
+
+      <!-- Acciones -->
+      <template v-slot:item.actions="{ item }">
+        <div class="areas-actions-cell">
+          <v-btn
+            icon="mdi-pencil"
+            size="small"
+            color="white"
+            variant="text"
+            @click="$emit('edit', item)"
+            class="action-btn"
+            title="Editar área"
+          ></v-btn>
+          
+          <!-- Botón dinámico según el estado del área -->
+          <v-btn 
+            v-if="item.status === 'active'"
+            icon="mdi-account-off" 
+            size="small" 
+            color="white"
+            variant="text"
+            @click="item.employee_count > 0 ? null : $emit('delete', item)"
+            :disabled="item.employee_count > 0"
+            :title="item.employee_count > 0 ? 'No se puede desactivar: tiene empleados asignados' : 'Desactivar área'"
+            class="action-btn"
+          ></v-btn>
+          
+          <v-btn 
+            v-else
+            icon="mdi-account-check" 
+            size="small" 
+            color="white"
+            variant="text"
+            @click="$emit('activate', item)"
+            title="Reactivar área"
+            class="action-btn"
+          ></v-btn>
+        </div>
+      </template>
+
+      <!-- Sin datos -->
+      <template v-slot:no-data>
+        <div class="text-center py-8">
+          <v-icon size="64" color="grey-400" class="mb-4">mdi-map-marker-off</v-icon>
+          <h3 class="text-grey-500 mb-2">No hay áreas</h3>
+          <p class="text-grey-400">Crea la primera área para comenzar</p>
+        </div>
       </template>
     </v-data-table>
   </v-card>
@@ -136,15 +174,55 @@ export default {
     return {
       search: '',
       headers: [
-        { title: 'Nombre', key: 'name', sortable: true },
-        { title: 'Descripción', key: 'description', sortable: false },
-        { title: 'Latitud', key: 'latitude', sortable: true },
-        { title: 'Longitud', key: 'longitude', sortable: true },
-        { title: 'Radio', key: 'radius', sortable: true },
-        { title: 'Empleados', key: 'employee_count', sortable: true },
-        { title: 'Horario', key: 'schedule_info', sortable: false },
-        { title: 'Estado', key: 'status', sortable: true },
-        { title: 'Acciones', key: 'actions', sortable: false, width: '120px' }
+        {
+          title: 'Nombre',
+          key: 'name',
+          sortable: true,
+          width: '20%'
+        },
+        {
+          title: 'Descripción',
+          key: 'description',
+          sortable: false,
+          width: '25%'
+        },
+        {
+          title: 'Latitud',
+          key: 'latitude',
+          sortable: true,
+          width: '12%'
+        },
+        {
+          title: 'Longitud',
+          key: 'longitude',
+          sortable: true,
+          width: '12%'
+        },
+        {
+          title: 'Radio',
+          key: 'radius',
+          sortable: true,
+          width: '8%'
+        },
+        {
+          title: 'Empleados',
+          key: 'employee_count',
+          sortable: true,
+          width: '10%'
+        },
+        {
+          title: 'Horario',
+          key: 'schedule_info',
+          sortable: false,
+          width: '13%'
+        },
+        {
+          title: 'Acciones',
+          key: 'actions',
+          sortable: false,
+          width: '10%',
+          align: 'center'
+        }
       ]
     }
   },
@@ -180,30 +258,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-/* Estilos específicos para la tabla */
-.v-data-table {
-  background: transparent !important;
-}
-
-.v-data-table .v-data-table__wrapper {
-  background: transparent !important;
-}
-
-.v-data-table .v-data-table__thead {
-  background: rgba(15, 23, 42, 0.8) !important;
-}
-
-.v-data-table .v-data-table__tbody tr:hover {
-  background: rgba(59, 130, 246, 0.1) !important;
-}
-
-.v-data-table .v-data-table__tbody tr:nth-child(even) {
-  background: rgba(15, 23, 42, 0.3) !important;
-}
-
-.v-data-table .v-data-table__tbody tr:nth-child(odd) {
-  background: rgba(15, 23, 42, 0.1) !important;
-}
-</style>
