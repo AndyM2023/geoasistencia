@@ -292,7 +292,8 @@ class Employee(models.Model):
             'analista',
             'administrador_personal',  # Nuevo cargo administrativo
             'asistente_rrhh',         # Nuevo cargo administrativo
-            'tecnico_rrhh'            # Nuevo cargo administrativo
+            'tecnico_rrhh',           # Nuevo cargo administrativo
+            'otro'                    # Cargo genérico - también es administrativo
         ]
     
     def get_position_display(self):

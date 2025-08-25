@@ -124,15 +124,33 @@ class AuthViewSet(viewsets.ViewSet):
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 cedula=data['cedula'],
-                position=data['position'],
                 password=data['password'],
                 role='admin',
                 is_active=True
             )
             
+            # La señal create_employee_for_admin se ejecutará automáticamente
+            # y creará el perfil de empleado. Ahora necesitamos actualizar la posición
+            try:
+                employee = Employee.objects.get(user=user)
+                employee.position = data['position']
+                # Si la posición es "otro", asegurar acceso administrativo
+                if data['position'] == 'otro':
+                    employee.has_admin_access = True
+                employee.save()
+            except Employee.DoesNotExist:
+                # Si por alguna razón la señal no funcionó, crear el empleado manualmente
+                has_admin_access = True if data['position'] == 'otro' else True  # Siempre True para administradores
+                employee = Employee.objects.create(
+                    user=user,
+                    position=data['position'],
+                    has_admin_access=has_admin_access
+                )
+            
             return Response({
                 'message': 'Administrador registrado exitosamente',
-                'user': UserSerializer(user).data
+                'user': UserSerializer(user).data,
+                'employee': EmployeeSerializer(employee).data
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
