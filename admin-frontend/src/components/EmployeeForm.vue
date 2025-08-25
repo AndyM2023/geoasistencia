@@ -113,12 +113,12 @@
             
             <!-- Gestión de Fotos -->
             <v-col cols="12">
-              <h3 class="text-white mb-4">📷 Foto del Empleado</h3>
+              <h3 class="text-white mb-4"> Foto del Empleado</h3>
             </v-col>
             
             <v-col cols="12">
               <v-card class="bg-dark-surface border border-blue-500/20">
-                <v-card-title class="text-sm text-blue-400">📸 Gestión de Fotos</v-card-title>
+                <v-card-title class="text-sm text-blue-400"> Gestión de Fotos</v-card-title>
                 <v-card-text>
                   <!-- Vista previa de la foto - Solo visible cuando hay foto -->
                   <div v-if="getPhotoUrl(employeeForm.photo) || getPhotoUrl(editingEmployee?.photo)" class="text-center mb-4">
@@ -151,7 +151,7 @@
                       size="large"
                       prepend-icon="mdi-camera"
                     >
-                      📷 Tomar Foto
+                       Tomar Foto
                     </v-btn>
                     
                     <v-btn
@@ -160,7 +160,7 @@
                       size="large"
                       prepend-icon="mdi-upload"
                     >
-                      📁 Subir Archivo
+                      Subir Archivo
                     </v-btn>
                     
                     <!-- Eliminar foto -->
@@ -173,7 +173,7 @@
                       size="large"
                       :disabled="employeeForm.photo === 'DELETE_PHOTO'"
                     >
-                      {{ employeeForm.photo === 'DELETE_PHOTO' ? '🔄 Deshacer eliminación' : '🗑️ Eliminar' }}
+                      {{ employeeForm.photo === 'DELETE_PHOTO' ? '🔄Deshacer eliminación' : ' Eliminar' }}
                     </v-btn>
                   </div>
                   
@@ -189,10 +189,10 @@
                   <!-- Información de ayuda -->
                   <div class="mt-4 text-center">
                     <p class="text-blue-400 text-xs mb-1">
-                      📋 Formatos soportados: JPG, PNG, GIF
+                       Formatos soportados: JPG, PNG, GIF
                     </p>
                     <p class="text-grey-400 text-xs">
-                      📏 Tamaño máximo: 5MB | 📐 Resolución recomendada: 400x400px
+                       Tamaño máximo: 5MB |  Resolución recomendada: 400x400px
                     </p>
                   </div>
                 </v-card-text>
@@ -203,19 +203,21 @@
             <v-row v-if="editingEmployee && editingEmployee.id">
               <v-col cols="12">
                 <v-divider class="mb-4"></v-divider>
-                <h3 class="text-white mb-4">🎭 Registro Facial</h3>
+                <h3 class="text-white mb-4">Registro Facial</h3>
               </v-col>
             </v-row>
             
             <v-row v-if="editingEmployee && editingEmployee.id">
               <v-col cols="12">
                 <v-card class="bg-dark-surface border border-blue-500/20">
-                  <v-card-title class="text-sm text-blue-400">📷 Registro Facial</v-card-title>
+                  <v-card-title class="text-sm text-blue-400"> Registro Facial</v-card-title>
                   <v-card-text>
                     <!-- Componente de captura de rostros -->
                     <div class="text-center">
+                      <!-- Botón para empleados SIN rostro registrado -->
                       <v-btn
-                        @click="showFaceRegistration = true"
+                        v-if="!editingEmployee.face_registration_status"
+                        @click="$emit('face-registration', editingEmployee)"
                         color="blue-400"
                         size="large"
                         prepend-icon="mdi-camera"
@@ -224,84 +226,30 @@
                         Iniciar Registro Facial
                       </v-btn>
                       
-                      <p class="text-blue-400 text-xs mt-2">
-                        📸 Se capturarán 15 fotos para máxima velocidad
-                      </p>
-                      <p class="text-green-400 text-xs mt-1">
-                        🎯 Umbral de confianza: 80% (más permisivo)
-                      </p>
-                    </div>
-                    
-                    <!-- Estado verificando (mientras se consulta la base de datos) -->
-                    <div v-if="faceRegistration.status === 'checking'" class="mt-4 text-center">
-                      <v-divider class="mb-4"></v-divider>
-                      <v-progress-circular 
-                        indeterminate 
-                        color="blue-400"
-                        size="32"
-                        class="mb-2"
-                      ></v-progress-circular>
-                      <p class="text-grey-300 text-sm">Verificando estado del registro facial...</p>
-                    </div>
-                    
-                    <!-- Estado después de captura -->
-                    <div v-else-if="faceRegistration.status === 'captured'" class="mt-4 text-center">
-                      <v-divider class="mb-4"></v-divider>
-                      <v-icon color="green-400" size="48" class="mb-2">mdi-camera-check</v-icon>
-                      <h4 class="text-white mb-2">{{ faceRegistration.statusText }}</h4>
-                      <p class="text-grey-300 mb-3">📸 {{ faceRegistration.photosCount }} fotos listas para procesar</p>
-                      
+                      <!-- Botón para empleados CON rostro registrado -->
                       <v-btn 
-                        @click="trainFaceModel"
+                        v-else
+                        @click="$emit('face-registration', editingEmployee)"
                         color="blue-400"
+                        variant="outlined"
+                        size="large"
+                        prepend-icon="mdi-camera-plus"
                         block
-                        :loading="faceRegistration.isTraining"
-                        prepend-icon="mdi-face-recognition"
                       >
-                        Procesar y Guardar Rostros
+                        Actualizar Rostro
                       </v-btn>
-                    </div>
-                    
-                    <!-- Estado procesando -->
-                    <div v-else-if="faceRegistration.isTraining" class="mt-4 text-center">
-                      <v-divider class="mb-4"></v-divider>
-                      <v-progress-circular 
-                        indeterminate 
-                        color="orange-400"
-                        size="64"
-                        class="mb-3"
-                      ></v-progress-circular>
-                      <h4 class="text-white mb-2">{{ faceRegistration.statusText }}</h4>
-                      <p class="text-grey-300">Generando embeddings faciales...</p>
-                    </div>
-                    
-                    <!-- Estado completado -->
-                    <div v-else-if="faceRegistration.status === 'trained'" class="mt-4 text-center">
-                      <v-divider class="mb-4"></v-divider>
-                      <v-icon color="green-500" size="64" class="mb-3">mdi-check-circle</v-icon>
-                      <h4 class="text-green-400 mb-2">Rostro Registrado Correctamente</h4>
-                      <p class="text-grey-300 mb-3">{{ faceRegistration.photosCount }} fotos procesadas y guardadas</p>
                       
-                      <div class="d-flex gap-2 justify-center">
-                        <v-btn 
-                          @click="showFaceRegistration = true"
-                          color="blue-400"
-                          variant="outlined"
-                          size="small"
-                          prepend-icon="mdi-camera-plus"
-                        >
-                          Actualizar Rostro
-                        </v-btn>
-                        
-                        <v-btn 
-                          @click="resetFaceRegistration"
-                          color="grey-600"
-                          variant="outlined"
-                          size="small"
-                        >
-                          Cancelar
-                        </v-btn>
-                      </div>
+                      <p class="text-blue-400 text-xs mt-2">
+                        {{ editingEmployee.face_registration_status ? 'Actualizar rostro existente' : 'Se capturarán 15 fotos para máxima velocidad' }}
+                      </p>
+                    </div>
+                    
+                    <!-- Estado del registro facial -->
+                    <div v-if="editingEmployee.face_registration_status" class="mt-4 text-center">
+                      <v-divider class="mb-4"></v-divider>
+                      <v-icon color="green-500" size="48" class="mb-2">mdi-check-circle</v-icon>
+                      <h4 class="text-green-400 mb-2">Rostro Registrado</h4>
+                      <p class="text-grey-300 text-sm">Este empleado ya tiene rostro registrado en el sistema</p>
                     </div>
                   </v-card-text>
                 </v-card>
@@ -346,17 +294,6 @@
         </v-btn>
       </v-card-actions>
     </v-card>
-    
-    <!-- Componente de registro facial -->
-    <FaceRegistration
-      v-if="showFaceRegistration && showDialog"
-      :employee-id="editingEmployee?.id || 'new'"
-      :employee-name="`${employeeForm.first_name} ${employeeForm.last_name}`"
-      :target-count="15"
-      @registro-completo="onRegistroCompleto"
-      @registro-error="onRegistroError"
-      @close="showFaceRegistration = false"
-    />
     
     <!-- Componente de captura de foto -->
     <v-dialog v-model="showPhotoCapture" max-width="500px" persistent>
@@ -424,7 +361,7 @@
             <!-- Controles para foto capturada -->
             <div v-if="capturedPhoto" class="captured-photo-controls">
               <v-btn
-                @click="acceptPhoto(employeeForm)"
+                @click="acceptPhoto"
                 color="green-400"
                 prepend-icon="mdi-check"
                 size="large"
@@ -468,13 +405,11 @@
 
 <script>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import FaceRegistration from './FaceRegistration.vue'
 import EmployeePhotoModal from './EmployeePhotoModal.vue'
 
 export default {
   name: 'EmployeeForm',
   components: {
-    FaceRegistration,
     EmployeePhotoModal
   },
   props: {
@@ -499,7 +434,7 @@ export default {
       default: false
     }
   },
-  emits: ['close', 'save', 'update:showDialog'],
+  emits: ['close', 'save', 'update:showDialog', 'face-registration'],
   setup(props, { emit }) {
     // Referencias del formulario
     const form = ref(null)
@@ -524,15 +459,6 @@ export default {
     const cameraLoading = ref(false)
     const capturedPhoto = ref(null)
     const stream = ref(null)
-    
-    // Estado del registro facial
-    const showFaceRegistration = ref(false)
-    const faceRegistration = reactive({
-      status: 'idle',
-      statusText: '',
-      photosCount: 0,
-      isTraining: false
-    })
     
     // Estado del modal de foto
     const showPhotoModal = ref(false)
@@ -745,38 +671,6 @@ export default {
       }
     }
     
-    // Funciones de registro facial
-    const onRegistroCompleto = (data) => {
-      faceRegistration.status = 'trained'
-      faceRegistration.statusText = 'Rostro registrado correctamente'
-      faceRegistration.photosCount = data.photosCount || 15
-      showFaceRegistration.value = false
-    }
-    
-    const onRegistroError = (error) => {
-      faceRegistration.status = 'idle'
-      showFaceRegistration.value = false
-    }
-    
-    const trainFaceModel = () => {
-      faceRegistration.isTraining = true
-      faceRegistration.statusText = 'Procesando rostros...'
-      
-      // Simular entrenamiento
-      setTimeout(() => {
-        faceRegistration.isTraining = false
-        faceRegistration.status = 'trained'
-        faceRegistration.statusText = 'Rostro registrado correctamente'
-      }, 3000)
-    }
-    
-    const resetFaceRegistration = () => {
-      faceRegistration.status = 'idle'
-      faceRegistration.statusText = ''
-      faceRegistration.photosCount = 0
-      faceRegistration.isTraining = false
-    }
-    
     // Función de guardado
     const saveEmployee = async () => {
       if (form.value?.validate()) {
@@ -811,7 +705,6 @@ export default {
       employeeForm.position = 'desarrollador'
       employeeForm.area = null
       employeeForm.photo = null
-      resetFaceRegistration()
     }
     
     // Watcher para editingEmployee
@@ -821,7 +714,7 @@ export default {
         // Verificar estado facial
         if (newEmployee.id) {
           // Aquí podrías hacer una llamada al API para verificar el estado
-          faceRegistration.status = newEmployee.face_registration_status ? 'trained' : 'idle'
+          // faceRegistration.status = newEmployee.face_registration_status ? 'trained' : 'idle'
         }
       } else {
         resetForm()
@@ -854,8 +747,7 @@ export default {
       cameraActive,
       cameraLoading,
       capturedPhoto,
-      showFaceRegistration,
-      faceRegistration,
+      // faceRegistration, // Eliminado
       showPhotoModal,
       selectedEmployeePhoto,
       
@@ -884,10 +776,6 @@ export default {
       shouldShowDeletePhotoButton,
       getPhotoUrl,
       openPhotoModal,
-      onRegistroCompleto,
-      onRegistroError,
-      trainFaceModel,
-      resetFaceRegistration,
       saveEmployee
     }
   }

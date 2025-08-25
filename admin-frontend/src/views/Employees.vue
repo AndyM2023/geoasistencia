@@ -112,6 +112,7 @@
       :saving="saving"
       @close="closeDialog"
       @save="handleSaveEmployee"
+      @face-registration="openFaceRegistration"
     />
 
     <!-- Diálogo de confirmación de eliminación -->
@@ -125,6 +126,7 @@
     <!-- Modal de registro facial -->
     <FaceRegistration
       v-if="showFaceRegistrationDialog"
+      :show-dialog="showFaceRegistrationDialog"
       :employee-id="selectedEmployeeForFace?.id"
       :employee-name="selectedEmployeeForFace ? `${selectedEmployeeForFace.user.first_name} ${selectedEmployeeForFace.user.last_name}` : ''"
       :target-count="15"
@@ -235,8 +237,25 @@ export default {
 
     // Métodos para manejo de registro facial
     const openFaceRegistration = (employee) => {
-      selectedEmployeeForFace.value = employee
-      showFaceRegistrationDialog.value = true
+      console.log('🎯 openFaceRegistration llamado con:', employee);
+      console.log('🔍 employee.id:', employee?.id);
+      console.log('🔍 employee.user:', employee?.user);
+      console.log('🔍 employee.user.first_name:', employee?.user?.first_name);
+      console.log('🔍 employee.user.last_name:', employee?.user?.last_name);
+      
+      selectedEmployeeForFace.value = employee;
+      console.log('🔍 selectedEmployeeForFace.value después:', selectedEmployeeForFace.value);
+      
+      showFaceRegistrationDialog.value = true;
+      console.log('🔍 showFaceRegistrationDialog.value después:', showFaceRegistrationDialog.value);
+      
+      // Debug adicional
+      console.log('🔍 Estado completo del modal:', {
+        showFaceRegistrationDialog: showFaceRegistrationDialog.value,
+        selectedEmployeeForFace: selectedEmployeeForFace.value,
+        employeeId: selectedEmployeeForFace.value?.id,
+        employeeName: selectedEmployeeForFace.value ? `${selectedEmployeeForFace.value.user.first_name} ${selectedEmployeeForFace.value.user.last_name}` : ''
+      });
     }
 
     const closeFaceRegistrationDialog = () => {
@@ -272,22 +291,32 @@ export default {
     // Métodos para manejo de empleados
     const handleSaveEmployee = async (employeeData) => {
       try {
+        console.log('🔄 handleSaveEmployee llamado con:', employeeData);
+        console.log('🔍 editingEmployee.value:', editingEmployee.value);
+        
         const result = await saveEmployee(employeeData)
+        console.log('✅ saveEmployee completado, resultado:', result);
         
         // Si es un empleado nuevo (no editingEmployee), abrir registro facial
         if (!editingEmployee.value) {
-          console.log('🆕 Empleado nuevo creado, abriendo registro facial...')
-          console.log('👤 Empleado creado:', result)
+          console.log('🆕 Empleado nuevo creado, abriendo registro facial...');
+          console.log('👤 Empleado creado:', result);
+          console.log('🔍 selectedEmployeeForFace antes:', selectedEmployeeForFace.value);
           
           // Configurar el empleado para el registro facial
-          selectedEmployeeForFace.value = result
-          showFaceRegistrationDialog.value = true
+          selectedEmployeeForFace.value = result;
+          console.log('🔍 selectedEmployeeForFace después:', selectedEmployeeForFace.value);
+          
+          showFaceRegistrationDialog.value = true;
+          console.log('🎯 showFaceRegistrationDialog.value = true');
+          console.log('🔍 showFaceRegistrationDialog.value después:', showFaceRegistrationDialog.value);
         } else {
+          console.log('✏️ Empleado editado, cerrando diálogo...');
           // Si es edición, cerrar el diálogo
           closeDialog()
         }
       } catch (error) {
-        console.error('Error al guardar empleado:', error)
+        console.error('❌ Error en handleSaveEmployee:', error);
         // El error ya se maneja en el composable
       }
     }
