@@ -56,7 +56,7 @@
             <div class="capture-indicator">
               <v-progress-circular
                 :model-value="(fotosCapturadas / targetCount) * 100"
-                color="green-400"
+                :color="faceDetected ? 'green-400' : 'orange-400'"
                 size="64"
                 width="6"
                 class="mb-2"
@@ -64,6 +64,21 @@
                 {{ fotosCapturadas }}/{{ targetCount }}
               </v-progress-circular>
               <p class="text-green-400 text-center">Capturando...</p>
+              <div v-if="fotosCapturadas < targetCount" class="text-center">
+                <v-icon 
+                  :color="faceDetected ? 'green-400' : 'orange-400'" 
+                  size="24" 
+                  class="mb-1"
+                >
+                  {{ faceDetected ? 'mdi-face' : 'mdi-face-off' }}
+                </v-icon>
+                <p :class="faceDetected ? 'text-green-400' : 'text-orange-400'" class="text-sm">
+                  {{ faceDetected ? 'Rostro detectado ✓' : 'Buscando rostro...' }}
+                </p>
+                <p v-if="!faceDetected" class="text-red-400 text-xs mt-1">
+                  Solo rostros humanos, no objetos
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -84,7 +99,7 @@
           ></v-progress-linear>
           
           <p class="text-center text-grey-400 text-sm">
-            {{ isCapturing ? 'Capturando fotos...' : 'Listo para iniciar' }}
+            {{ isProcessing ? 'Procesando fotos...' : isCapturing ? 'Capturando fotos...' : 'Listo para iniciar' }}
           </p>
         </div>
 
@@ -101,7 +116,7 @@
       
       <v-card-actions class="justify-center pa-4">
         <v-btn
-          v-if="!isCapturing"
+          v-if="!isCapturing && !isProcessing"
           @click="startCapture"
           color="blue-400"
           size="large"
@@ -112,7 +127,7 @@
         </v-btn>
         
         <v-btn
-          v-else
+          v-if="isCapturing && !isProcessing"
           @click="stopCapture"
           color="red-400"
           size="large"
@@ -123,10 +138,23 @@
         </v-btn>
         
         <v-btn
+          v-if="isProcessing"
+          color="blue-400"
+          size="large"
+          prepend-icon="mdi-loading"
+          loading
+          disabled
+          class="mr-2"
+        >
+          Procesando...
+        </v-btn>
+        
+        <v-btn
           @click="closeDialog"
           color="grey-600"
           variant="outlined"
           class="ml-2"
+          :disabled="isProcessing"
         >
           Cancelar
         </v-btn>
@@ -162,12 +190,135 @@ const emit = defineEmits(['registro-completo', 'registro-error', 'close']);
 
 // Estado del componente
 const isCapturing = ref(false);
+const isProcessing = ref(false);
 const fotosCapturadas = ref(0);
 const capturedPhotos = ref([]);
 const mensaje = ref(null);
 const videoElement = ref(null);
 const stream = ref(null);
 const captureInterval = ref(null);
+const faceDetected = ref(false);
+
+// Función para detectar rostro en el video
+const detectFace = async () => {
+  try {
+    if (!videoElement.value || !stream.value) return false;
+    
+    // Crear canvas para procesar el frame actual
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = videoElement.value.videoWidth || 640;
+    canvas.height = videoElement.value.videoHeight || 480;
+    
+    context.drawImage(videoElement.value, 0, 0);
+    
+    // Usar la API de detección de rostros del navegador si está disponible
+    if ('FaceDetector' in window) {
+      try {
+        const faceDetector = new FaceDetector({
+          fastMode: true,
+          maxDetectedFaces: 1
+        });
+        
+        const faces = await faceDetector.detect(canvas);
+        console.log('🔍 FaceDetector API - Rostros detectados:', faces.length);
+        if (faces.length > 0) {
+          console.log('✅ FaceDetector API confirmó rostro real');
+          return true;
+        }
+      } catch (faceError) {
+        console.warn('⚠️ FaceDetector API falló, usando fallback:', faceError);
+      }
+    }
+    
+    // Fallback más estricto: análisis de imagen más inteligente
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Verificar que la imagen no esté completamente oscura o borrosa
+    let totalBrightness = 0;
+    let pixelCount = 0;
+    let hasVariation = false;
+    let lastBrightness = -1;
+    let skinTonePixels = 0;
+    let totalPixels = 0;
+    
+    // Analizar cada píxel para detectar tonos de piel
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      
+      totalPixels++;
+      
+      // Calcular brillo del píxel
+      const brightness = (r + g + b) / 3;
+      totalBrightness += brightness;
+      pixelCount++;
+      
+      // Detectar tonos de piel (más flexible)
+      // Los tonos de piel pueden variar mucho, ser más inclusivos
+      if (
+        // Criterio 1: R > G > B (típico de piel)
+        (r > g && g > b) ||
+        // Criterio 2: R y G altos, B bajo (piel clara)
+        (r > 80 && g > 60 && b < 100) ||
+        // Criterio 3: R muy alto, G y B moderados (piel más oscura)
+        (r > 120 && g > 50 && b < 80) ||
+        // Criterio 4: Rango general de tonos de piel
+        (r > 70 && g > 50 && b < 110)
+      ) {
+        skinTonePixels++;
+      }
+      
+      // Verificar variación entre píxeles consecutivos
+      if (lastBrightness !== -1) {
+        const variation = Math.abs(brightness - lastBrightness);
+        if (variation > 30) {
+          hasVariation = true;
+        }
+      }
+      lastBrightness = brightness;
+    }
+    
+    const averageBrightness = totalBrightness / pixelCount;
+    const skinTonePercentage = (skinTonePixels / totalPixels) * 100;
+    
+    // Criterios más equilibrados para considerar que hay un rostro:
+    // 1. Brillo promedio en rango razonable
+    // 2. Variación suficiente entre píxeles (no borroso)
+    // 3. Porcentaje razonable de tonos de piel
+    // 4. Distribución de colores típica de rostro humano
+    const hasGoodBrightness = averageBrightness > 50 && averageBrightness < 220; // Rango más amplio
+    const hasGoodContrast = hasVariation;
+    const hasSkinTones = skinTonePercentage > 5; // Reducido de 15% a 5%
+    
+    console.log('🔍 Análisis de imagen (EQUILIBRADO):', {
+      averageBrightness: Math.round(averageBrightness),
+      hasVariation,
+      hasGoodBrightness,
+      hasGoodContrast,
+      skinTonePixels,
+      skinTonePercentage: Math.round(skinTonePercentage * 100) / 100,
+      hasSkinTones
+    });
+    
+    // Solo retornar true si se cumplen los criterios principales
+    const isFace = hasGoodBrightness && hasGoodContrast && hasSkinTones;
+    
+    if (isFace) {
+      console.log('✅ Criterios equilibrados cumplidos - Probablemente es un rostro');
+    } else {
+      console.log('❌ Criterios equilibrados NO cumplidos - No es un rostro');
+    }
+    
+    return isFace;
+    
+  } catch (error) {
+    console.error('❌ Error en detección de rostro:', error);
+    return false;
+  }
+};
 
 // Función para iniciar captura
 const startCapture = async () => {
@@ -226,6 +377,17 @@ const captureFace = async () => {
   try {
     if (!videoElement.value || !stream.value) return;
     
+    // Verificar si hay un rostro antes de capturar
+    const faceDetectedResult = await detectFace();
+    faceDetected.value = faceDetectedResult;
+    
+    if (!faceDetectedResult) {
+      console.log('⚠️ No se detectó rostro, saltando captura...');
+      return;
+    }
+    
+    console.log('✅ Rostro detectado, procediendo con captura...');
+    
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.width = videoElement.value.videoWidth || 640;
@@ -237,7 +399,7 @@ const captureFace = async () => {
     capturedPhotos.value.push(photoData);
     fotosCapturadas.value++;
     
-    console.log(`📸 Foto ${fotosCapturadas.value}/${props.targetCount} capturada`);
+    console.log(`📸 Foto ${fotosCapturadas.value}/${props.targetCount} capturada (rostro detectado)`);
     
   } catch (error) {
     console.error('❌ Error capturando foto:', error);
@@ -247,6 +409,7 @@ const captureFace = async () => {
 // Función para procesar fotos
 const processPhotos = async () => {
   try {
+    isProcessing.value = true;
     mensaje.value = { tipo: 'info', texto: 'Procesando fotos...' };
     
     const result = await faceService.registerFace(
@@ -265,6 +428,8 @@ const processPhotos = async () => {
     console.error('❌ Error procesando fotos:', error);
     mensaje.value = { tipo: 'error', texto: `Error: ${error.message}` };
     emit('registro-error', error);
+  } finally {
+    isProcessing.value = false;
   }
 };
 

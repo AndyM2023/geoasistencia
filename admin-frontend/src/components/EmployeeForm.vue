@@ -216,7 +216,7 @@
                     <div class="text-center">
                       <!-- Botón para empleados SIN rostro registrado -->
                       <v-btn
-                        v-if="!editingEmployee.face_registration_status"
+                        v-if="!(faceStatus && faceStatus.has_physical_files)"
                         @click="$emit('face-registration', editingEmployee)"
                         color="blue-400"
                         size="large"
@@ -240,12 +240,12 @@
                       </v-btn>
                       
                       <p class="text-blue-400 text-xs mt-2">
-                        {{ editingEmployee.face_registration_status ? 'Actualizar rostro existente' : 'Se capturarán 15 fotos para máxima velocidad' }}
+                        {{ faceStatus && faceStatus.has_physical_files ? 'Actualizar rostro existente' : 'Se capturarán 15 fotos para máxima velocidad' }}
                       </p>
                     </div>
                     
                     <!-- Estado del registro facial -->
-                    <div v-if="editingEmployee.face_registration_status" class="mt-4 text-center">
+                    <div v-if="faceStatus && faceStatus.has_physical_files" class="mt-4 text-center">
                       <v-divider class="mb-4"></v-divider>
                       <v-icon color="green-500" size="48" class="mb-2">mdi-check-circle</v-icon>
                       <h4 class="text-green-400 mb-2">Rostro Registrado</h4>
@@ -406,6 +406,7 @@
 <script>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import EmployeePhotoModal from './EmployeePhotoModal.vue'
+import { faceService } from '../services/faceService'
 
 export default {
   name: 'EmployeeForm',
@@ -463,6 +464,9 @@ export default {
     // Estado del modal de foto
     const showPhotoModal = ref(false)
     const selectedEmployeePhoto = ref(null)
+    
+    // Estado del rostro existente
+    const faceStatus = ref(null)
     
     // Posiciones disponibles
     const positions = [
@@ -696,6 +700,37 @@ export default {
       }
     }
     
+    const fetchFaceStatus = async (employeeId) => {
+      try {
+        if (!employeeId) {
+          faceStatus.value = null
+          return
+        }
+        const data = await faceService.getFaceStatus(employeeId)
+        console.log('🔍 fetchFaceStatus - data recibida:', data)
+        console.log('🔍 fetchFaceStatus - data type:', typeof data)
+        console.log('🔍 fetchFaceStatus - data keys:', Object.keys(data || {}))
+        
+        // Extraer datos del Proxy object si es necesario
+        const rawData = data?.__v_isRef ? data.value : data
+        
+        // Normalizar estructura esperada - ser más defensivo
+        faceStatus.value = {
+          has_profile: Boolean(rawData?.has_profile),
+          is_trained: Boolean(rawData?.is_trained),
+          photos_count: Number(rawData?.photos_count || 0),
+          physical_photos_count: Number(rawData?.physical_photos_count || 0),
+          physical_embeddings_count: Number(rawData?.physical_embeddings_count || 0),
+          folder_exists: Boolean(rawData?.folder_exists),
+          has_physical_files: Boolean(rawData?.has_physical_files)
+        }
+        console.log('🔍 Estado facial normalizado:', faceStatus.value)
+      } catch (e) {
+        console.error('Error obteniendo estado de rostro:', e)
+        faceStatus.value = null
+      }
+    }
+    
     // Resetear formulario
     const resetForm = () => {
       employeeForm.first_name = ''
@@ -711,13 +746,10 @@ export default {
     watch(() => props.editingEmployee, (newEmployee) => {
       if (newEmployee) {
         fillForm(newEmployee)
-        // Verificar estado facial
-        if (newEmployee.id) {
-          // Aquí podrías hacer una llamada al API para verificar el estado
-          // faceRegistration.status = newEmployee.face_registration_status ? 'trained' : 'idle'
-        }
+        if (newEmployee.id) fetchFaceStatus(newEmployee.id)
       } else {
         resetForm()
+        faceStatus.value = null
       }
     }, { immediate: true })
     
@@ -750,6 +782,7 @@ export default {
       // faceRegistration, // Eliminado
       showPhotoModal,
       selectedEmployeePhoto,
+      faceStatus,
       
       // Datos
       positions,

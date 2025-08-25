@@ -50,6 +50,10 @@ export const faceService = {
     async getFaceStatus(employeeId) {
         try {
             const response = await api.get(`/employees/${employeeId}/face_status/`);
+            console.log('🔍 getFaceStatus - response completa:', response);
+            console.log('🔍 getFaceStatus - response.data:', response.data);
+            console.log('🔍 getFaceStatus - response.data type:', typeof response.data);
+            console.log('🔍 getFaceStatus - response.data keys:', Object.keys(response.data || {}));
             return response.data;
         } catch (error) {
             console.error('Error obteniendo estado facial:', error);
