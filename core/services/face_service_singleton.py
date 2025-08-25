@@ -26,16 +26,29 @@ class FaceServiceSingleton:
     def _create_service(cls):
         """Crear el servicio facial con manejo de errores robusto"""
         try:
+            # ✅ SOLUCIÓN RÁPIDA: Usar el entorno virtual de Django en lugar del directorio local
+            # El problema es que face_recognition tiene su propio requirements.txt pero deepface está en venv
+            print("🔧 SOLUCIÓN RÁPIDA: Usando entorno virtual de Django para deepface")
+            
             # Verificar que el directorio de reconocimiento facial existe
             face_recognition_dir = os.path.join(os.getcwd(), 'face_recognition')
             if not os.path.exists(face_recognition_dir):
                 print(f"❌ Directorio de reconocimiento facial no encontrado: {face_recognition_dir}")
                 return None
             
-            # Agregar el directorio al path si no está
+            # ✅ AGREGAR EL DIRECTORIO AL PATH DE DJANGO (no al path local)
             if face_recognition_dir not in sys.path:
                 sys.path.insert(0, face_recognition_dir)
-                print(f"✅ Directorio agregado al path: {face_recognition_dir}")
+                print(f"✅ Directorio agregado al path de Django: {face_recognition_dir}")
+            
+            # ✅ VERIFICAR QUE DEEPFACE ESTÁ DISPONIBLE EN EL ENTORNO VIRTUAL
+            try:
+                import deepface
+                print(f"✅ DeepFace disponible en entorno virtual: {deepface.__version__}")
+            except ImportError as e:
+                print(f"❌ DeepFace no disponible en entorno virtual: {e}")
+                print("💡 Asegúrate de que estés usando: venv\\Scripts\\activate.ps1")
+                return None
             
             # Intentar importar el sistema facial
             try:
@@ -43,6 +56,7 @@ class FaceServiceSingleton:
                 print(f"✅ FacialRecognition importado correctamente")
             except ImportError as e:
                 print(f"❌ Error importando FacialRecognition: {e}")
+                print("🔍 Verificando dependencias del sistema facial...")
                 return None
             
             # Crear el servicio

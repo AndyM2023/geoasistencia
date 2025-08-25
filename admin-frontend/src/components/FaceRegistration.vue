@@ -1,7 +1,7 @@
 <template>
   <!-- Modal Dialog -->
   <v-dialog
-    :model-value="true"
+    :model-value="showDialog"
     persistent
     max-width="800px"
     @update:model-value="$emit('close')"
@@ -21,24 +21,17 @@
       </v-card-title>
       
       <v-card-text>
-        <!-- Mensaje de error si el ID no es válido -->
-        <div v-if="!props.employeeId || props.employeeId === 'new' || isNaN(props.employeeId)" class="text-center py-8">
-          <v-icon color="orange" size="64" class="mb-4">mdi-alert-circle</v-icon>
-          <h3 class="text-orange-400 mb-2">ID de Empleado Inválido</h3>
-          <p class="text-grey-300 mb-4">
-            Debes guardar el empleado antes de poder registrar su rostro facial.
-          </p>
-          <v-btn color="blue-400" @click="closeDialog">
-            Cerrar
-          </v-btn>
-        </div>
-        
-        <!-- Contenido normal solo si el ID es válido -->
-        <template v-else>
-          <!-- Video Container -->
-          <div class="video-container mb-4">
-            <video ref="videoElement" autoplay playsinline muted class="camera-video"></video>
+        <!-- Video Container - Siempre visible cuando el modal esté abierto -->
+        <div class="video-container mb-4">
+          <video ref="videoElement" autoplay playsinline muted class="camera-video"></video>
+          <!-- Debug: Mostrar si el elemento video está disponible -->
+          <div v-if="!videoElement" class="text-red-400 text-sm mt-2">
+            ⚠️ Elemento video no disponible
           </div>
+          <div v-else class="text-green-400 text-sm mt-2">
+            ✅ Elemento video disponible
+          </div>
+        </div>
         
         <!-- Progress Info -->
         <div class="progress-section">
@@ -67,7 +60,6 @@
         >
           {{ mensaje.texto }}
         </v-alert>
-        </template>
       </v-card-text>
       
       <v-card-actions class="justify-center pa-4">
@@ -141,6 +133,10 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { faceService } from '../services/faceService';
 
 const props = defineProps({
+  showDialog: {
+    type: Boolean,
+    default: false
+  },
   employeeId: {
     type: [String, Number],
     required: true
@@ -160,6 +156,16 @@ console.log('🔍 FaceRegistration - Props recibidas:', {
   employeeId: props.employeeId,
   employeeName: props.employeeName,
   targetCount: props.targetCount
+});
+
+console.log('🔍 FaceRegistration - Validación de employeeId:', {
+  employeeId: props.employeeId,
+  isNull: props.employeeId === null,
+  isUndefined: props.employeeId === undefined,
+  isNew: props.employeeId === 'new',
+  isNaN: isNaN(props.employeeId),
+  type: typeof props.employeeId,
+  value: props.employeeId
 });
 
 const emit = defineEmits(['registro-completo', 'registro-error', 'close']);
@@ -184,6 +190,16 @@ const statusText = computed(() => {
   return `Capturando... ${fotosCapturadas.value}/${props.targetCount}`;
 });
 
+const isValidEmployeeId = computed(() => {
+  const isValid = props.employeeId && props.employeeId !== 'new' && !isNaN(props.employeeId);
+  console.log('🔍 isValidEmployeeId computed:', {
+    employeeId: props.employeeId,
+    isValid,
+    type: typeof props.employeeId
+  });
+  return isValid;
+});
+
 const startCapture = async () => {
   try {
     // Validar que el employeeId sea válido antes de iniciar
@@ -193,6 +209,18 @@ const startCapture = async () => {
     
     console.log('🎬 Iniciando captura de video...');
     console.log('👤 Employee ID válido:', props.employeeId);
+    
+    // ✅ VERIFICACIÓN ADICIONAL: Esperar a que el elemento video esté disponible
+    if (!videoElement.value) {
+      console.log('⏳ Esperando a que el elemento video esté disponible...');
+      await new Promise(resolve => setTimeout(resolve, 100)); // Esperar 100ms
+      
+      if (!videoElement.value) {
+        throw new Error('Elemento de video no encontrado. Espere un momento e intente nuevamente.');
+      }
+    }
+    
+    console.log('✅ Elemento video encontrado:', videoElement.value);
     
     stream.value = await navigator.mediaDevices.getUserMedia({ 
       video: { 
@@ -555,9 +583,30 @@ const closeDialog = () => {
 
 onMounted(async () => {
   console.log('🎯 Componente FaceRegistration montado');
-  // Iniciar captura automáticamente al abrir el diálogo
-  await new Promise(resolve => setTimeout(resolve, 500)); // Esperar que se renderice
-  startCapture();
+  
+  // ✅ SIMPLIFICADO: Siempre intentar iniciar la cámara
+  console.log('✅ Iniciando proceso de cámara...');
+  
+  // ✅ ESPERAR A QUE EL ELEMENTO VIDEO ESTÉ DISPONIBLE
+  let attempts = 0;
+  const maxAttempts = 15; // Aumentado a 15 intentos
+  
+  while (!videoElement.value && attempts < maxAttempts) {
+    console.log(`⏳ Intento ${attempts + 1}/${maxAttempts}: Esperando elemento video...`);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Aumentado a 300ms
+    attempts++;
+  }
+  
+  if (videoElement.value) {
+    console.log('✅ Elemento video disponible, iniciando captura automática');
+    await startCapture();
+  } else {
+    console.error('❌ Elemento video no disponible después de múltiples intentos');
+    mensaje.value = {
+      tipo: 'error',
+      texto: 'No se pudo inicializar la cámara. Intente cerrar y abrir nuevamente.'
+    };
+  }
 });
 
 onBeforeUnmount(() => {

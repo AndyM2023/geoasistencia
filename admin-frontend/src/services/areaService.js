@@ -4,10 +4,19 @@ class AreaService {
   // Obtener todas las áreas
   async getAll() {
     try {
+      console.log('🔄 AreaService.getAll() - Iniciando petición a /areas/')
       const response = await api.get('/areas/')
+      console.log('✅ AreaService.getAll() - Respuesta exitosa:', response)
+      console.log('📥 AreaService.getAll() - Datos recibidos:', response.data)
       return response.data
     } catch (error) {
-      console.error('Error obteniendo áreas:', error)
+      console.error('❌ AreaService.getAll() - Error obteniendo áreas:', error)
+      console.error('📊 Detalles del error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      })
       throw error
     }
   }

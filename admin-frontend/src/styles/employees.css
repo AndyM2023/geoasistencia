@@ -424,3 +424,473 @@
     min-width: 100% !important;
   }
 }
+
+/* ===== ESTILOS ESPECÍFICOS PARA LAS TARJETAS DE EMPLEADOS ===== */
+
+/* Contenedor de tarjetas */
+.employee-cards {
+  padding: 1rem;
+}
+
+/* Tarjeta individual */
+.employee-card {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0f172a; /* Azul muy oscuro, no negro puro */
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  position: relative;
+}
+
+.employee-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* Header de la tarjeta */
+.card-header {
+  position: relative;
+  height: 120px;
+  background: #1e293b; /* Azul ligeramente más claro que el fondo para diferenciación */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem 1rem 1rem;
+  overflow: hidden;
+}
+
+/* Avatar del empleado */
+.employee-avatar {
+  position: relative;
+  z-index: 2;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 0 20px rgba(59, 130, 246, 0.6),
+    0 0 40px rgba(59, 130, 246, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.employee-avatar:hover {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 0 30px rgba(59, 130, 246, 0.8),
+    0 0 60px rgba(59, 130, 246, 0.5),
+    0 6px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Avatar placeholder cuando no hay foto */
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 0 25px rgba(59, 130, 246, 0.8),
+    0 0 50px rgba(59, 130, 246, 0.6),
+    0 0 75px rgba(59, 130, 246, 0.4);
+}
+
+.employee-avatar:hover .avatar-placeholder {
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 
+    0 0 35px rgba(59, 130, 246, 1),
+    0 0 70px rgba(59, 130, 246, 0.8),
+    0 0 100px rgba(59, 130, 246, 0.6);
+}
+
+/* Información del empleado */
+.employee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.01rem; /* Reducido de 0.75rem a 0.5rem para menos separación */
+  text-align: center;
+}
+
+.employee-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.employee-position {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+.employee-area {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0;
+  font-weight: 500;
+}
+
+.employee-email {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 400;
+}
+
+.employee-cedula {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 400;
+  font-family: 'Courier New', monospace;
+}
+
+/* Contenedor de acciones */
+.actions-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* Botones de acción */
+.action-btn {
+  transition: all 0.3s ease;
+  border-radius: 50%;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Cursor pointer para elementos clickeables */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Responsive para las tarjetas */
+@media (max-width: 768px) {
+  .employee-cards {
+    padding: 0.5rem;
+  }
+  
+  .employee-card {
+    margin-bottom: 1rem;
+  }
+  
+  .card-header {
+    height: 100px;
+    padding: 1rem 0.75rem 0.75rem;
+  }
+  
+  .employee-avatar {
+    size: 64px;
+  }
+  
+  .employee-name {
+    font-size: 1rem;
+  }
+  
+  .employee-position,
+  .employee-area,
+  .employee-email,
+  .employee-cedula {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-header {
+    height: 80px;
+    padding: 0.75rem 0.5rem 0.5rem;
+  }
+  
+  .employee-avatar {
+    size: 56px;
+  }
+  
+  .employee-name {
+    font-size: 0.9rem;
+  }
+  
+  .employee-position,
+  .employee-area,
+  .employee-email,
+  .employee-cedula {
+    font-size: 0.75rem;
+  }
+  
+  .actions-container {
+    gap: 0.5rem;
+  }
+}
+
+/* ===== ESTILOS ESPECÍFICOS PARA LA TABLA DE EMPLEADOS ===== */
+
+/* Contenedor de la tabla */
+.employee-table {
+  width: 100%;
+}
+
+/* Tabla de datos */
+.employee-data-table {
+  background: transparent !important;
+  border: none !important; /* Eliminar borde de la tabla */
+}
+
+/* Override global de Vuetify para eliminar bordes */
+.employee-data-table * {
+  border-color: transparent !important;
+}
+
+.employee-data-table .v-data-table__tr,
+.employee-data-table .v-data-table__td,
+.employee-data-table .v-data-table-header th {
+  border: none !important;
+  border-color: transparent !important;
+}
+
+/* Headers de la tabla */
+.employee-data-table .v-data-table-header {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-bottom: none !important; /* Eliminado el borde inferior azul */
+}
+
+.employee-data-table .v-data-table-header th {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 0.75rem 0.75rem !important; /* Padding reducido de 1rem a 0.75rem */
+  background: transparent !important;
+  height: 48px !important; /* Altura consistente con las filas */
+}
+
+/* Filas de la tabla */
+.employee-data-table .v-data-table__tr {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-bottom: none !important; /* Eliminado el borde inferior azul */
+  border-top: none !important; /* Asegurar que no haya borde superior */
+  border-left: none !important; /* Asegurar que no haya borde izquierdo */
+  border-right: none !important; /* Asegurar que no haya borde derecho */
+  height: 48px !important; /* Altura reducida para filas más compactas */
+}
+
+/* Eliminado el hover que causaba problemas */
+
+/* Asegurar que no haya bordes en hover */
+.employee-data-table .v-data-table__tr:hover {
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* Celdas de la tabla */
+.employee-data-table .v-data-table__td {
+  padding: 0.5rem 0.75rem !important; /* Padding reducido de 1rem a 0.5rem */
+  color: #ffffff !important;
+  font-size: 0.875rem !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  height: 48px !important; /* Altura reducida para celdas más compactas */
+}
+
+/* Celdas específicas */
+.employee-name-cell {
+  font-weight: 600 !important;
+  color: #ffffff !important;
+}
+
+.employee-cedula-cell {
+  font-family: 'Courier New', monospace !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+.employee-email-cell {
+  color: #cbd5e1 !important;
+  font-weight: 400 !important;
+}
+
+.employee-position-cell {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+.employee-area-cell {
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+/* Contenedor de acciones */
+.employee-actions-cell {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  align-items: center !important;
+}
+
+/* Botones de acción */
+.action-btn {
+  transition: all 0.3s ease !important;
+  border-radius: 50% !important;
+}
+
+.action-btn:hover {
+  transform: scale(1.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Paginación */
+.employee-data-table .v-data-table-footer {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-top: 1px solid rgba(59, 130, 246, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.employee-data-table .v-data-table-footer .v-select {
+  color: #ffffff !important;
+}
+
+.employee-data-table .v-data-table-footer .v-btn {
+  color: #ffffff !important;
+}
+
+.employee-data-table .v-data-table-footer .v-btn:disabled {
+  color: #64748b !important;
+}
+
+/* Responsive para la tabla */
+@media (max-width: 1024px) {
+  .employee-data-table .v-data-table-header th,
+  .employee-data-table .v-data-table__td {
+    padding: 0.75rem 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-data-table .v-data-table-header th,
+  .employee-data-table .v-data-table__td {
+    padding: 0.5rem 0.25rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .employee-actions-cell {
+    gap: 0.25rem !important;
+  }
+}
+
+/* ===== ESTILOS PARA EL HEADER DE EMPLEADOS ===== */
+.employee-header {
+  margin-bottom: 2rem;
+}
+
+.neon-border {
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.neon-border:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ===== ESTILOS PARA TOGGLE DE VISTA ===== */
+.view-toggle-buttons {
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+}
+
+.view-toggle-buttons .v-btn {
+  border-radius: 6px;
+}
+
+.view-toggle-buttons .v-btn--selected {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+/* ===== ESTILOS PARA EL CONTENEDOR PRINCIPAL ===== */
+.employee-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ===== ESTILOS PARA FILTROS ===== */
+.filters-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-field {
+  max-width: 300px;
+}
+
+/* ===== ESTILOS PARA INPUT DE BÚSQUEDA ===== */
+.search-input {
+  max-width: 400px;
+  min-width: 300px;
+}
+
+.search-input .v-field {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+}
+
+.search-input .v-field:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.search-input .v-field__input {
+  color: #ffffff;
+}
+
+.search-input .v-field__label {
+  color: #94a3b8;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-item {
+    min-width: auto;
+  }
+  
+  .search-field {
+    max-width: none;
+  }
+  
+  .view-toggle-buttons {
+    width: 100%;
+  }
+
+  .search-input {
+    max-width: 100%;
+    min-width: auto;
+  }
+}
