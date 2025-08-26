@@ -17,25 +17,28 @@
     
     <div v-else>
       <!-- Información del Empleado -->
-      <v-card class="bg-dark-surface border border-blue-500/20 mb-6">
-        <v-card-title class="text-white pb-2">Información Personal</v-card-title>
-        <v-card-text class="pt-0">
+      <v-card class="employee-card mb-6">
+        <v-card-title>Información Personal</v-card-title>
+        <v-card-text>
           <v-row>
             <v-col cols="12" md="6">
-              <div class="text-grey-300 mb-2">
-                <strong>Nombre:</strong> {{ employeeInfo.fullName }}
+              <div class="employee-info-row">
+                <div class="employee-info-label">Nombre</div>
+                <div class="employee-info-value">{{ employeeInfo.fullName }}</div>
               </div>
-
-              <div class="text-grey-300 mb-2">
-                <strong>Cargo:</strong> {{ employeeInfo.position }}
+              <div class="employee-info-row">
+                <div class="employee-info-label">Cargo</div>
+                <div class="employee-info-value">{{ employeeInfo.position }}</div>
               </div>
             </v-col>
             <v-col cols="12" md="6">
-              <div class="text-grey-300 mb-2">
-                <strong>Área:</strong> {{ employeeInfo.area || 'Sin área asignada' }}
+              <div class="employee-info-row">
+                <div class="employee-info-label">Área</div>
+                <div class="employee-info-value">{{ employeeInfo.area || 'Sin área asignada' }}</div>
               </div>
-              <div class="text-grey-300 mb-2">
-                <strong>Fecha de Contratación:</strong> {{ employeeInfo.hireDate }}
+              <div class="employee-info-row">
+                <div class="employee-info-label">Fecha de Contratación</div>
+                <div class="employee-info-value">{{ employeeInfo.hireDate }}</div>
               </div>
             </v-col>
           </v-row>
@@ -43,63 +46,63 @@
       </v-card>
 
       <!-- Estadísticas Personales -->
-      <v-row class="mb-6">
-        <v-col cols="12" sm="6" md="2">
-          <v-card class="bg-dark-surface border border-blue-500/20 text-center">
+      <v-row class="mb-6 stats-row">
+        <v-col cols="12" sm="6" md="auto" class="stats-col">
+          <v-card class="employee-stats-card days-worked text-center">
             <v-card-text>
-              <v-icon size="48" color="primary" class="mb-2">mdi-calendar-check</v-icon>
-              <div class="text-h5 text-white">{{ stats.totalDays }}</div>
-              <div class="text-grey-400">Días Trabajados</div>
+              <v-icon size="48" color="info" class="employee-stats-icon">mdi-calendar-check</v-icon>
+              <div class="employee-stats-number">{{ stats.totalDays }}</div>
+              <div class="employee-stats-label">Días Trabajados</div>
             </v-card-text>
           </v-card>
         </v-col>
         
-        <v-col cols="12" sm="6" md="2">
-          <v-card class="bg-dark-surface border border-blue-500/20 text-center">
+        <v-col cols="12" sm="6" md="auto" class="stats-col">
+          <v-card class="employee-stats-card on-time text-center">
             <v-card-text>
-              <v-icon size="48" color="success" class="mb-2">mdi-clock-in</v-icon>
-              <div class="text-h5 text-white">{{ stats.onTimeDays }}</div>
-              <div class="text-grey-400">A Tiempo</div>
+              <v-icon size="48" color="success" class="employee-stats-icon">mdi-clock-in</v-icon>
+              <div class="employee-stats-number">{{ stats.onTimeDays }}</div>
+              <div class="employee-stats-label">A Tiempo</div>
             </v-card-text>
           </v-card>
         </v-col>
         
-        <v-col cols="12" sm="6" md="2">
-          <v-card class="bg-dark-surface border border-blue-500/20 text-center">
+        <v-col cols="12" sm="6" md="auto" class="stats-col">
+          <v-card class="employee-stats-card late text-center">
             <v-card-text>
-              <v-icon size="48" color="warning" class="mb-2">mdi-clock-alert</v-icon>
-              <div class="text-h5 text-white">{{ stats.lateDays }}</div>
-              <div class="text-grey-400">Atrasos</div>
+              <v-icon size="48" color="warning" class="employee-stats-icon">mdi-clock-alert</v-icon>
+              <div class="employee-stats-number">{{ stats.lateDays }}</div>
+              <div class="employee-stats-label">Atrasos</div>
             </v-card-text>
           </v-card>
         </v-col>
         
-        <v-col cols="12" sm="6" md="2">
-          <v-card class="bg-dark-surface border border-blue-500/20 text-center">
+        <v-col cols="12" sm="6" md="auto" class="stats-col">
+          <v-card class="employee-stats-card absent text-center">
             <v-card-text>
-              <v-icon size="48" color="orange" class="mb-2">mdi-clock-out</v-icon>
-              <div class="text-h5 text-white">{{ stats.earlyExitDays || 0 }}</div>
-              <div class="text-grey-400">Salida Temprana</div>
+              <v-icon size="48" color="error" class="employee-stats-icon">mdi-close-circle</v-icon>
+              <div class="employee-stats-number">{{ stats.absentDays || 0 }}</div>
+              <div class="employee-stats-label">Ausente</div>
             </v-card-text>
           </v-card>
         </v-col>
         
-        <v-col cols="12" sm="6" md="2">
-          <v-card class="bg-dark-surface border border-blue-500/20 text-center">
+        <v-col cols="12" sm="6" md="auto" class="stats-col">
+          <v-card class="employee-stats-card attendance-rate text-center">
             <v-card-text>
-              <v-icon size="48" color="info" class="mb-2">mdi-percent</v-icon>
-              <div class="text-h5 text-white">{{ stats.attendanceRate }}%</div>
-              <div class="text-grey-400">Tasa de Asistencia</div>
+              <v-icon size="48" color="info" class="employee-stats-icon">mdi-percent</v-icon>
+              <div class="employee-stats-number">{{ stats.attendanceRate }}%</div>
+              <div class="employee-stats-label">Tasa de Asistencia</div>
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
 
       <!-- Historial de Asistencias -->
-      <v-card class="bg-dark-surface border border-blue-500/20">
-                 <v-card-title class="text-white pb-2">
-           Historial de Asistencias
-           <v-spacer></v-spacer>
+      <v-card class="attendance-table-card">
+        <v-card-title>
+          Historial de Asistencias
+          <v-spacer></v-spacer>
            
                        <!-- Filtro de Fechas -->
             <div class="d-flex align-center date-filter-container">
@@ -503,9 +506,11 @@ export default {
 </script>
 
 <style scoped>
- .max-width-150 {
-   max-width: 150px;
- }
+@import '../style/reports.css';
+
+.max-width-150 {
+  max-width: 150px;
+}
  
  .max-width-200 {
    max-width: 200px;

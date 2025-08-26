@@ -581,10 +581,10 @@ class Attendance(models.Model):
             else:
                 time_remaining_str = f"{minutes}m"
             
-            error_message = f'No puedes marcar salida antes de las {expected_check_out.strftime("%H:%M")}. Te faltan {time_remaining_str} para completar tu jornada laboral.'
+            error_message = f"No puedes marcar salida antes de las {expected_check_out.strftime('%H:%M')}. Te faltan {time_remaining_str} para completar tu jornada laboral."
             error_details = {
-                'expected_check_out': expected_check_out.strftime("%H:%M"),
-                'actual_check_out': self.check_out.strftime("%H:%M"),
+                'expected_check_out': expected_check_out.strftime('%H:%M'),
+                'actual_check_out': self.check_out.strftime('%H:%M'),
                 'time_remaining': time_remaining_str,
                 'time_remaining_minutes': int(time_remaining.total_seconds() // 60)
             }

@@ -471,7 +471,6 @@ class DashboardViewSet(viewsets.ViewSet):
             # Contadores para diferentes tipos de asistencia
             on_time_days = 0
             late_days = 0
-            early_exit_days = 0
             
             for attendance in attendances:
                 if not attendance.check_in or not attendance.area:
@@ -493,7 +492,6 @@ class DashboardViewSet(viewsets.ViewSet):
                 
                 # Convertir horas a objetos time para comparar
                 check_in_time = attendance.check_in
-                check_out_time = attendance.check_out
                 
                 if isinstance(check_in_time, str):
                     from datetime import datetime
@@ -501,13 +499,6 @@ class DashboardViewSet(viewsets.ViewSet):
                         check_in_time = datetime.strptime(check_in_time, '%H:%M:%S').time()
                     except ValueError:
                         check_in_time = datetime.strptime(check_in_time, '%H:%M').time()
-                
-                if isinstance(check_out_time, str):
-                    from datetime import datetime
-                    try:
-                        check_out_time = datetime.strptime(check_out_time, '%H:%M:%S').time()
-                    except ValueError:
-                        check_out_time = datetime.strptime(check_out_time, '%H:%M').time()
                 
                 # Calcular hora límite de entrada (con período de gracia)
                 from datetime import datetime, timedelta
@@ -518,17 +509,21 @@ class DashboardViewSet(viewsets.ViewSet):
                 # Verificar entrada
                 is_late_entry = check_in_time > limit_time
                 
-                # Verificar salida
-                is_early_exit = check_out_time < expected_check_out if check_out_time else False
-                
-                # Clasificar el día de manera simple: solo entrada y salida
+                # Clasificar el día de manera simple: solo entrada
                 if is_late_entry:
                     late_days += 1
-                elif is_early_exit:
-                    early_exit_days += 1
                 else:
-                    # A tiempo: entrada a tiempo Y salida a tiempo (o sin salida)
+                    # A tiempo: entrada a tiempo
                     on_time_days += 1
+            
+            # Calcular días ausentes (días laborables del mes - días con asistencia)
+            current_month = timezone.now().month
+            current_year = timezone.now().year
+            from calendar import monthrange
+            _, days_in_month = monthrange(current_year, current_month)
+            # Asumir 22 días laborables por mes
+            working_days = min(22, days_in_month)
+            absent_days = max(0, working_days - total_days)
             
             # Calcular tasa de asistencia (días trabajados vs días laborables del mes)
             current_month = timezone.now().month
@@ -546,7 +541,7 @@ class DashboardViewSet(viewsets.ViewSet):
                 'totalDays': total_days,
                 'onTimeDays': on_time_days,
                 'lateDays': late_days,
-                'earlyExitDays': early_exit_days,
+                'absentDays': absent_days,
                 'attendanceRate': attendance_rate
             }
             
@@ -1241,10 +1236,10 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                         
                         return Response({
                             'success': False,
-                            'message': f'No puedes marcar salida antes de las {expected_check_out.strftime("%H:%M")}. Te faltan {time_remaining_str} para completar tu jornada laboral.',
-                            'error_type': 'early_exit_not_allowed',
-                            'expected_check_out': expected_check_out.strftime("%H:%M"),
-                            'current_time': current_time.strftime("%H:%M"),
+                            'message': f"No puedes marcar salida antes de las {expected_check_out.strftime('%H:%M')}. Te faltan {time_remaining_str} para completar tu jornada laboral.",
+                            'error_type': 'checkout_before_schedule',
+                            'expected_check_out': expected_check_out.strftime('%H:%M'),
+                            'current_time': current_time.strftime('%H:%M'),
                             'time_remaining': time_remaining_str,
                             'time_remaining_minutes': int(time_remaining.total_seconds() // 60)
                         }, status=status.HTTP_400_BAD_REQUEST)
@@ -1288,10 +1283,10 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                         print(f"❌ MUY TARDE PARA ENTRADA: Hora actual {current_time} > Hora salida {expected_check_out}")
                         return Response({
                             'success': False,
-                            'message': f'Ya pasó la hora de salida ({expected_check_out.strftime("%H:%M")}). No puedes marcar entrada ahora.',
+                            'message': f"Ya pasó la hora de salida ({expected_check_out.strftime('%H:%M')}). No puedes marcar entrada ahora.",
                             'error_type': 'too_late_for_entry',
-                            'expected_check_out': expected_check_out.strftime("%H:%M"),
-                            'current_time': current_time.strftime("%H:%M")
+                            'expected_check_out': expected_check_out.strftime('%H:%M'),
+                            'current_time': current_time.strftime('%H:%M')
                         }, status=status.HTTP_400_BAD_REQUEST)
                     
                     # Si es tarde pero dentro del horario laboral
