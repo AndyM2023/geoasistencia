@@ -567,7 +567,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         # Asegurar que hire_date esté presente
         if 'hire_date' not in validated_data:
             from django.utils import timezone
-            validated_data['hire_date'] = timezone.now().date()
+            validated_data['hire_date'] = timezone.localtime().date()
         
         # NO asignar la cédula al empleado - solo al usuario
         # La cédula ya se asignó al usuario en la línea anterior

@@ -69,7 +69,7 @@ class Command(BaseCommand):
                 return
         
         # Mostrar estadísticas del día actual
-        today = timezone.now().date()
+        today = timezone.localtime().date()
         self.stdout.write(f"\n📊 ESTADÍSTICAS DEL DÍA {today}:")
         
         from core.models import Attendance

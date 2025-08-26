@@ -47,7 +47,7 @@ class Command(BaseCommand):
             return
         
         # Obtener horarios del área
-        today = timezone.now().date()
+        today = timezone.localtime().date()
         expected_check_in, expected_check_out = ScheduleService.get_expected_times(area, today)
         grace_period = ScheduleService.get_grace_period(area)
         

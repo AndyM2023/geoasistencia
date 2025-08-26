@@ -30,7 +30,7 @@ class Command(BaseCommand):
         
         # Contar totales
         total_attendances = attendances.count()
-        today = timezone.now().date()
+        today = timezone.localtime().date()
         today_attendances = attendances.filter(date=today).count()
         
         self.stdout.write(f'\n📊 RESUMEN:')

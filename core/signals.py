@@ -170,7 +170,7 @@ def process_incomplete_attendance_after_save(sender, instance, created, **kwargs
         # Solo procesar si es una asistencia nueva o si se actualizó el check_out
         if created or kwargs.get('update_fields') and 'check_out' in kwargs['update_fields']:
             # Procesar asistencias incompletas del día anterior
-            yesterday = timezone.now().date() - timedelta(days=1)
+            yesterday = timezone.localtime().date() - timedelta(days=1)
             process_incomplete_attendance_for_date(yesterday)
             
     except Exception as e:
@@ -219,7 +219,7 @@ def process_incomplete_attendance_on_access(sender, instance, **kwargs):
     """
     try:
         # Solo procesar si es una asistencia del día anterior o anterior
-        if instance.date and instance.date < timezone.now().date():
+        if instance.date and instance.date < timezone.localtime().date():
             # Procesar asistencias incompletas para esa fecha
             process_incomplete_attendance_for_date(instance.date)
             
@@ -232,7 +232,7 @@ def auto_process_all_incomplete_attendances():
     Procesa todas las asistencias incompletas de días anteriores
     """
     try:
-        today = timezone.now().date()
+        today = timezone.localtime().date()
         
         # Procesar los últimos 7 días
         for days_back in range(1, 8):

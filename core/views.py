@@ -221,7 +221,7 @@ class AuthViewSet(viewsets.ViewSet):
             user.save()
             
             # Actualizar timestamp de modificación
-            user.updated_at = timezone.now()
+            user.updated_at = timezone.localtime()
             user.save(update_fields=['updated_at'])
             
             print(f"✅ Perfil actualizado para usuario {user.username}")
@@ -245,7 +245,7 @@ class DashboardViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Obtener estadísticas del dashboard"""
-        today = timezone.now().date()
+        today = timezone.localtime().date()
         
         # Contar empleados
         total_employees = Employee.objects.count()
@@ -260,8 +260,8 @@ class DashboardViewSet(viewsets.ViewSet):
         pending_attendance = total_employees - today_attendance
         
         # Calcular tasa de asistencia del mes actual
-        current_month = timezone.now().month
-        current_year = timezone.now().year
+        current_month = timezone.localtime().month
+        current_year = timezone.localtime().year
         month_attendance = Attendance.objects.filter(
             date__month=current_month,
             date__year=current_year
@@ -298,7 +298,7 @@ class DashboardViewSet(viewsets.ViewSet):
         from datetime import timedelta
         
         # Obtener fecha de hace 7 días
-        end_date = timezone.now().date()
+        end_date = timezone.localtime().date()
         start_date = end_date - timedelta(days=6)
         
         # Generar lista de fechas de la semana
@@ -335,7 +335,7 @@ class DashboardViewSet(viewsets.ViewSet):
         from datetime import datetime, timedelta
         
         # Obtener actividades de las últimas 24 horas
-        yesterday = timezone.now() - timedelta(days=1)
+        yesterday = timezone.localtime() - timedelta(days=1)
         
         # Asistencias recientes
         recent_attendances = Attendance.objects.select_related(
@@ -348,7 +348,7 @@ class DashboardViewSet(viewsets.ViewSet):
         
         for attendance in recent_attendances:
             # Calcular tiempo transcurrido
-            time_diff = timezone.now() - attendance.created_at
+            time_diff = timezone.localtime() - attendance.created_at
             
             if time_diff.days > 0:
                 time_text = f"Hace {time_diff.days} día{'s' if time_diff.days > 1 else ''}"
@@ -407,14 +407,14 @@ class DashboardViewSet(viewsets.ViewSet):
                     'status': 'Sistema',
                     'employee': 'Sistema',
                     'area': 'General',
-                    'timestamp': timezone.now().isoformat()
+                    'timestamp': timezone.localtime().isoformat()
                 }
             ]
         
         return Response({
             'activities': activities,
             'total': len(activities),
-            'lastUpdate': timezone.now().isoformat()
+            'lastUpdate': timezone.localtime().isoformat()
         })
 
     @action(detail=False, methods=['get'])
@@ -517,8 +517,8 @@ class DashboardViewSet(viewsets.ViewSet):
                     on_time_days += 1
             
             # Calcular días ausentes (días laborables del mes - días con asistencia)
-            current_month = timezone.now().month
-            current_year = timezone.now().year
+            current_month = timezone.localtime().month
+            current_year = timezone.localtime().year
             from calendar import monthrange
             _, days_in_month = monthrange(current_year, current_month)
             # Asumir 22 días laborables por mes
@@ -526,8 +526,8 @@ class DashboardViewSet(viewsets.ViewSet):
             absent_days = max(0, working_days - total_days)
             
             # Calcular tasa de asistencia (días trabajados vs días laborables del mes)
-            current_month = timezone.now().month
-            current_year = timezone.now().year
+            current_month = timezone.localtime().month
+            current_year = timezone.localtime().year
             from calendar import monthrange
             _, days_in_month = monthrange(current_year, current_month)
             # Asumir 22 días laborables por mes
@@ -627,7 +627,7 @@ class DashboardViewSet(viewsets.ViewSet):
             return Response({
                 'success': True,
                 'message': message,
-                'timestamp': timezone.now().isoformat()
+                'timestamp': timezone.localtime().isoformat()
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
@@ -1146,8 +1146,8 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Verificar si ya tiene asistencia hoy
-            today = timezone.now().date()
-            current_time = timezone.now().time()
+            today = timezone.localtime().date()
+            current_time = timezone.localtime().time()
             print(f"📅 Fecha actual: {today}")
             print(f"🕐 Hora actual: {current_time}")
             
@@ -1618,7 +1618,7 @@ class PasswordResetViewSet(viewsets.ViewSet):
     def request_reset(self, request):
         """Solicitar recuperación de contraseña"""
         print(f"\n🔍 === DEBUG COMPLETO DE REQUEST_RESET ===")
-        print(f"🔍 Timestamp: {timezone.now()}")
+        print(f"🔍 Timestamp: {timezone.localtime()}")
         print(f"🔍 Método: {request.method}")
         print(f"🔍 URL: {request.path}")
         print(f"🔍 Headers: {dict(request.headers)}")

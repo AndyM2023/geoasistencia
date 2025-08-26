@@ -279,14 +279,14 @@ class FaceRecognitionService:
                     'face_embeddings_path': employee_folder,
                     'photos_count': saved_photos,
                     'is_trained': True,
-                    'last_training': timezone.now()
+                    'last_training': timezone.localtime()
                 }
             )
             
             if not created:
                 face_profile.photos_count = saved_photos
                 face_profile.is_trained = True
-                face_profile.last_training = timezone.now()
+                face_profile.last_training = timezone.localtime()
                 face_profile.save()
             
             print(f"✅ FACE_SERVICE: Registro facial completado exitosamente")

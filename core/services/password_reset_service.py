@@ -22,7 +22,7 @@ class PasswordResetService:
             # Crear nuevo token
             token = PasswordResetToken.objects.create(
                 user=user,
-                expires_at=timezone.now() + timedelta(hours=1)
+                expires_at=timezone.localtime() + timedelta(hours=1)
             )
             
             logger.info(f"Token de recuperación creado para usuario {user.username}")
@@ -43,7 +43,7 @@ class PasswordResetService:
             # Buscar tokens recientes del mismo usuario (últimos 5 minutos)
             recent_tokens = PasswordResetToken.objects.filter(
                 user=user,
-                created_at__gte=timezone.now() - timedelta(minutes=5)
+                created_at__gte=timezone.localtime() - timedelta(minutes=5)
             ).order_by('-created_at')
             
             if recent_tokens.count() > 1:
@@ -124,7 +124,7 @@ class PasswordResetService:
         """Limpiar tokens expirados"""
         try:
             expired_tokens = PasswordResetToken.objects.filter(
-                expires_at__lt=timezone.now()
+                expires_at__lt=timezone.localtime()
             )
             count = expired_tokens.count()
             expired_tokens.delete()

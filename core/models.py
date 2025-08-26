@@ -254,7 +254,7 @@ class Employee(models.Model):
         related_name='employees',
         verbose_name='Área de Trabajo'
     )
-    hire_date = models.DateField(default=timezone.now, verbose_name='Fecha de Contratación')
+    hire_date = models.DateField(default=timezone.localtime, verbose_name='Fecha de Contratación')
     photo = models.ImageField(
         upload_to='employee_photos/', 
         null=True, 
@@ -476,8 +476,8 @@ class Attendance(models.Model):
         grace_period = ScheduleService.get_grace_period(self.area)
         
         # Hora actual
-        current_time = timezone.now().time()
-        current_date = timezone.now().date()
+        current_time = timezone.localtime().time()
+        current_date = timezone.localtime().date()
         
         # Si es un día diferente, no actualizar
         if current_date != self.date:
@@ -627,13 +627,13 @@ class PasswordResetToken(models.Model):
         if not self.token:
             self.token = str(uuid.uuid4())
         if not self.expires_at:
-            self.expires_at = timezone.now() + timedelta(hours=1)
+            self.expires_at = timezone.localtime() + timedelta(hours=1)
         super().save(*args, **kwargs)
     
     @property
     def is_expired(self):
         """Verificar si el token ha expirado"""
-        return timezone.now() > self.expires_at
+        return timezone.localtime() > self.expires_at
     
     @property
     def is_valid(self):

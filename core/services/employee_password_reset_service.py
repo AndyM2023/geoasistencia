@@ -26,7 +26,7 @@ class EmployeePasswordResetService:
             # Crear nuevo token
             token = PasswordResetToken.objects.create(
                 user=user,
-                expires_at=timezone.now() + timedelta(hours=1)
+                expires_at=timezone.localtime() + timedelta(hours=1)
             )
             
             logger.info(f"Token de recuperación creado para empleado {user.username}")
@@ -47,7 +47,7 @@ class EmployeePasswordResetService:
             # Buscar tokens recientes del mismo usuario (últimos 5 minutos)
             recent_tokens = PasswordResetToken.objects.filter(
                 user=user,
-                created_at__gte=timezone.now() - timedelta(minutes=5)
+                created_at__gte=timezone.localtime() - timedelta(minutes=5)
             ).order_by('-created_at')
             
             if recent_tokens.count() > 1:

@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='employee',
             name='hire_date',
-            field=models.DateField(default=django.utils.timezone.now, verbose_name='Fecha de Contratación'),
+            field=models.DateField(default=django.utils.timezone.localtime, verbose_name='Fecha de Contratación'),
         ),
         migrations.CreateModel(
             name='FaceProfile',
