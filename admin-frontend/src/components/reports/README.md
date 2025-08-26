@@ -74,6 +74,39 @@ Esta carpeta contiene los componentes modulares que conforman la página de repo
 **Emits**:
 - `clear-search`: Solicita limpiar la búsqueda
 
+## Composable useReports
+
+### Ubicación
+`../../composables/useReports.js`
+
+### Responsabilidad
+Contiene toda la lógica de negocio de los reportes:
+- Estado reactivo (filtros, datos, estadísticas, etc.)
+- Computed properties (datos filtrados, datos del gráfico)
+- Funciones de negocio (generar reporte, exportar, cargar datos)
+- Funciones de utilidad (formateo de fechas, colores de estado)
+- Watchers y lógica de inicialización
+
+### Funciones Principales
+- `generateReport()`: Genera el reporte con los filtros aplicados
+- `exportReport()`: Exporta el reporte a Excel
+- `clearSearch()`: Limpia la búsqueda
+- `initialize()`: Inicializa el composable cargando datos básicos
+
+### Estado Reactivo
+- `search`: Término de búsqueda
+- `loading`: Estado de carga
+- `generating`: Estado de generación de reporte
+- `filters`: Filtros aplicados
+- `employees`: Lista de empleados
+- `areas`: Lista de áreas
+- `reportData`: Datos del reporte
+- `stats`: Estadísticas calculadas
+
+### Computed Properties
+- `filteredReportData`: Datos filtrados por búsqueda
+- `chartData`: Datos procesados para el gráfico
+
 ## Estilos Compartidos
 
 Los estilos están centralizados en `../../style/reports.css` y se importan en cada componente que los necesita.
@@ -85,14 +118,15 @@ Los estilos están centralizados en `../../style/reports.css` y se importan en c
 3. **Testabilidad**: Es más fácil escribir tests unitarios para componentes pequeños
 4. **Legibilidad**: El código es más fácil de entender y navegar
 5. **Escalabilidad**: Facilita agregar nuevas funcionalidades
+6. **Separación de Responsabilidades**: Lógica de negocio separada de la presentación
 
 ## Uso en Reports.vue
 
 El componente principal `Reports.vue` ahora:
 - Importa todos los componentes modulares
-- Mantiene la lógica de negocio y estado
-- Coordina la comunicación entre componentes
-- Es mucho más pequeño y legible (de ~1100 líneas a ~600 líneas)
+- Usa el composable `useReports` para toda la lógica de negocio
+- Solo se encarga de la presentación y coordinación de componentes
+- Es extremadamente limpio y legible (de ~1100 líneas a ~100 líneas)
 
 ## Comunicación entre Componentes
 
@@ -100,3 +134,23 @@ El componente principal `Reports.vue` ahora:
 - **Events up**: Las acciones de los usuarios se comunican hacia arriba
 - **v-model**: Para sincronización bidireccional de filtros
 - **Computed properties**: Para datos derivados y filtrados
+- **Composable**: Centraliza toda la lógica de negocio y estado
+
+## Arquitectura Final
+
+```
+Reports.vue (Componente de Presentación)
+├── useReports.js (Lógica de Negocio)
+├── ReportFilters.vue (Filtros)
+├── ReportStats.vue (Estadísticas)
+├── ReportTable.vue (Tabla de Datos)
+├── ReportChart.vue (Gráfico)
+└── ReportMessages.vue (Mensajes de Estado)
+```
+
+Esta arquitectura proporciona:
+- **Máxima separación de responsabilidades**
+- **Código altamente mantenible**
+- **Lógica reutilizable**
+- **Componentes testables**
+- **Fácil escalabilidad**
