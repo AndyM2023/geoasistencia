@@ -6,14 +6,19 @@ const API_BASE_URL = 'http://localhost:8000/api'
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 120000, // 2 minutos para procesar 50 fotos con embeddings
-  headers: {
-    'Content-Type': 'application/json',
-  }
+  headers: {}
 })
 
 // Interceptor para token de autenticación
 api.interceptors.request.use(
   (config) => {
+    // Si el payload es FormData, dejar que el navegador establezca el Content-Type con boundary
+    if (config.data instanceof FormData) {
+      if (config.headers && (config.headers['Content-Type'] || config.headers['content-type'])) {
+        delete config.headers['Content-Type']
+        delete config.headers['content-type']
+      }
+    }
     const token = localStorage.getItem('token')
     console.log('🔍 API Interceptor - Request:', {
       method: config.method?.toUpperCase(),

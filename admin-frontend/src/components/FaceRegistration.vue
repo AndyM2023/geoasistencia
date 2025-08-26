@@ -14,7 +14,7 @@
     <v-card class="bg-dark-surface border border-blue-500/20">
       <v-card-title class="text-white d-flex align-center">
         <v-icon color="blue-400" class="mr-2">mdi-camera</v-icon>
-        📷 Registro de Rostro - {{ displayEmployeeName }}
+         Registro de Rostro - {{ displayEmployeeName }}
         <v-spacer></v-spacer>
         <v-btn 
           icon="mdi-close" 
@@ -35,11 +35,10 @@
             muted 
             class="camera-video"
             :class="{ 'capturing': isCapturing }"
-            style="width: 100%; max-width: 640px; height: auto; max-height: 400px;"
           ></video>
           
           <!-- Status Overlay -->
-          <div v-if="!isCapturing" class="camera-status-overlay">
+          <div v-if="!isCapturing && !isProcessing" class="camera-status-overlay">
             <v-icon color="orange" size="48" class="mb-2">mdi-camera-off</v-icon>
             <p class="text-orange-400 text-center mb-2">Cámara no iniciada</p>
             <v-btn
@@ -53,7 +52,7 @@
           </div>
           
           <!-- Capture Progress -->
-          <div v-if="isCapturing" class="capture-status-overlay">
+          <div v-if="isCapturing && !isProcessing" class="capture-status-overlay">
             <div class="capture-indicator">
               <v-progress-circular
                 :model-value="(fotosCapturadas / targetCount) * 100"
@@ -195,9 +194,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick, watch, computed } from 'vue';
 import { faceService } from '../services/faceService';
-import { capitalizeFullName } from '../utils/nameUtils';
+import { capitalizeFullNameString } from '../utils/nameUtils';
 
 const props = defineProps({
   showDialog: {
@@ -508,6 +507,10 @@ onMounted(async () => {
   if (props.showDialog) {
     console.log('✅ Modal ya está abierto, inicializando...');
     await initializeVideo();
+    // Auto iniciar captura inmediatamente
+    try {
+      await startCapture();
+    } catch (e) {}
   } else {
     console.log('⏳ Modal no está abierto, esperando...');
   }
@@ -568,6 +571,10 @@ watch(() => props.showDialog, async (newValue, oldValue) => {
     console.log('🔍 employeeId:', props.employeeId);
     console.log('🔍 employeeName:', props.employeeName);
     await initializeVideo();
+    // Auto iniciar captura inmediatamente
+    try {
+      await startCapture();
+    } catch (e) {}
   } else {
     console.log('🔒 Modal cerrado, limpiando estado...');
     // Limpiar estado cuando se cierra el modal
@@ -593,19 +600,29 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   overflow: hidden;
   background: #000;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9; /* contenedor panorámico */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .camera-video {
   border-radius: 8px;
   transition: all 0.3s ease-in-out;
-  filter: brightness(1.2) contrast(1.1) saturate(1.05);
+  filter: none !important; /* mostrar video nítido */
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* cubrir contenedor sin bandas negras */
 }
 
 .camera-video.capturing {
-  filter: brightness(1.5) contrast(1.4) saturate(1.2) hue-rotate(0deg);
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
-  transform: scale(1.01);
-  transition: all 0.3s ease-in-out;
+  filter: none !important; /* sin efectos al capturar */
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 .camera-status-overlay,
@@ -615,11 +632,12 @@ onBeforeUnmount(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: transparent !important; /* quitar oscurecimiento */
   display: flex;
   justify-content: center;
   align-items: center;
   border-radius: 8px;
+  pointer-events: none; /* no bloquear la interacción del video */
 }
 
 .capture-indicator {
@@ -632,18 +650,17 @@ onBeforeUnmount(() => {
 }
 
 .processing-overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: auto;
-  height: auto;
-  background: rgba(0, 0, 0, 0.95);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
   border-radius: 16px;
+  background: transparent !important; /* no oscurecer el video */
 }
 
 .processing-content {

@@ -2,16 +2,39 @@ import api from './api'
 
 export const employeeService = {
   async getAll() {
-    const response = await api.get('/employees/')
-    // Extraer el array de results si viene paginado
-    return response.data.results || response.data
+    // Recolectar todas las páginas (el backend fija PAGE_SIZE=20)
+    const items = []
+    let url = '/employees/?page_size=100'
+    while (url) {
+      const response = await api.get(url)
+      const data = response.data
+      if (Array.isArray(data)) {
+        // Sin paginación
+        return data
+      }
+      items.push(...(data.results || []))
+      // Usar 'next' absoluto o relativo
+      url = data.next ? data.next.replace(response.config.baseURL, '') : null
+    }
+    return items
   },
   
   async getAllWithStatus(status = 'active') {
-    const params = status !== 'active' ? `?status=${status}` : ''
-    const response = await api.get(`/employees/${params}`)
-    // Extraer el array de results si viene paginado
-    return response.data.results || response.data
+    const items = []
+    const params = new URLSearchParams()
+    if (status !== 'active') params.set('status', status)
+    params.set('page_size', '100')
+    let url = `/employees/?${params.toString()}`
+    while (url) {
+      const response = await api.get(url)
+      const data = response.data
+      if (Array.isArray(data)) {
+        return data
+      }
+      items.push(...(data.results || []))
+      url = data.next ? data.next.replace(response.config.baseURL, '') : null
+    }
+    return items
   },
   
   async getById(id) {
@@ -20,30 +43,34 @@ export const employeeService = {
   },
   
   async create(employeeData) {
-    // Si hay foto, enviar como FormData
-    if (employeeData.photo && employeeData.photo instanceof File) {
+    // Si hay foto (File o Blob de cámara), enviar como FormData
+    if (employeeData.photo && (employeeData.photo instanceof File || employeeData.photo instanceof Blob)) {
       console.log('📸 Foto detectada en creación, enviando como FormData')
       const formData = new FormData()
-      
+
       // Agregar todos los campos del formulario
       Object.keys(employeeData).forEach(key => {
         if (key === 'photo') {
-          formData.append('photo', employeeData.photo)
+          // Si es Blob (captura de cámara), agregar un nombre de archivo por compatibilidad
+          const isBlob = employeeData.photo instanceof Blob && !(employeeData.photo instanceof File)
+          const filename = isBlob ? 'photo.jpg' : employeeData.photo.name
+          formData.append('photo', employeeData.photo, filename)
         } else if (employeeData[key] !== null && employeeData[key] !== undefined) {
           formData.append(key, employeeData[key])
         }
       })
-      
-      console.log('📤 FormData creado para creación:', formData)
-      const response = await api.post('/employees/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+
+      console.log('📤 FormData creado para creación (sin forzar Content-Type):', formData)
+      // No forzar Content-Type; el navegador agregará el boundary correcto
+      const response = await api.post('/employees/', formData)
       return response.data
     } else {
-      // Sin foto, enviar como JSON normal
-      const response = await api.post('/employees/', employeeData)
+      // Sin foto válida, enviar como JSON normal removiendo el campo photo si existe
+      const cleanData = { ...employeeData }
+      if ('photo' in cleanData) {
+        delete cleanData.photo
+      }
+      const response = await api.post('/employees/', cleanData)
       return response.data
     }
   },
@@ -60,26 +87,24 @@ export const employeeService = {
       console.log(`   - ${key}: ${value} (tipo: ${typeof value}, null: ${value === null}, undefined: ${value === undefined})`)
     })
     
-    // Si hay foto nueva, enviar como FormData
-    if (employeeData.photo && employeeData.photo instanceof File) {
+    // Si hay foto nueva (File o Blob), enviar como FormData
+    if (employeeData.photo && (employeeData.photo instanceof File || employeeData.photo instanceof Blob)) {
       console.log('📸 Foto nueva detectada, enviando como FormData')
       const formData = new FormData()
-      
+
       // Agregar todos los campos del formulario
       Object.keys(employeeData).forEach(key => {
         if (key === 'photo') {
-          formData.append('photo', employeeData.photo)
+          const isBlob = employeeData.photo instanceof Blob && !(employeeData.photo instanceof File)
+          const filename = isBlob ? 'photo.jpg' : employeeData.photo.name
+          formData.append('photo', employeeData.photo, filename)
         } else if (employeeData[key] !== null && employeeData[key] !== undefined) {
           formData.append(key, employeeData[key])
         }
       })
-      
-      console.log('📤 FormData creado:', formData)
-      const response = await api.put(`/employees/${id}/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+
+      console.log('📤 FormData creado (sin forzar Content-Type):', formData)
+      const response = await api.put(`/employees/${id}/`, formData)
       return response.data
     } else if (employeeData.photo === 'DELETE_PHOTO') {
       // Si se marca para eliminar la foto, enviar señal especial

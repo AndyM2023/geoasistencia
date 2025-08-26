@@ -21,7 +21,7 @@
         ></v-btn>
       </v-card-title>
       
-      <v-card-text class="pa-6">
+      <v-card-text class="pa-6 employee-form-scroll">
         <v-form ref="form" v-model="valid">
           <v-row>
             
@@ -405,6 +405,7 @@
 
 <script>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useNotifications } from '../composables/useNotifications'
 import EmployeePhotoModal from './EmployeePhotoModal.vue'
 import { faceService } from '../services/faceService'
 import { capitalizeFullName } from '../utils/nameUtils'
@@ -438,6 +439,9 @@ export default {
   },
   emits: ['close', 'save', 'update:showDialog', 'face-registration'],
   setup(props, { emit }) {
+    // Notificaciones
+    const { showError } = useNotifications()
+
     // Referencias del formulario
     const form = ref(null)
     const valid = ref(false)
@@ -682,6 +686,20 @@ export default {
     
     // Función de guardado
     const saveEmployee = async () => {
+      // Validación extra: cédula duplicada con notificación
+      try {
+        const existingCedulas = props.employees
+          .filter(emp => emp.id !== props.editingEmployee?.id)
+          .map(emp => emp.cedula_display || emp.cedula || emp.user?.cedula)
+          .filter(Boolean)
+        if (existingCedulas.includes(employeeForm.cedula)) {
+          showError('La cédula ingresada ya está registrada. Verifica los datos.')
+          return
+        }
+      } catch (e) {
+        // No bloquear por errores de chequeo local
+      }
+
       if (form.value?.validate()) {
         try {
           // Emitir el evento de guardado

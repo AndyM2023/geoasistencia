@@ -1,0 +1,38 @@
+/* Ajustes para 'Actividad Reciente' en el Dashboard */
+
+/* Dar espacio justo para el chip, sin encoger demasiado el texto */
+.dashboard-activity .v-list-item__content {
+  padding-right: 10px !important; /* menos espacio para el chip */
+}
+
+/* Evitar cortes letra por letra y permitir saltos solo donde corresponde */
+.dashboard-activity .v-list-item-title,
+.dashboard-activity .v-list-item-subtitle {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;
+  line-height: 1.25 !important;
+}
+
+/* Ajustar el espacio del área del chip */
+.dashboard-activity .v-list-item__append {
+  margin-left: 6px !important;
+  width: auto !important; /* no reservar espacio extra */
+}
+
+/* Compactar el chip */
+.dashboard-activity .v-chip {
+  padding: 0 6px !important;
+  height: 18px !important;
+  font-size: 11px !important;
+  line-height: 18px !important;
+}
+
+@media (max-width: 600px) {
+  .dashboard-activity .v-list-item__content {
+    padding-right: 44px !important;
+  }
+}
+
+

@@ -19,7 +19,7 @@
       </v-card-title>
 
       <!-- Contenido del modal -->
-      <v-card-text class="pa-6">
+      <v-card-text class="pa-6 profile-modal-scroll">
         <div v-if="loading" class="text-center py-8">
           <v-progress-circular
             indeterminate
@@ -362,7 +362,7 @@
        </v-card-title>
 
        <!-- Contenido del modal -->
-       <v-card-text class="pa-6">
+       <v-card-text class="pa-6 profile-modal-scroll">
          <div v-if="passwordLoading" class="text-center py-8">
            <v-progress-circular
              indeterminate

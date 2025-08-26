@@ -307,6 +307,8 @@ export default {
           selectedEmployeeForFace.value = result;
           console.log('🔍 selectedEmployeeForFace después:', selectedEmployeeForFace.value);
           
+          // Cerrar el formulario de creación y abrir el registro facial
+          showDialog.value = false;
           showFaceRegistrationDialog.value = true;
           console.log('🎯 showFaceRegistrationDialog.value = true');
           console.log('🔍 showFaceRegistrationDialog.value después:', showFaceRegistrationDialog.value);

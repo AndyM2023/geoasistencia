@@ -8,7 +8,7 @@
     <v-card class="bg-dark-surface border border-blue-500/20">
       <v-card-title class="text-white d-flex align-center">
         <v-icon color="blue-400" class="mr-2">mdi-image</v-icon>
-        📷 Vista Expandida de la Foto
+         Vista Expandida de la Foto
         <v-spacer></v-spacer>
         <v-btn 
           icon="mdi-close" 

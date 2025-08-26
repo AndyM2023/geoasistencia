@@ -57,12 +57,13 @@
           ></v-btn>
           
           <v-btn
-            icon="mdi-account-star"
+            icon="mdi-account-off"
             size="small"
             color="white"
             variant="text"
-            @click="$emit('face-registration', item)"
+            @click="$emit('delete', item)"
             class="action-btn"
+            title="Desactivar"
           ></v-btn>
         </div>
       </template>

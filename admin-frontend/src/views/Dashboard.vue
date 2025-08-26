@@ -82,7 +82,7 @@
               <v-progress-circular indeterminate color="primary"></v-progress-circular>
               <div class="mt-3 text-grey-400">Cargando actividad...</div>
             </div>
-            <v-list v-else density="compact" class="bg-transparent pa-0">
+            <v-list v-else density="compact" class="bg-transparent pa-0 dashboard-activity">
               <!-- Debug: Mostrar cantidad de actividades -->
               <div class="text-grey-400 text-caption pa-2 text-center">
                 {{ recentActivities.length }} actividades recientes
