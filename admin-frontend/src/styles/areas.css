@@ -392,6 +392,136 @@
   margin: 0 !important;
 }
 
+/* ===== ESTILOS ESPECÍFICOS PARA LA TABLA DE ÁREAS ===== */
+
+/* Contenedor de la tabla */
+.areas-table {
+  width: 100%;
+}
+
+/* Tabla de datos */
+.areas-data-table {
+  background: transparent !important;
+  border: none !important; /* Eliminar borde de la tabla */
+}
+
+/* Override global de Vuetify para eliminar bordes */
+.areas-data-table * {
+  border-color: transparent !important;
+}
+
+.areas-data-table .v-data-table__tr,
+.areas-data-table .v-data-table__td,
+.areas-data-table .v-data-table-header th {
+  border: none !important;
+  border-color: transparent !important;
+}
+
+/* Headers de la tabla */
+.areas-data-table .v-data-table-header {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-bottom: none !important; /* Eliminado el borde inferior azul */
+}
+
+.areas-data-table .v-data-table-header th {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 0.75rem 0.75rem !important; /* Padding reducido de 1rem a 0.75rem */
+  background: transparent !important;
+  height: 48px !important; /* Altura consistente con las filas */
+}
+
+/* Filas de la tabla */
+.areas-data-table .v-data-table__tr {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-bottom: none !important; /* Eliminado el borde inferior azul */
+  border-top: none !important; /* Asegurar que no haya borde superior */
+  border-left: none !important; /* Asegurar que no haya borde izquierdo */
+  border-right: none !important; /* Asegurar que no haya borde derecho */
+  height: 48px !important; /* Altura reducida para filas más compactas */
+}
+
+/* Asegurar que no haya bordes en hover */
+.areas-data-table .v-data-table__tr:hover {
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  background: rgba(59, 130, 246, 0.15) !important; /* Efecto hover con fondo azul translúcido */
+  transition: background-color 0.2s ease !important; /* Transición suave para el hover */
+}
+
+/* Efecto hover para las celdas individuales */
+.areas-data-table .v-data-table__tr:hover .v-data-table__td {
+  background: transparent !important; /* Las celdas mantienen fondo transparente */
+}
+
+/* Celdas de la tabla */
+.areas-data-table .v-data-table__td {
+  padding: 0.5rem 0.75rem !important; /* Padding reducido de 1rem a 0.5rem */
+  color: #ffffff !important;
+  font-size: 0.875rem !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  height: 48px !important; /* Altura reducida para celdas más compactas */
+}
+
+/* Celdas específicas */
+.area-name-cell {
+  font-weight: 600 !important;
+  color: #ffffff !important;
+}
+
+.area-description-cell {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+.area-coordinate-cell {
+  font-family: 'Courier New', monospace !important;
+  color: #cbd5e1 !important;
+  font-weight: 400 !important;
+}
+
+.area-radius-cell {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+.area-employee-count-cell {
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+.area-schedule-cell {
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+/* Paginación */
+.areas-data-table .v-data-table-footer {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-top: 1px solid rgba(59, 130, 246, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.areas-data-table .v-data-table-footer .v-select {
+  color: #ffffff !important;
+}
+
+.areas-data-table .v-data-table-footer .v-btn {
+  color: #ffffff !important;
+}
+
+.areas-data-table .v-data-table-footer .v-btn:disabled {
+  color: #64748b !important;
+}
+
 /* Responsive para la tabla */
 @media (max-width: 1024px) {
   .areas-data-table .v-data-table-header th,

@@ -25,8 +25,11 @@ export default function useAreas() {
   }
   
   const loadAreas = async () => {
-    loading.value = true
     try {
+      loading.value = true
+      console.log('🔄 Cargando áreas...')
+      
+      // Usar el método que obtiene todas las áreas sin paginación
       const areasData = await areaService.getAll()
       const areasArray = areasData.results || areasData
       

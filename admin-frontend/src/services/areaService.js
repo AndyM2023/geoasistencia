@@ -5,10 +5,31 @@ class AreaService {
   async getAll() {
     try {
       console.log('🔄 AreaService.getAll() - Iniciando petición a /areas/')
-      const response = await api.get('/areas/')
-      console.log('✅ AreaService.getAll() - Respuesta exitosa:', response)
-      console.log('📥 AreaService.getAll() - Datos recibidos:', response.data)
-      return response.data
+      
+      // Intentar obtener todas las áreas con page_size alto
+      try {
+        const response = await api.get('/areas/', {
+          params: {
+            page_size: 1000, // Número muy alto para obtener todas las áreas
+            page: 1
+          }
+        })
+        
+        console.log('✅ AreaService.getAll() - Respuesta exitosa con page_size:', response)
+        console.log('📥 AreaService.getAll() - Datos recibidos:', response.data)
+        
+        // Verificar si realmente obtuvimos todas las áreas
+        if (response.data.count && response.data.results && response.data.count <= response.data.results.length) {
+          console.log('✅ Se obtuvieron todas las áreas con page_size')
+          return response.data
+        } else {
+          console.log('⚠️ page_size no funcionó, usando método alternativo')
+          return await this.getAllWithoutPagination()
+        }
+      } catch (pageSizeError) {
+        console.log('⚠️ Error con page_size, usando método alternativo:', pageSizeError.message)
+        return await this.getAllWithoutPagination()
+      }
     } catch (error) {
       console.error('❌ AreaService.getAll() - Error obteniendo áreas:', error)
       console.error('📊 Detalles del error:', {
@@ -17,6 +38,57 @@ class AreaService {
         status: error.response?.status,
         statusText: error.response?.statusText
       })
+      throw error
+    }
+  }
+
+  // Obtener todas las áreas sin paginación (método alternativo)
+  async getAllWithoutPagination() {
+    try {
+      console.log('🔄 AreaService.getAllWithoutPagination() - Obteniendo todas las áreas...')
+      
+      let allAreas = []
+      let currentPage = 1
+      let hasNextPage = true
+      
+      while (hasNextPage) {
+        console.log(`📄 Obteniendo página ${currentPage}...`)
+        
+        const response = await api.get('/areas/', {
+          params: {
+            page: currentPage,
+            page_size: 100 // Tamaño de página estándar
+          }
+        })
+        
+        const pageData = response.data
+        const pageAreas = pageData.results || []
+        
+        console.log(`📋 Página ${currentPage}: ${pageAreas.length} áreas`)
+        
+        allAreas = [...allAreas, ...pageAreas]
+        
+        // Verificar si hay siguiente página
+        hasNextPage = !!pageData.next
+        currentPage++
+        
+        // Evitar bucle infinito
+        if (currentPage > 100) {
+          console.warn('⚠️ Límite de páginas alcanzado, deteniendo bucle')
+          break
+        }
+      }
+      
+      console.log(`✅ Total de áreas obtenidas: ${allAreas.length}`)
+      
+      return {
+        count: allAreas.length,
+        results: allAreas,
+        next: null,
+        previous: null
+      }
+    } catch (error) {
+      console.error('❌ AreaService.getAllWithoutPagination() - Error:', error)
       throw error
     }
   }
