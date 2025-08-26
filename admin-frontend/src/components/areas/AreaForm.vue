@@ -512,5 +512,5 @@ export default {
 </script>
 
 <style>
-@import '../../style/areas.css';
+@import '../../styles/areas.css';
 </style>

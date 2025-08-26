@@ -1,24 +1,28 @@
+/* Migrated from src/style/dashboard.css */
 /* Ajustes para 'Actividad Reciente' en el Dashboard */
 
-/* Dar espacio justo para el chip, sin encoger demasiado el texto */
+/* Permitir que el contenido se encoja y usar elipsis para no solaparse con el chip */
 .dashboard-activity .v-list-item__content {
-  padding-right: 10px !important; /* menos espacio para el chip */
+  padding-right: 10px !important;
+  min-width: 0 !important; /* crítico para que flex permita encoger */
+  overflow: hidden !important; /* oculta exceso para elipsis */
 }
 
 /* Evitar cortes letra por letra y permitir saltos solo donde corresponde */
 .dashboard-activity .v-list-item-title,
 .dashboard-activity .v-list-item-subtitle {
-  white-space: normal !important;
-  word-break: normal !important;
-  overflow-wrap: break-word !important;
-  hyphens: auto !important;
+  white-space: nowrap !important; /* una sola línea */
+  overflow: hidden !important;
+  text-overflow: ellipsis !important; /* recorta con … */
+  display: block !important;
   line-height: 1.25 !important;
 }
 
 /* Ajustar el espacio del área del chip */
 .dashboard-activity .v-list-item__append {
   margin-left: 6px !important;
-  width: auto !important; /* no reservar espacio extra */
+  width: auto !important;
+  flex: 0 0 auto !important; /* que no empuje al contenido */
 }
 
 /* Compactar el chip */
@@ -31,7 +35,7 @@
 
 @media (max-width: 600px) {
   .dashboard-activity .v-list-item__content {
-    padding-right: 44px !important;
+    padding-right: 44px !important; /* espacio extra por el chip en móviles */
   }
 }
 

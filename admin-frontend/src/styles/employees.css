@@ -558,6 +558,24 @@
   width: 100%;
 }
 
+/* Migrated from src/style/employees.css */
+/* Scroll interno para el formulario de crear/editar empleado */
+.employee-form-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Scrollbar sutil y consistente */
+.employee-form-scroll::-webkit-scrollbar { width: 8px; }
+.employee-form-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 8px; }
+.employee-form-scroll::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.35); border-radius: 8px; }
+.employee-form-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.5); }
+
+@media (max-width: 600px) {
+  .employee-form-scroll { max-height: 60vh; }
+}
+
 
 
 /* Cursor pointer para elementos clickeables */

@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="show" max-width="600px" persistent>
-    <v-card class="bg-dark-surface border border-blue-500/20">
+    <v-card class="bg-dark-surface border border-blue-500/20 profile-modal-card">
       <!-- Header del modal -->
       <v-card-title class="text-white d-flex align-center justify-space-between">
         <div class="d-flex align-center">
@@ -343,7 +343,7 @@
 
    <!-- Modal para cambiar contraseña -->
    <v-dialog v-model="showPasswordModal" max-width="500px" persistent>
-     <v-card class="bg-dark-surface border border-blue-500/20">
+     <v-card class="bg-dark-surface border border-blue-500/20 profile-modal-card">
        <!-- Header del modal -->
        <v-card-title class="text-white d-flex align-center justify-space-between">
          <div class="d-flex align-center">

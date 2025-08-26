@@ -11,7 +11,6 @@
 
 /* Importar estilos específicos de páginas */
 @import './employees.css';
-@import '../style/employees.css';
 @import './areas.css';
 @import './map-selector.css';
 @import './leaflet.css';
@@ -19,8 +18,8 @@
 
 /* Importar sobrescritura de notificaciones DESPUÉS de Vuetify */
 @import './notifications-override.css';
-@import '../style/profiles.css';
-@import '../style/dashboard.css';
+@import './profiles.css';
+@import './dashboard.css';
 
 /* ===== ESTILOS ADICIONALES ESPECÍFICOS ===== */
 

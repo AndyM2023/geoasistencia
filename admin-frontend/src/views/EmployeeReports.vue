@@ -506,7 +506,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../style/reports.css';
+@import '../styles/reports.css';
 
 .max-width-150 {
   max-width: 150px;

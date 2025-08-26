@@ -1,0 +1,58 @@
+/* Migrated from src/style/profiles.css */
+/* Scroll interno para modales de perfil (perfil y cambio de contraseña) */
+.profile-modal-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Asegurar scroll interno robusto dentro de v-dialog */
+.v-dialog .v-card-text.profile-modal-scroll {
+  max-height: calc(80vh - 140px);
+  overflow-y: auto;
+}
+
+/* Evitar que el contenedor del card bloquee el scroll interno */
+.profile-modal-card {
+  overflow: hidden !important;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hacer que el área de contenido ocupe el espacio disponible y permita scroll */
+.profile-modal-card .v-card-text.profile-modal-scroll {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 768px) {
+  .v-dialog .v-card-text.profile-modal-scroll {
+    max-height: calc(85vh - 120px);
+  }
+}
+
+.profile-modal-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.profile-modal-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.profile-modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.35);
+  border-radius: 8px;
+}
+
+.profile-modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.5);
+}
+
+@media (max-width: 600px) {
+  .profile-modal-scroll {
+    max-height: 65vh;
+  }
+}
+
+
