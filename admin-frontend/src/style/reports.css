@@ -1,0 +1,57 @@
+/* Estilos compartidos para componentes de reportes */
+
+/* Estilos de las tarjetas de estadísticas */
+.dashboard-stats-row {
+  margin-bottom: 1rem !important;
+}
+
+.dashboard-stats-row .v-col {
+  padding: 0.5rem;
+}
+
+.stats-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.stats-card .v-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.stats-card .v-card-text {
+  padding: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .dashboard-stats-row .v-col {
+    padding: 0.25rem;
+  }
+  
+  .stats-card .v-card-text {
+    padding: 0.75rem;
+  }
+}
+
+/* Estilos específicos para los filtros si son necesarios */
+.report-filters-card {
+  margin-bottom: 1.5rem;
+}
+
+/* Estilos para la tabla de reportes */
+.report-table-card {
+  margin-top: 0.5rem;
+}
+
+/* Estilos para mensajes de estado */
+.report-messages-card {
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Estilos para el gráfico */
+.report-chart-card {
+  margin-top: 1.5rem;
+}
