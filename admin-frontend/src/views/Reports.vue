@@ -27,7 +27,7 @@
       :search="search"
       :loading="loading"
       :table-key="tableKey"
-      :headers="headers"
+        :headers="headers"
     />
 
     <!-- Gráfico -->
