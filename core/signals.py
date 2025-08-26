@@ -1,7 +1,12 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_init
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
-from .models import User, Employee, Area
+from django.utils import timezone
+from datetime import date, timedelta
+from .models import User, Employee, Area, Attendance
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -154,3 +159,87 @@ def auto_promote_to_admin_by_access(sender, instance, created, **kwargs):
                     
             except Exception as e:
                 print(f"❌ Error verificando otros perfiles: {e}")
+
+@receiver(post_save, sender=Attendance)
+def process_incomplete_attendance_after_save(sender, instance, created, **kwargs):
+    """
+    Signal que se ejecuta automáticamente después de guardar una asistencia
+    Procesa asistencias incompletas del día anterior
+    """
+    try:
+        # Solo procesar si es una asistencia nueva o si se actualizó el check_out
+        if created or kwargs.get('update_fields') and 'check_out' in kwargs['update_fields']:
+            # Procesar asistencias incompletas del día anterior
+            yesterday = timezone.now().date() - timedelta(days=1)
+            process_incomplete_attendance_for_date(yesterday)
+            
+    except Exception as e:
+        logger.error(f"Error procesando asistencia incompleta automáticamente: {e}")
+
+def process_incomplete_attendance_for_date(target_date):
+    """
+    Procesa asistencias incompletas para una fecha específica
+    """
+    try:
+        # Obtener asistencias incompletas del día objetivo
+        incomplete_attendances = Attendance.objects.filter(
+            date=target_date,
+            check_in__isnull=False,
+            check_out__isnull=True,
+            status__in=['present', 'late']  # Solo los que aún no son ausentes
+        )
+        
+        if not incomplete_attendances.exists():
+            return
+        
+        updated_count = 0
+        for attendance in incomplete_attendances:
+            try:
+                old_status = attendance.status
+                
+                # Marcar como ausente
+                if attendance.mark_as_absent_if_incomplete():
+                    updated_count += 1
+                    logger.info(f"🔄 {attendance.employee.full_name} ({target_date}): {old_status} → ausente (automático)")
+                    
+            except Exception as e:
+                logger.error(f"Error procesando {attendance.employee.full_name}: {e}")
+        
+        if updated_count > 0:
+            logger.info(f"✅ Procesamiento automático completado para {target_date}: {updated_count} estados actualizados")
+            
+    except Exception as e:
+        logger.error(f"Error en procesamiento automático para {target_date}: {e}")
+
+@receiver(post_init, sender=Attendance)
+def process_incomplete_attendance_on_access(sender, instance, **kwargs):
+    """
+    Signal que se ejecuta cuando se accede a una asistencia
+    Útil para procesar automáticamente al cargar reportes
+    """
+    try:
+        # Solo procesar si es una asistencia del día anterior o anterior
+        if instance.date and instance.date < timezone.now().date():
+            # Procesar asistencias incompletas para esa fecha
+            process_incomplete_attendance_for_date(instance.date)
+            
+    except Exception as e:
+        logger.error(f"Error procesando asistencia al acceder: {e}")
+
+def auto_process_all_incomplete_attendances():
+    """
+    Función que se puede llamar manualmente o programar
+    Procesa todas las asistencias incompletas de días anteriores
+    """
+    try:
+        today = timezone.now().date()
+        
+        # Procesar los últimos 7 días
+        for days_back in range(1, 8):
+            target_date = today - timedelta(days=days_back)
+            process_incomplete_attendance_for_date(target_date)
+            
+        logger.info("✅ Procesamiento automático de todas las asistencias incompletas completado")
+        
+    except Exception as e:
+        logger.error(f"Error en procesamiento automático general: {e}")

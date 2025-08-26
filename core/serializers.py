@@ -704,6 +704,32 @@ class AttendanceSerializer(serializers.ModelSerializer):
             'face_verified', 'hours_worked', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'employee_name', 'area_name', 'hours_worked']
+    
+    def validate(self, attrs):
+        """Validación personalizada para el modelo Attendance"""
+        # Validar que si hay check_out, también debe haber check_in
+        if attrs.get('check_out') and not attrs.get('check_in'):
+            raise serializers.ValidationError(
+                'No puedes marcar salida sin haber marcado entrada primero.'
+            )
+        
+        # Validar que la fecha de check_out no sea anterior a la fecha de check_in
+        if attrs.get('check_in') and attrs.get('check_out'):
+            if attrs['check_in'] > attrs['check_out']:
+                raise serializers.ValidationError(
+                    'La hora de salida no puede ser anterior a la hora de entrada.'
+                )
+        
+        # Validar hora de salida contra horario esperado (si se está actualizando)
+        if self.instance and attrs.get('check_out'):
+            # Si es una actualización y se está cambiando la hora de salida
+            if self.instance.check_out != attrs['check_out']:
+                # Usar el método de validación del modelo
+                is_valid, error_message, error_details = self.instance.validate_check_out_time()
+                if not is_valid:
+                    raise serializers.ValidationError(error_message)
+        
+        return attrs
 
 class LoginSerializer(serializers.Serializer):
     """Serializer para autenticación - SOLO ADMINISTRADORES (Panel Admin)"""

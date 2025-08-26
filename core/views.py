@@ -23,6 +23,7 @@ from django.contrib.auth import update_session_auth_hash
 import logging
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
+from core.signals import auto_process_all_incomplete_attendances, process_incomplete_attendance_for_date
 
 # Configurar logging para debugging
 logger = logging.getLogger(__name__)
@@ -600,6 +601,44 @@ class DashboardViewSet(viewsets.ViewSet):
                 {'error': f'Error obteniendo historial de asistencias: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=False, methods=['post'])
+    def auto_process_incomplete(self, request):
+        """
+        Endpoint para procesar automáticamente asistencias incompletas
+        Se puede llamar desde el frontend o programar
+        """
+        try:
+            # Obtener parámetros opcionales
+            target_date = request.data.get('date')
+            days_back = request.data.get('days_back', 1)
+            
+            if target_date:
+                # Procesar fecha específica
+                try:
+                    target_date = date.fromisoformat(target_date)
+                    process_incomplete_attendance_for_date(target_date)
+                    message = f"Asistencias incompletas procesadas para {target_date}"
+                except ValueError:
+                    return Response(
+                        {'error': 'Formato de fecha inválido. Use YYYY-MM-DD'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                # Procesar automáticamente los últimos días
+                auto_process_all_incomplete_attendances()
+                message = f"Asistencias incompletas procesadas automáticamente para los últimos {days_back} días"
+            
+            return Response({
+                'success': True,
+                'message': message,
+                'timestamp': timezone.now().isoformat()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'error': f'Error procesando asistencias incompletas: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     """ViewSet para gestión de empleados"""
@@ -1181,24 +1220,34 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 
                 # Si solo tiene entrada, registrar salida
                 if attendance.check_in and not attendance.check_out:
-                    # TEMPORALMENTE DESHABILITADO: Validación de tiempo mínimo de trabajo
-                    # if expected_check_out and current_time < expected_check_out:
-                    #     # Calcular tiempo mínimo de trabajo (ej: 1 hora)
-                    #     from datetime import datetime, timedelta
-                    #     min_work_time = timedelta(hours=1)
-                    #     check_in_datetime = datetime.combine(today, attendance.check_in)
-                    #     current_datetime = datetime.combine(today, current_time)
-                    #     work_duration = current_datetime - check_in_datetime
-                    #     
-                    #     if work_duration < min_work_time:
-                    #         print(f"❌ TIEMPO DE TRABAJO INSUFICIENTE: {work_duration}")
-                    #         return Response({
-                    #             'success': False,
-                    #             'message': f'Debes trabajar al menos 1 hora antes de marcar salida. Tiempo actual: {work_duration}',
-                    #             'error_type': 'insufficient_work_time',
-                    #             'work_duration': str(work_duration),
-                    #             'min_required': '1 hora'
-                    #         }, status=status.HTTP_400_BAD_REQUEST)
+                    # VALIDACIÓN: No permitir marcar salida antes de la hora esperada
+                    if expected_check_out and current_time < expected_check_out:
+                        print(f"❌ SALIDA PREMATURA: Hora actual {current_time} < Hora salida esperada {expected_check_out}")
+                        
+                        # Calcular tiempo restante hasta la hora de salida
+                        from datetime import datetime, timedelta
+                        current_datetime = datetime.combine(today, current_time)
+                        expected_datetime = datetime.combine(today, expected_check_out)
+                        time_remaining = expected_datetime - current_datetime
+                        
+                        # Formatear tiempo restante de forma legible
+                        hours = int(time_remaining.total_seconds() // 3600)
+                        minutes = int((time_remaining.total_seconds() % 3600) // 60)
+                        
+                        if hours > 0:
+                            time_remaining_str = f"{hours}h {minutes}m"
+                        else:
+                            time_remaining_str = f"{minutes}m"
+                        
+                        return Response({
+                            'success': False,
+                            'message': f'No puedes marcar salida antes de las {expected_check_out.strftime("%H:%M")}. Te faltan {time_remaining_str} para completar tu jornada laboral.',
+                            'error_type': 'early_exit_not_allowed',
+                            'expected_check_out': expected_check_out.strftime("%H:%M"),
+                            'current_time': current_time.strftime("%H:%M"),
+                            'time_remaining': time_remaining_str,
+                            'time_remaining_minutes': int(time_remaining.total_seconds() // 60)
+                        }, status=status.HTTP_400_BAD_REQUEST)
                     
                     # Marcar salida
                     attendance.check_out = current_time

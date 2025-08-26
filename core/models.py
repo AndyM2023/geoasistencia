@@ -354,7 +354,6 @@ class Attendance(models.Model):
         ('present', 'Presente'),
         ('late', 'Llegada Tarde'),
         ('absent', 'Ausente'),
-        ('half_day', 'Medio Día'),
     ]
     
     employee = models.ForeignKey(
@@ -511,6 +510,13 @@ class Attendance(models.Model):
     
     def save(self, *args, **kwargs):
         """Guardar y actualizar status automáticamente"""
+        # Validar hora de salida antes de guardar
+        if self.check_out:
+            is_valid, error_message, error_details = self.validate_check_out_time()
+            if not is_valid:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(error_message)
+        
         # Actualizar status antes de guardar
         if self.check_in and not self.check_out:
             self.update_status_based_on_schedule()
@@ -542,6 +548,64 @@ class Attendance(models.Model):
         
         check_in_datetime = datetime.combine(self.date, self.check_in)
         return check_in_datetime > limit_time
+
+    def validate_check_out_time(self):
+        """
+        Valida que la hora de salida no sea antes de la hora esperada
+        Returns:
+            tuple: (is_valid, error_message, error_details)
+        """
+        if not self.check_out or not self.area:
+            return True, None, None
+        
+        from core.services.schedule_service import ScheduleService
+        expected_check_in, expected_check_out = ScheduleService.get_expected_times(self.area, self.date)
+        
+        if not expected_check_out:
+            # Sin horario definido, permitir cualquier hora de salida
+            return True, None, None
+        
+        # Verificar si la salida es antes de la hora esperada
+        if self.check_out < expected_check_out:
+            from datetime import datetime, timedelta
+            current_datetime = datetime.combine(self.date, self.check_out)
+            expected_datetime = datetime.combine(self.date, expected_check_out)
+            time_remaining = expected_datetime - current_datetime
+            
+            # Formatear tiempo restante
+            hours = int(time_remaining.total_seconds() // 3600)
+            minutes = int((time_remaining.total_seconds() % 3600) // 60)
+            
+            if hours > 0:
+                time_remaining_str = f"{hours}h {minutes}m"
+            else:
+                time_remaining_str = f"{minutes}m"
+            
+            error_message = f'No puedes marcar salida antes de las {expected_check_out.strftime("%H:%M")}. Te faltan {time_remaining_str} para completar tu jornada laboral.'
+            error_details = {
+                'expected_check_out': expected_check_out.strftime("%H:%M"),
+                'actual_check_out': self.check_out.strftime("%H:%M"),
+                'time_remaining': time_remaining_str,
+                'time_remaining_minutes': int(time_remaining.total_seconds() // 60)
+            }
+            
+            return False, error_message, error_details
+        
+        return True, None, None
+
+    def mark_as_absent_if_incomplete(self):
+        """
+        Marca como ausente si el empleado solo tiene entrada sin salida
+        Este método se puede llamar al final del día o al día siguiente
+        """
+        if self.check_in and not self.check_out:
+            old_status = self.status
+            self.status = 'absent'
+            # Guardar sin llamar a update_status_based_on_schedule
+            super(Attendance, self).save(update_fields=['status', 'updated_at'])
+            print(f"🔄 {self.employee.full_name} ({self.date}): {old_status} → ausente (jornada incompleta)")
+            return True
+        return False
 
 class PasswordResetToken(models.Model):
     """Token para recuperación de contraseña del administrador"""
