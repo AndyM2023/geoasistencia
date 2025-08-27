@@ -445,7 +445,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=50)
     last_name = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=50)
     email = serializers.EmailField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=254)
-    cedula = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, max_length=20)
+    cedula = serializers.CharField(write_only=True, required=True, allow_blank=False, allow_null=False, max_length=20)
     
     # Campo para la foto del empleado
     photo = serializers.ImageField(required=False, allow_null=True)
@@ -467,6 +467,50 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 f'"{value}" no es una opción válida. Opciones disponibles: {", ".join(valid_positions)}'
             )
         return value
+
+    # Utilidad: validar cédula ecuatoriana (10 dígitos con dígito verificador)
+    @staticmethod
+    def _is_valid_ecuadorian_cedula(cedula: str) -> bool:
+        try:
+            if not cedula or len(cedula) != 10 or not cedula.isdigit():
+                return False
+            total = 0
+            for i in range(9):
+                num = int(cedula[i])
+                if i % 2 == 0:
+                    num = num * 2
+                    if num >= 10:
+                        num = (num // 10) + (num % 10)
+                total += num
+            verificador = int(cedula[9])
+            modulo = total % 10
+            calculado = 0 if modulo == 0 else 10 - modulo
+            return verificador == calculado
+        except Exception:
+            return False
+
+    def validate_cedula(self, value):
+        """Validar formato de cédula (obligatoria)."""
+        if value in [None, ""]:
+            raise serializers.ValidationError('La cédula es requerida')
+        cedula_str = str(value)
+        if len(cedula_str) != 10 or not cedula_str.isdigit():
+            raise serializers.ValidationError('La cédula debe tener 10 dígitos numéricos')
+        if not self._is_valid_ecuadorian_cedula(cedula_str):
+            raise serializers.ValidationError('Cédula ecuatoriana inválida')
+
+        # Validar duplicado en creación
+        try:
+            existing = User.objects.filter(cedula=cedula_str)
+            # En update, excluir el usuario actual si existe
+            if self.instance and getattr(self.instance, 'user_id', None):
+                existing = existing.exclude(id=self.instance.user_id)
+            if existing.exists():
+                raise serializers.ValidationError('Esta cédula ya está registrada para otro usuario')
+        except Exception:
+            # Si algo falla, no ocultar errores de validación, relanzar
+            raise
+        return cedula_str
     
     def validate_first_name(self, value):
         """Capitalizar automáticamente el primer nombre"""

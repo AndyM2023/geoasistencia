@@ -81,6 +81,11 @@
                 @paste="blockCedulaPaste"
                 required
               ></v-text-field>
+              <div class="mt-1 text-caption" v-if="employeeForm.cedula">
+                <span :class="cedulaValidityClass">
+                  {{ cedulaValidityText }}
+                </span>
+              </div>
             </v-col>
             
             <v-col cols="12" sm="6">
@@ -320,7 +325,7 @@
                 style="width: 100%; max-width: 400px; height: 300px; background: #000; border-radius: 8px;"
               ></video>
               
-              <div class="mt-3">
+              <div class="mt-3" v-if="!cameraActive">
                 <v-btn
                   @click="startCamera"
                   color="blue-400"
@@ -415,6 +420,7 @@ import { useNotifications } from '../composables/useNotifications'
 import EmployeePhotoModal from './EmployeePhotoModal.vue'
 import { faceService } from '../services/faceService'
 import { capitalizeFullName } from '../utils/nameUtils'
+import { useEmployeeValidation } from '../composables/useEmployeeValidation'
 
 export default {
   name: 'EmployeeForm',
@@ -497,93 +503,23 @@ export default {
       { title: 'Otro', value: 'otro' }
     ]
     
-    // Reglas de validación simplificadas
-    const rules = {
-      required: (value) => {
-        if (!value || value === '') return 'Este campo es requerido'
-        return true
-      },
-      firstName: (value) => {
-        if (!value || value.length < 2) return 'El nombre debe tener al menos 2 caracteres'
-        if (value.length > 50) return 'El nombre no puede exceder 50 caracteres'
-        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) {
-          return 'El nombre solo puede contener letras y espacios'
-        }
-        return true
-      },
-      lastName: (value) => {
-        if (!value || value.length < 2) return 'El apellido debe tener al menos 2 caracteres'
-        if (value.length > 50) return 'El apellido no puede exceder 50 caracteres'
-        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) {
-          return 'El apellido solo puede contener letras y espacios'
-        }
-        return true
-      },
-      email: (value) => {
-        if (!value) return 'El email es requerido'
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(value)) return 'Formato de email inválido'
-        return true
-      },
-      cedula: (value) => {
-        if (!value) return 'La cédula es requerida'
-        if (value.length !== 10) return 'La cédula debe tener 10 dígitos'
-        if (!/^\d+$/.test(value)) return 'La cédula solo puede contener números'
-        
-        // Verificar duplicados
-        const existingCedulas = props.employees
-          .filter(emp => emp.id !== props.editingEmployee?.id)
-          .map(emp => emp.cedula_display || emp.cedula || emp.user?.cedula)
-          .filter(Boolean)
-        
-        if (existingCedulas.includes(value)) {
-          return 'Esta cédula ya está registrada'
-        }
-        
-        return true
-      }
-    }
+    // Reglas y filtros desde composable compartido
+    const employeesRef = computed(() => props.employees)
+    const editingEmployeeRef = computed(() => props.editingEmployee)
+    const {
+      rules,
+      filterLettersOnly,
+      filterEmail,
+      filterNumbersOnly,
+      blockInvalidCharacters,
+      blockNonNumericCharacters,
+      blockInvalidEmailCharacters,
+      blockCedulaPaste,
+      validateEcuadorianCedula,
+      getExistingCedulas
+    } = useEmployeeValidation(employeesRef, editingEmployeeRef)
     
-    // Filtros de input
-    const filterLettersOnly = (event) => {
-      event.target.value = event.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
-    }
-    
-    const filterEmail = (event) => {
-      event.target.value = event.target.value.replace(/[^a-zA-Z0-9@._-]/g, '')
-    }
-    
-    const filterNumbersOnly = (event) => {
-      event.target.value = event.target.value.replace(/[^0-9]/g, '')
-    }
-    
-    const blockInvalidCharacters = (event) => {
-      const char = String.fromCharCode(event.keyCode || event.charCode)
-      if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(char)) {
-        event.preventDefault()
-      }
-    }
-    
-    const blockNonNumericCharacters = (event) => {
-      const char = String.fromCharCode(event.keyCode || event.charCode)
-      if (!/[0-9]/.test(char)) {
-        event.preventDefault()
-      }
-    }
-    
-    const blockInvalidEmailCharacters = (event) => {
-      const char = String.fromCharCode(event.keyCode || event.charCode)
-      if (!/[a-zA-Z0-9@._-]/.test(char)) {
-        event.preventDefault()
-      }
-    }
-    
-    const blockCedulaPaste = (event) => {
-      event.preventDefault()
-      const pastedText = (event.clipboardData || window.clipboardData).getData('text')
-      const cleanText = pastedText.replace(/[^0-9]/g, '')
-      event.target.value = cleanText
-    }
+    // (Se usan los filtros y bloqueos del composable)
     
     // Funciones de cámara
     const startCamera = async () => {
@@ -728,6 +664,23 @@ export default {
         employeeForm.photo = null
       }
     }
+
+    // Estado derivado: validez dinámica de cédula
+    const cedulaIsValid = computed(() => {
+      const value = employeeForm.cedula || ''
+      if (value.length !== 10 || !/^\d+$/.test(value)) return false
+      if (!validateEcuadorianCedula(String(value))) return false
+      // Evitar marcar inválida si es del mismo empleado en edición
+      try {
+        const existingCedulas = getExistingCedulas()
+        return !existingCedulas.includes(String(value))
+      } catch (e) {
+        return true
+      }
+    })
+
+    const cedulaValidityText = computed(() => (cedulaIsValid.value ? 'Cédula válida' : 'Cédula inválida'))
+    const cedulaValidityClass = computed(() => (cedulaIsValid.value ? 'text-green-400' : 'text-red-400'))
     
     const fetchFaceStatus = async (employeeId) => {
       try {

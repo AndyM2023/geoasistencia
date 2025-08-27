@@ -82,7 +82,7 @@
                   color="primary"
                   bg-color="dark-surface"
                   class="mb-4"
-                  :rules="[rules.required, rules.minLength]"
+                  :rules="[rules.required, rules.password]"
                   hide-details="auto"
                   :disabled="loading"
                 >
@@ -236,7 +236,16 @@ export default {
     
     const rules = {
       required: v => !!v || 'Este campo es requerido',
-      minLength: v => v.length >= 8 || 'La contraseña debe tener al menos 8 caracteres',
+      // Misma validación que en registro de administrador
+      password: v => {
+        if (!v) return 'Este campo es requerido'
+        if (v.length < 8) return 'La contraseña debe tener al menos 8 caracteres'
+        if (!/(?=.*[a-z])/.test(v)) return 'La contraseña debe contener al menos una minúscula'
+        if (!/(?=.*[A-Z])/.test(v)) return 'La contraseña debe contener al menos una mayúscula'
+        if (!/(?=.*\d)/.test(v)) return 'La contraseña debe contener al menos un número'
+        if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(v)) return 'La contraseña debe contener al menos un carácter especial'
+        return true
+      },
       confirmPassword: v => v === form.newPassword || 'Las contraseñas no coinciden'
     }
     
@@ -281,6 +290,12 @@ export default {
           success.value = result.message
           form.newPassword = ''
           form.confirmPassword = ''
+          // Limpiar estados de validación visual
+          try {
+            if (formRef.value && typeof formRef.value.resetValidation === 'function') {
+              formRef.value.resetValidation()
+            }
+          } catch (e) {}
           
           // Redirigir según si es cambio obligatorio o no
           setTimeout(() => {
