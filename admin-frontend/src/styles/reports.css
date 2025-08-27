@@ -1,6 +1,450 @@
 /* Migrated from src/style/reports.css */
 /* Estilos compartidos para componentes de reportes */
 
+/* ===== POSICIONAMIENTO CORRECTO DESDE APPBAR ===== */
+/* Contenedor principal de la página de reportes */
+.employee-reports-page {
+  padding-top: 80px !important; /* Espacio desde AppBar (64px + 16px extra) */
+  min-height: calc(100vh - 64px);
+}
+
+/* Responsive para el espaciado superior */
+@media (max-width: 960px) {
+  .employee-reports-page {
+    padding-top: 70px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-reports-page {
+    padding-top: 65px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .employee-reports-page {
+    padding-top: 60px !important;
+  }
+}
+
+/* ===== CABECERA MEJORADA (ESTILO ADMIN) ===== */
+.employee-reports-header {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  backdrop-filter: blur(15px);
+}
+
+.employee-reports-header h1 {
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.employee-reports-header .header-icon {
+  color: #3b82f6;
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* ===== TARJETA DE INFORMACIÓN PERSONAL MEJORADA ===== */
+.employee-info-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  backdrop-filter: blur(15px);
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.employee-info-card .v-card-title {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 0.75rem;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.employee-info-card .v-card-title .title-icon {
+  color: #3b82f6;
+  font-size: 1.5rem;
+}
+
+.employee-info-card .v-card-text {
+  padding: 1rem;
+}
+
+.employee-info-row {
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.employee-info-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.employee-info-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+  padding-left: 0.5rem;
+  border-radius: 8px;
+}
+
+.employee-info-label {
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 0.125rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.employee-info-value {
+  color: #e2e8f0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* ===== GRID RESPONSIVO MEJORADO PARA TARJETAS DE ESTADÍSTICAS ===== */
+.employee-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  justify-content: center;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ===== TARJETAS DE ESTADÍSTICAS MEJORADAS ===== */
+.employee-stats-card {
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  border: 2px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+  backdrop-filter: blur(15px);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.employee-stats-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, currentColor 50%, transparent 100%);
+  opacity: 0.6;
+}
+
+.employee-stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.employee-stats-card .v-card-text {
+  padding: 0.5rem 1rem;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.employee-stats-icon {
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.employee-stats-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+}
+
+.employee-stats-label {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+  line-height: 1.3;
+}
+
+/* ===== VARIANTES DE COLOR MEJORADAS ===== */
+.employee-stats-card.days-worked {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%);
+  border-color: rgba(59, 130, 246, 0.6);
+  color: #3b82f6;
+}
+
+.employee-stats-card.days-worked .employee-stats-icon {
+  color: #3b82f6;
+}
+
+.employee-stats-card.on-time {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.1) 100%);
+  border-color: rgba(34, 197, 94, 0.6);
+  color: #22c55e;
+}
+
+.employee-stats-card.on-time .employee-stats-icon {
+  color: #22c55e;
+}
+
+.employee-stats-card.late {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border-color: rgba(245, 158, 11, 0.6);
+  color: #f59e0b;
+}
+
+.employee-stats-card.late .employee-stats-icon {
+  color: #f59e0b;
+}
+
+.employee-stats-card.absent {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+}
+
+.employee-stats-card.absent .employee-stats-icon {
+  color: #ef4444;
+}
+
+.employee-stats-card.attendance-rate {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%);
+  border-color: rgba(139, 92, 246, 0.6);
+  color: #8b5cf6;
+}
+
+.employee-stats-card.attendance-rate .employee-stats-icon {
+  color: #8b5cf6;
+}
+
+/* ===== TABLA DE ASISTENCIAS MEJORADA ===== */
+.attendance-table-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  backdrop-filter: blur(15px);
+  margin-top: 2rem;
+  overflow: hidden;
+}
+
+.attendance-table-card .v-card-title {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.4);
+  padding: 0.5rem;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.attendance-table-card .v-card-title .table-icon {
+  color: #3b82f6;
+  font-size: 1.5rem;
+}
+
+.attendance-table-card .v-data-table {
+  background: transparent;
+}
+
+.attendance-table-card .v-data-table .v-data-table-header {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.attendance-table-card .v-data-table .v-data-table-header th {
+  color: #cbd5e1;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.attendance-table-card .v-data-table .v-data-table-header th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.attendance-table-card .v-data-table .v-data-table-header th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.attendance-table-card .v-data-table tbody tr {
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.3s ease;
+}
+
+.attendance-table-card .v-data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: scale(1.01);
+}
+
+.attendance-table-card .v-data-table tbody td {
+  color: #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ===== RESPONSIVE MEJORADO ===== */
+@media (max-width: 1199px) and (min-width: 960px) {
+  .employee-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 1000px;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 959px) and (min-width: 768px) {
+  .employee-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 800px;
+    gap: 0.875rem;
+  }
+  
+  .employee-reports-header {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .employee-reports-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .employee-info-card .v-card-title {
+    padding: 1.25rem;
+    font-size: 1.2rem;
+  }
+  
+  .employee-info-card .v-card-text {
+    padding: 1.5rem;
+  }
+  
+  .employee-stats-card .v-card-text {
+    padding: 1.25rem 0.875rem;
+  }
+  
+  .employee-stats-icon {
+    font-size: 2.25rem;
+    margin-bottom: 0.875rem;
+  }
+  
+  .employee-stats-number {
+    font-size: 1.875rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .employee-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 600px;
+    gap: 0.75rem;
+  }
+  
+  .employee-reports-header {
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .employee-reports-header h1 {
+    font-size: 1.5rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .employee-info-card .v-card-title {
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+  
+  .employee-info-card .v-card-text {
+    padding: 1.25rem;
+  }
+  
+  .employee-stats-card .v-card-text {
+    padding: 1.25rem 0.75rem;
+  }
+  
+  .employee-stats-icon {
+    font-size: 2rem;
+    margin-bottom: 0.875rem;
+  }
+  
+  .employee-stats-number {
+    font-size: 1.75rem;
+  }
+  
+  .employee-stats-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+}
+
+@media (max-width: 600px) {
+  .employee-stats-grid {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+    gap: 0.75rem;
+  }
+  
+  .employee-reports-header {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .employee-reports-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .employee-info-card .v-card-title {
+    padding: 0.875rem;
+    font-size: 1rem;
+  }
+  
+  .employee-info-card .v-card-text {
+    padding: 1rem;
+  }
+  
+  .employee-stats-card .v-card-text {
+    padding: 1.5rem 1rem;
+  }
+  
+  .employee-stats-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .employee-stats-number {
+    font-size: 2.25rem;
+  }
+}
+
+/* ===== ESTILOS EXISTENTES MANTENIDOS ===== */
+
 /* Estilos de las tarjetas de estadísticas */
 .dashboard-stats-row {
   margin-bottom: 1rem !important;
@@ -54,38 +498,16 @@
   padding: 1.5rem;
 }
 
-.employee-info-row { margin-bottom: 1rem; }
-.employee-info-label { font-weight: 600; color: #94a3b8; margin-bottom: 0.25rem; }
-.employee-info-value { color: #e2e8f0; font-size: 1.1rem; }
-
-/* Tarjetas de estadísticas de empleados */
-.employee-stats-card { border-radius: 16px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); border: 2px solid transparent; transition: all 0.3s ease; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%); width: 100%; min-width: 180px; }
-.employee-stats-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); }
-.employee-stats-card .v-card-text { padding: 1.5rem; text-align: center; }
-.employee-stats-icon { margin-bottom: 1rem; }
-.employee-stats-number { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; }
-.employee-stats-label { color: #94a3b8; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-.employee-stats-card.days-worked { background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.35) 100%); border-color: rgba(59, 130, 246, 0.8); }
-.employee-stats-card.on-time { background: linear-gradient(135deg, rgba(34, 197, 94, 0.4) 0%, rgba(22, 163, 74, 0.35) 100%); border-color: rgba(34, 197, 94, 0.8); }
-.employee-stats-card.late { background: linear-gradient(135deg, rgba(245, 158, 11, 0.4) 0%, rgba(217, 119, 6, 0.35) 100%); border-color: rgba(245, 158, 11, 0.8); }
-.employee-stats-card.absent { background: linear-gradient(135deg, rgba(239, 68, 68, 0.4) 0%, rgba(220, 38, 38, 0.35) 100%); border-color: rgba(239, 68, 68, 0.8); }
-.employee-stats-card.attendance-rate { background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.35) 100%); border-color: rgba(59, 130, 246, 0.8); }
-
-/* Tabla de asistencias */
-.attendance-table-card { border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); border: 2px solid rgba(59, 130, 246, 0.3); background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%); }
-.attendance-table-card .v-card-title { font-size: 1.3rem; font-weight: 700; color: #ffffff; border-bottom: 2px solid rgba(59, 130, 246, 0.4); padding-bottom: 1rem; margin-bottom: 1.5rem; }
-
 /* Filtros de fecha */
 .date-filter-container { gap: 1rem; margin-bottom: 1rem; }
 .date-filter-field { max-width: 200px; }
 .clear-filter-btn { height: 40px; margin-top: 8px; }
 
-/* Responsive */
+/* Responsive general */
 @media (max-width: 960px) {
   .dashboard-stats-row .v-col { padding: 0.25rem; }
   .stats-card .v-card-text { padding: 0.75rem; }
   .employee-card .v-card-text { padding: 1rem; }
-  .employee-stats-card .v-card-text { padding: 1rem; }
   .date-filter-container { flex-direction: column; align-items: stretch; }
   .date-filter-field { max-width: none; }
 }
