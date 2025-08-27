@@ -1265,21 +1265,40 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 print(f"🆕 Creando nueva asistencia para {employee.full_name}")
                 
                 if expected_check_in and expected_check_out:
-                    # Validar que no sea muy tarde para marcar entrada
+                    # Validar horarios antes de permitir entrada
                     from datetime import datetime, timedelta
                     
-                    # Calcular hora límite con tolerancia
+                    # Calcular hora límite con tolerancia (para entrada tarde)
                     limit_time = datetime.combine(today, expected_check_in)
                     limit_time = limit_time + timedelta(minutes=grace_period)
                     limit_time = limit_time.time()
                     
+                    # Calcular hora mínima permitida (para entrada temprana)
+                    min_time = datetime.combine(today, expected_check_in)
+                    min_time = min_time - timedelta(minutes=grace_period)
+                    min_time = min_time.time()
+                    
                     print(f"🕐 Validación de horarios:")
                     print(f"   - Hora entrada esperada: {expected_check_in}")
+                    print(f"   - Hora mínima permitida: {min_time}")
                     print(f"   - Hora límite con tolerancia: {limit_time}")
                     print(f"   - Hora actual: {current_time}")
                     
+                    # Si es muy temprano para marcar entrada
+                    if current_time < min_time:
+                        print(f"❌ MUY TEMPRANO PARA ENTRADA: Hora actual {current_time} < Hora mínima {min_time}")
+                        return Response({
+                            'success': False,
+                            'message': f"No puedes marcar entrada antes de las {min_time.strftime('%H:%M')}. El horario de entrada comienza a las {expected_check_in.strftime('%H:%M')} con una tolerancia de {grace_period} minutos.",
+                            'error_type': 'too_early_for_entry',
+                            'expected_check_in': expected_check_in.strftime('%H:%M'),
+                            'min_time_allowed': min_time.strftime('%H:%M'),
+                            'current_time': current_time.strftime('%H:%M'),
+                            'grace_period': grace_period
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    
                     # Si es muy tarde para marcar entrada
-                    if current_time > expected_check_out:
+                    elif current_time > expected_check_out:
                         print(f"❌ MUY TARDE PARA ENTRADA: Hora actual {current_time} > Hora salida {expected_check_out}")
                         return Response({
                             'success': False,
