@@ -79,6 +79,19 @@
           INICIAR SESIÓN
           <v-icon right>mdi-arrow-right</v-icon>
         </v-btn>
+        
+        <!-- En páginas de recuperación de contraseña: Botón VOLVER -->
+        <v-btn
+          v-if="isPasswordRecoveryPage"
+          variant="text"
+          class="text-white"
+          @click="goToRecognition"
+        >
+          <v-avatar size="32" class="mr-2">
+            <v-icon>mdi-arrow-left</v-icon>
+          </v-avatar>
+          VOLVER
+        </v-btn>
       </template>
       
       <!-- Menú desplegable para rutas autenticadas (/app/*) -->
@@ -149,6 +162,13 @@ export default {
     const isRecognitionPage = computed(() => route.path === '/')
     const isLoginPage = computed(() => route.path === '/admin/login')
     const isRegisterPage = computed(() => route.path === '/admin/register')
+    const isPasswordRecoveryPage = computed(() => 
+      route.path.includes('/reset-password') || 
+      route.path.includes('/forgot-password') ||
+      route.path.includes('/password-change') ||
+      route.path.includes('/employee/reports') ||
+      route.path.includes('/employee/login')
+    )
     const isAppRoute = computed(() => route.path.startsWith('/app'))
     const isEmployeeRoute = computed(() => route.path.startsWith('/employee'))
     
@@ -225,6 +245,7 @@ export default {
       isRecognitionPage,
       isLoginPage,
       isRegisterPage,
+      isPasswordRecoveryPage,
       isAppRoute,
       isEmployeeRoute,
       showMenuButton,

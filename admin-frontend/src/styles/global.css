@@ -236,6 +236,211 @@ body.recognition-page {
   }
 }
 
+/* ===== ESTILOS RESPONSIVE PARA PÁGINA DE RECONOCIMIENTO ===== */
+/* Scroll interno solo cuando es responsive - mismo estilo que perfil */
+
+/* En pantallas normales: sin scroll, centrado perfecto */
+@media (min-width: 961px) {
+  .recognition-main .v-container {
+    overflow: hidden !important;
+  }
+  
+  .recognition-main .v-card {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* En pantallas responsive: scroll interno con estilo de perfil */
+@media (max-width: 960px) {
+  .recognition-main .v-container {
+    overflow: visible !important;
+    padding: 1rem !important;
+  }
+  
+  .recognition-main .v-card {
+    max-height: calc(100vh - 80px) !important; /* 64px AppBar + 16px margen */
+    overflow: hidden !important;
+  }
+  
+  /* Scroll interno para la página de reconocimiento */
+  .recognition-main .v-card .v-card-text {
+    max-height: calc(100vh - 120px) !important; /* 64px AppBar + 56px tarjeta */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 2rem !important;
+  }
+  
+  /* Scrollbar personalizado - mismo estilo que perfil */
+  .recognition-main .v-card .v-card-text::-webkit-scrollbar {
+    width: 8px !important;
+  }
+  
+  .recognition-main .v-card .v-card-text::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.3) !important;
+    border-radius: 4px !important;
+  }
+  
+  .recognition-main .v-card .v-card-text::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.6) !important;
+    border-radius: 4px !important;
+    transition: background 0.3s ease !important;
+  }
+  
+  .recognition-main .v-card .v-card-text::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.8) !important;
+  }
+  
+  /* Soporte para Firefox */
+  .recognition-main .v-card .v-card-text {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(59, 130, 246, 0.6) rgba(15, 23, 42, 0.3) !important;
+  }
+  
+  /* Responsive para reconocimiento */
+  @media (max-width: 768px) {
+    .recognition-main .v-card .v-card-text {
+      max-height: calc(100vh - 100px) !important;
+      padding: 1.5rem !important;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .recognition-main .v-card .v-card-text {
+      max-height: calc(100vh - 80px) !important;
+      padding: 1rem !important;
+    }
+  }
+  
+  @media (max-height: 800px) {
+    .recognition-main .v-card .v-card-text {
+      max-height: calc(100vh - 100px) !important;
+    }
+  }
+  
+  /* Ocultar scrollbar en móviles - mismo comportamiento que perfil */
+  @media (max-width: 768px) {
+    .recognition-main .v-card .v-card-text::-webkit-scrollbar {
+      display: none !important;
+    }
+    
+    .recognition-main .v-card .v-card-text {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+  }
+}
+
+/* ===== ESTILOS RESPONSIVE PARA FORMULARIOS DE RECUPERACIÓN ===== */
+/* Compactación vertical para evitar que toquen el AppBar */
+
+/* Formularios de recuperación de contraseña */
+.employee-reset-password-container,
+.admin-reset-password-container,
+.forgot-password-container {
+  /* En pantallas normales: centrado perfecto */
+  @media (min-width: 961px) {
+    height: calc(100vh - 64px) !important;
+    min-height: calc(100vh - 64px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+  }
+  
+  /* En pantallas responsive: compactación vertical */
+  @media (max-width: 960px) {
+    height: auto !important;
+    min-height: calc(100vh - 64px) !important;
+    display: flex !important;
+    align-items: flex-start !important; /* Alinear arriba en lugar de centro */
+    justify-content: center !important;
+    overflow: visible !important;
+    padding: 1rem !important;
+    padding-top: 2rem !important; /* Espacio desde AppBar */
+  }
+  
+  /* Compactación progresiva según el tamaño */
+  @media (max-width: 768px) {
+    padding: 0.75rem !important;
+    padding-top: 1.5rem !important;
+  }
+  
+  @media (max-width: 600px) {
+    padding: 0.5rem !important;
+    padding-top: 1.25rem !important;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.25rem !important;
+    padding-top: 1rem !important;
+  }
+}
+
+/* Tarjetas de formulario con altura máxima */
+.employee-reset-password-card,
+.admin-reset-password-card,
+.forgot-password-card {
+  /* En pantallas normales: sin restricción */
+  @media (min-width: 961px) {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  /* En pantallas responsive: altura máxima para evitar tocar AppBar */
+  @media (max-width: 960px) {
+    max-height: calc(100vh - 120px) !important; /* 64px AppBar + 56px espacio */
+    overflow: hidden !important;
+    margin-top: 0 !important;
+  }
+  
+  @media (max-width: 768px) {
+    max-height: calc(100vh - 140px) !important;
+  }
+  
+  @media (max-width: 600px) {
+    max-height: calc(100vh - 130px) !important;
+  }
+  
+  @media (max-width: 480px) {
+    max-height: calc(100vh - 125px) !important;
+  }
+}
+
+/* Contenido interno de las tarjetas con scroll si es necesario */
+.employee-reset-password-card .v-card-text,
+.admin-reset-password-card .v-card-text,
+.forgot-password-card .v-card-text {
+  /* En pantallas normales: sin scroll */
+  @media (min-width: 961px) {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  /* En pantallas responsive: scroll interno si es necesario */
+  @media (max-width: 960px) {
+    max-height: calc(100vh - 160px) !important; /* 64px AppBar + 56px tarjeta + 40px espacio */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 2rem !important;
+  }
+  
+  @media (max-width: 768px) {
+    max-height: calc(100vh - 180px) !important;
+    padding: 1.5rem !important;
+  }
+  
+  @media (max-width: 600px) {
+    max-height: calc(100vh - 170px) !important;
+    padding: 1rem !important;
+  }
+  
+  @media (max-width: 480px) {
+    max-height: calc(100vh - 165px) !important;
+    padding: 0.75rem !important;
+  }
+}
+
 /* ===== ESTILOS ESPECÍFICOS PARA EL DASHBOARD ===== */
 /* Eliminar scroll del body cuando esté en dashboard */
 body.dashboard-page {
