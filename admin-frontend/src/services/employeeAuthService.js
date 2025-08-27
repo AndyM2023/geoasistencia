@@ -10,7 +10,7 @@ export const employeeAuthService = {
     try {
       console.log('🔑 Employee Auth Service - Solicitando recuperación de contraseña para:', email)
       
-      const response = await api.post('/employee-password-reset/request_reset/', { email })
+      const response = await api.post('/employees/password-reset/request_reset/', { email })
       
       console.log('🎉 Employee Auth Service - Respuesta de recuperación:', response.data)
       return { success: true, message: response.data.message }
@@ -37,7 +37,7 @@ export const employeeAuthService = {
     try {
       console.log('🔑 Employee Auth Service - Validando token de recuperación:', token)
       
-      const response = await api.get(`/employee-password-reset/validate_token/?token=${token}`)
+      const response = await api.get(`/employees/password-reset/validate_token/?token=${token}`)
       
       console.log('🎉 Employee Auth Service - Token válido:', response.data)
       return { 
@@ -66,7 +66,7 @@ export const employeeAuthService = {
     try {
       console.log('🔑 Employee Auth Service - Confirmando cambio de contraseña')
       
-      const response = await api.post('/employee-password-reset/confirm_reset/', {
+      const response = await api.post('/employees/password-reset/confirm_reset/', {
         token,
         new_password: newPassword,
         confirm_password: newPassword
@@ -97,7 +97,7 @@ export const employeeAuthService = {
     try {
       console.log('🔍 Employee Auth Service - Verificando email de empleado:', email)
       
-      const response = await api.post('/employee-password-reset/verify_email/', { email })
+      const response = await api.post('/employees/password-reset/verify_email/', { email })
       
       console.log('✅ Employee Auth Service - Email verificado:', response.data)
       return { success: true, isEmployee: response.data.is_employee }

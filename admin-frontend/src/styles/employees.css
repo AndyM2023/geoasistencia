@@ -619,6 +619,66 @@
   }
 }
 
+/* ===== ESTILOS PARA CENTRAR SECCIONES DEL FORMULARIO ===== */
+
+/* Asegurar que las secciones del formulario tengan el mismo ancho */
+.employee-form-scroll .v-row.justify-center {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.employee-form-scroll .v-col.d-flex.justify-center {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+/* Centrar el divider */
+.employee-form-scroll .v-divider {
+  width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* Centrar el título */
+.employee-form-scroll h3.text-center {
+  text-align: center !important;
+  width: 100% !important;
+  margin: 0 auto 1rem auto !important;
+}
+
+/* Asegurar que la tarjeta de reconocimiento facial tenga el mismo ancho */
+.employee-form-scroll .v-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* Centrar el contenido de la tarjeta */
+.employee-form-scroll .v-card-title.text-center {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+.employee-form-scroll .v-card-text.text-center {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+/* Centrar los botones */
+.employee-form-scroll .v-btn.mx-auto {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  display: block !important;
+}
+
+/* Asegurar que el texto esté centrado */
+.employee-form-scroll .text-center {
+  text-align: center !important;
+  width: 100% !important;
+}
+
 
 /* Cursor pointer para elementos clickeables */
 .cursor-pointer {

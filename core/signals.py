@@ -243,3 +243,16 @@ def auto_process_all_incomplete_attendances():
         
     except Exception as e:
         logger.error(f"Error en procesamiento automático general: {e}")
+
+@receiver(post_save, sender=User)
+def force_password_change_for_new_users(sender, instance, created, **kwargs):
+    """
+    Señal que se ejecuta cuando se crea un nuevo usuario.
+    Marca automáticamente que debe cambiar su contraseña en el primer login.
+    """
+    if created:
+        # Marcar que el usuario debe cambiar su contraseña
+        instance.force_password_change = True
+        instance.save(update_fields=['force_password_change'])
+        logger.info(f"Usuario {instance.username} marcado para cambio obligatorio de contraseña")
+        print(f"🔐 Usuario {instance.username} marcado para cambio obligatorio de contraseña")

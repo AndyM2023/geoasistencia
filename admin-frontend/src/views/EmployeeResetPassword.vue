@@ -20,10 +20,30 @@
           <v-card-text class="pa-8">
             <div class="text-center mb-6">
               <v-icon size="64" color="primary" class="mb-4">mdi-lock-reset</v-icon>
-              <h2 class="text-h4 font-weight-bold text-white mb-2">Cambiar Contraseña</h2>
+              <h2 class="text-h4 font-weight-bold text-white mb-2">
+                {{ isForceChange ? '🔒 Cambio Obligatorio de Contraseña' : 'Cambiar Contraseña' }}
+              </h2>
               <p class="text-body-1 text-grey-lighten-1">
-                Ingresa tu nueva contraseña para completar la recuperación.
+                {{ isForceChange 
+                  ? 'Por seguridad, DEBES cambiar tu contraseña antes de poder usar el sistema.' 
+                  : 'Ingresa tu nueva contraseña para completar la recuperación.' 
+                }}
               </p>
+              
+              <!-- Alerta para cambio obligatorio -->
+              <v-alert
+                v-if="isForceChange"
+                type="warning"
+                variant="tonal"
+                class="mt-4"
+                border="start"
+                border-color="warning"
+              >
+                <template v-slot:prepend>
+                  <v-icon color="warning">mdi-alert-circle</v-icon>
+                </template>
+                <strong>IMPORTANTE:</strong> No podrás registrar asistencia ni usar el sistema hasta que cambies tu contraseña.
+              </v-alert>
             </div>
 
             <!-- Verificación del token -->
@@ -177,7 +197,17 @@ export default {
   components: {
     AppBar
   },
-  setup() {
+  props: {
+    isForceChange: {
+      type: Boolean,
+      default: false
+    },
+    token: {
+      type: String,
+      default: null
+    }
+  },
+  setup(props) {
     const router = useRouter()
     const route = useRoute()
     
@@ -200,8 +230,9 @@ export default {
     const showNewPassword = ref(false)
     const showConfirmPassword = ref(false)
     
-    // Obtener token de la URL
-    const token = route.query.token
+    // Obtener token de la URL o de props
+    const token = props.token || route.query.token
+    const isForceChange = props.isForceChange || route.query.force_change === 'true'
     
     const rules = {
       required: v => !!v || 'Este campo es requerido',
@@ -251,9 +282,15 @@ export default {
           form.newPassword = ''
           form.confirmPassword = ''
           
-          // Redirigir después de 3 segundos
+          // Redirigir según si es cambio obligatorio o no
           setTimeout(() => {
-            router.push('/')
+            if (isForceChange) {
+              // Si es cambio obligatorio, ir al dashboard
+              router.push('/app/dashboard')
+            } else {
+              // Si es recuperación normal, ir a la página principal
+              router.push('/')
+            }
           }, 3000)
         } else {
           error.value = result.error
@@ -294,6 +331,7 @@ export default {
       tokenError,
       showNewPassword,
       showConfirmPassword,
+      isForceChange,
       handleSubmit,
       toggleNewPassword,
       toggleConfirmPassword,

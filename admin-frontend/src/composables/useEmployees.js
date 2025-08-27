@@ -149,7 +149,47 @@ export function useEmployees() {
       return response
     } catch (error) {
       console.error('❌ Error al actualizar empleado:', error)
-      showError('Error al actualizar empleado: ' + (error.response?.data?.message || error.message))
+      
+      const status = error.response?.status
+      const rawData = error.response?.data
+
+      // 1) Intentar construir mensaje desde errores de validación JSON
+      if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+        const fieldMessages = []
+        Object.keys(rawData).forEach((k) => {
+          const val = rawData[k]
+          if (Array.isArray(val)) {
+            fieldMessages.push(`${k}: ${val.join(' ')}`)
+          } else if (typeof val === 'string') {
+            fieldMessages.push(`${k}: ${val}`)
+          }
+        })
+        if (fieldMessages.length > 0) {
+          showError('Error al actualizar empleado: ' + fieldMessages.join(' | '))
+          throw error
+        }
+      }
+
+      // 2) Detectar cédula duplicada incluso cuando viene como HTML (500 IntegrityError)
+      const htmlText = typeof rawData === 'string' ? rawData : (rawData?.toString ? rawData.toString() : '')
+      const looksLikeUniqueCedula =
+        (status === 500 && /UNIQUE/i.test(htmlText) && /cedula/i.test(htmlText)) || /cedula.*ya existe/i.test(htmlText)
+      if (looksLikeUniqueCedula) {
+        showError('La cédula ya está registrada en el sistema. Usa una diferente.')
+        throw error
+      }
+
+      // 3) Extraer <title> de la página de error de Django si existe para dar más detalle
+      if (typeof htmlText === 'string' && htmlText.includes('<title')) {
+        const match = htmlText.match(/<title>([^<]+)<\/title>/i)
+        if (match && match[1]) {
+          showError('Error al actualizar empleado: ' + match[1])
+          throw error
+        }
+      }
+
+      // 4) Fallback genérico
+      showError('Error al actualizar empleado: ' + (error.response?.statusText || error.message))
       throw error
     } finally {
       saving.value = false
@@ -163,7 +203,29 @@ export function useEmployees() {
       showSuccess('✅ Empleado eliminado exitosamente')
     } catch (error) {
       console.error('❌ Error al eliminar empleado:', error)
-      showError('Error al eliminar empleado: ' + (error.response?.data?.message || error.message))
+      
+      const status = error.response?.status
+      const rawData = error.response?.data
+
+      // 1) Intentar construir mensaje desde errores de validación JSON
+      if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+        const fieldMessages = []
+        Object.keys(rawData).forEach((k) => {
+          const val = rawData[k]
+          if (Array.isArray(val)) {
+            fieldMessages.push(`${k}: ${val.join(' ')}`)
+          } else if (typeof val === 'string') {
+            fieldMessages.push(`${k}: ${val}`)
+          }
+        })
+        if (fieldMessages.length > 0) {
+          showError('Error al eliminar empleado: ' + fieldMessages.join(' | '))
+          throw error
+        }
+      }
+
+      // 2) Fallback genérico
+      showError('Error al eliminar empleado: ' + (error.response?.statusText || error.message))
       throw error
     }
   }

@@ -178,6 +178,13 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Configuración del Frontend
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+# Configuración de la empresa
+COMPANY_NAME = os.getenv('COMPANY_NAME', 'GeoAsistencia')
+SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'soporte@geoasistencia.com')
+
 # Configuraciones adicionales de CORS para desarrollo
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Solo en desarrollo
 CORS_ALLOW_METHODS = [

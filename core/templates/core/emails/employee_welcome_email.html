@@ -73,6 +73,36 @@
             letter-spacing: 1px;
         }
 
+        .password-change-section {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .password-change-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 20px;
+        }
+        .change-password-btn {
+            display: inline-block;
+            background-color: #ffffff;
+            color: #ee5a24;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 15px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .change-password-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
         .important-notice {
             background-color: #fef3c7;
             border: 1px solid #f59e0b;
@@ -117,12 +147,10 @@
             padding-top: 20px;
             border-top: 1px solid #e5e7eb;
             color: #6b7280;
-            font-size: 14px;
         }
         .support-info {
             background-color: #f3f4f6;
             padding: 15px;
-            border-radius: 6px;
             margin: 20px 0;
             text-align: center;
         }
@@ -168,11 +196,41 @@
             </div>
         </div>
 
+        <!-- Sección de Cambio Obligatorio de Contraseña -->
+        {% if reset_url %}
+        <div class="password-change-section">
+            <h3>🔒 CAMBIO OBLIGATORIO DE CONTRASEÑA</h3>
+            <p>Por seguridad, <strong>DEBES cambiar tu contraseña</strong> en tu primer acceso al sistema.</p>
+            
+            <a href="{{ reset_url }}" class="change-password-btn">
+                🔑 CAMBIAR CONTRASEÑA AHORA
+            </a>
+            
+            <p style="margin-top: 15px; font-size: 14px;">
+                <strong>IMPORTANTE:</strong> No podrás usar el sistema hasta que cambies tu contraseña.
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- AVISO IMPORTANTE: Cambio Obligatorio de Contraseña -->
+        <div class="important-notice" style="background-color: #fef2f2; border-color: #dc2626;">
+            <h3 style="color: #991b1b;">🔒 CAMBIO OBLIGATORIO DE CONTRASEÑA</h3>
+            <p style="color: #991b1b; font-weight: 600; margin-bottom: 15px;">
+                Por seguridad, DEBES cambiar tu contraseña en tu primer acceso al sistema.
+            </p>
+            <div style="background-color: #fee2e2; padding: 15px; border-radius: 6px; border-left: 4px solid #dc2626;">
+                <p style="margin: 0; color: #7f1d1d; font-weight: 500;">
+                    <strong>⚠️ IMPORTANTE:</strong> No podrás usar el sistema hasta que cambies tu contraseña.
+                </p>
+            </div>
+        </div>
+
         <!-- Instrucciones de uso -->
         <div class="instructions">
             <h3>📋 Instrucciones para Marcar Asistencia</h3>
             <ul>
                 <li><strong>Accede al sistema</strong> usando las credenciales proporcionadas</li>
+                <li><strong>Cambia tu contraseña</strong> inmediatamente en tu primer login (OBLIGATORIO)</li>
                 <li><strong>Ubícate en tu área de trabajo</strong> para poder marcar entrada y salida</li>
                 <li><strong>Marca tu entrada</strong> al llegar al trabajo</li>
                 <li><strong>Marca tu salida</strong> al terminar tu jornada</li>

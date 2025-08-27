@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
@@ -1888,3 +1888,75 @@ class EmployeePasswordResetViewSet(viewsets.ViewSet):
             return Response({
                 'error': 'Error verificando email'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_password_change_required(request):
+    """
+    Verificar si el usuario debe cambiar su contraseña
+    """
+    try:
+        user = request.user
+        
+        # Verificar si el usuario debe cambiar su contraseña
+        force_change = getattr(user, 'force_password_change', False)
+        
+        return Response({
+            'force_password_change': force_change,
+            'message': 'Debes cambiar tu contraseña antes de continuar' if force_change else 'Contraseña actualizada',
+            'user_id': user.id,
+            'username': user.username
+        })
+        
+    except Exception as e:
+        logger.error(f"Error verificando cambio de contraseña: {str(e)}")
+        return Response({
+            'error': 'Error interno del servidor',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_attendance_permission(request):
+    """
+    Verificar si el usuario puede registrar asistencia
+    """
+    try:
+        user = request.user
+        
+        # Verificar si el usuario debe cambiar su contraseña
+        force_change = getattr(user, 'force_password_change', False)
+        
+        if force_change:
+            return Response({
+                'can_register_attendance': False,
+                'force_password_change': True,
+                'message': 'Debes cambiar tu contraseña antes de poder registrar asistencia',
+                'details': 'Por seguridad, no puedes usar el sistema hasta cambiar tu contraseña temporal',
+                'blocked_action': 'attendance_registration'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Si no necesita cambiar contraseña, verificar que sea empleado
+        try:
+            employee = Employee.objects.get(user=user)
+            return Response({
+                'can_register_attendance': True,
+                'force_password_change': False,
+                'message': 'Usuario autorizado para registrar asistencia',
+                'employee_id': employee.id,
+                'employee_name': employee.full_name
+            })
+        except Employee.DoesNotExist:
+            return Response({
+                'can_register_attendance': False,
+                'force_password_change': False,
+                'message': 'Usuario no es empleado',
+                'details': 'Solo los empleados pueden registrar asistencia'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+    except Exception as e:
+        logger.error(f"Error verificando permiso de asistencia: {str(e)}")
+        return Response({
+            'error': 'Error interno del servidor',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

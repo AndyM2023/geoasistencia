@@ -38,6 +38,15 @@ const routes = [
     component: () => import('../views/EmployeeResetPassword.vue')
   },
   {
+    path: '/change-password',
+    name: 'ChangePassword',
+    component: () => import('../views/EmployeeResetPassword.vue'),
+    props: (route) => ({ 
+      isForceChange: route.query.force_change === 'true',
+      token: route.query.token 
+    })
+  },
+  {
     path: '/reset-password',
     name: 'ResetPassword',
     component: () => import('../views/ResetPassword.vue')

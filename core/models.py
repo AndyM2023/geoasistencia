@@ -17,6 +17,11 @@ class User(AbstractUser):
     cedula = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name='ID Card Number')
     # position removido - se usa solo en Employee para evitar redundancia
     is_active = models.BooleanField(default=True)
+    force_password_change = models.BooleanField(
+        default=True, 
+        verbose_name='Forzar Cambio de Contraseña',
+        help_text='¿El usuario debe cambiar su contraseña en el próximo login?'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

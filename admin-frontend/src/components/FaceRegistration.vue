@@ -99,7 +99,7 @@
           ></v-progress-linear>
           
           <p class="text-center text-grey-400 text-sm">
-            {{ isProcessing ? 'Procesando fotos...' : isCapturing ? 'Capturando fotos...' : 'Listo para iniciar' }}
+            {{ isCapturing ? 'Capturando fotos...' : 'Listo para iniciar' }}
           </p>
         </div>
 
@@ -448,7 +448,6 @@ const processPhotos = async () => {
     console.log('🔄 Iniciando procesamiento de fotos...');
     isProcessing.value = true;
     console.log('✅ isProcessing.value =', isProcessing.value);
-    mensaje.value = { tipo: 'info', texto: 'Procesando fotos...' };
     
     const result = await faceService.registerFace(
       props.employeeId,

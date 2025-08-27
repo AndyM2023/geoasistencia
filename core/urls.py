@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AuthViewSet, DashboardViewSet, EmployeeViewSet, 
     AreaViewSet, AttendanceViewSet, ChangePasswordView, PasswordResetViewSet,
-    EmployeePasswordResetViewSet, AreaScheduleViewSet
+    EmployeePasswordResetViewSet, AreaScheduleViewSet, check_password_change_required,
+    check_attendance_permission
 )
 
 router = DefaultRouter()
@@ -14,10 +15,11 @@ router.register(r'areas', AreaViewSet, basename='area')
 router.register(r'area-schedules', AreaScheduleViewSet, basename='area-schedule')
 router.register(r'attendance', AttendanceViewSet, basename='attendance')
 router.register(r'password-reset', PasswordResetViewSet, basename='password-reset')
-router.register(r'employee-password-reset', EmployeePasswordResetViewSet, basename='employee-password-reset')
+router.register(r'employees/password-reset', EmployeePasswordResetViewSet, basename='employee-password-reset')
 
 urlpatterns = [
     path('', include(router.urls)),
-    # URL para cambio de contraseña (fuera del router porque es una vista individual)
-    path('auth/change-password/', ChangePasswordView.as_view(), name='change_password'),
+    path('auth/password/change/', ChangePasswordView.as_view(), name='change-password'),
+    path('check-password-change/', check_password_change_required, name='check-password-change'),
+    path('check-attendance-permission/', check_attendance_permission, name='check-attendance-permission'),
 ]

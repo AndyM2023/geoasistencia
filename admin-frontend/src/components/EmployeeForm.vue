@@ -200,18 +200,20 @@
             </v-col>
             
             <!-- Sección de Registro Facial - Solo visible después de crear el empleado -->
-            <v-row v-if="editingEmployee && editingEmployee.id">
-              <v-col cols="12">
-                <v-divider class="mb-4"></v-divider>
-                <h3 class="text-white mb-4">Registro Facial</h3>
+            <v-row v-if="editingEmployee && editingEmployee.id" class="justify-center">
+              <v-col cols="12" class="d-flex justify-center">
+                <v-divider class="mb-4" style="width: 100%;"></v-divider>
+              </v-col>
+              <v-col cols="12" class="d-flex justify-center">
+                <h3 class="text-white mb-4 text-center">Registro Facial</h3>
               </v-col>
             </v-row>
             
-            <v-row v-if="editingEmployee && editingEmployee.id">
-              <v-col cols="12">
-                <v-card class="bg-dark-surface border border-blue-500/20">
-                  <v-card-title class="text-sm text-blue-400"> Registro Facial</v-card-title>
-                  <v-card-text>
+            <v-row v-if="editingEmployee && editingEmployee.id" class="justify-center">
+              <v-col cols="12" class="d-flex justify-center">
+                <v-card class="bg-dark-surface border border-blue-500/20" style="width: 100%; max-width: 100%;">
+                  <v-card-title class="text-sm text-blue-400 text-center"> Registro Facial</v-card-title>
+                  <v-card-text class="text-center">
                     <!-- Componente de captura de rostros -->
                     <div class="text-center">
                       <!-- Botón para empleados SIN rostro registrado -->
@@ -222,6 +224,8 @@
                         size="large"
                         prepend-icon="mdi-camera"
                         block
+                        class="mx-auto"
+                        style="max-width: 300px;"
                       >
                         Iniciar Registro Facial
                       </v-btn>
@@ -235,11 +239,13 @@
                         size="large"
                         prepend-icon="mdi-camera-plus"
                         block
+                        class="mx-auto"
+                        style="max-width: 300px;"
                       >
                         Actualizar Rostro
                       </v-btn>
                       
-                      <p class="text-blue-400 text-xs mt-2">
+                      <p class="text-blue-400 text-xs mt-2 text-center">
                         {{ faceStatus && faceStatus.has_physical_files ? 'Actualizar rostro existente' : 'Se capturarán 15 fotos para máxima velocidad' }}
                       </p>
                     </div>
