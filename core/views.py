@@ -516,26 +516,20 @@ class DashboardViewSet(viewsets.ViewSet):
                     # A tiempo: entrada a tiempo
                     on_time_days += 1
             
-            # Calcular días ausentes (días laborables del mes - días con asistencia)
-            current_month = timezone.localtime().month
-            current_year = timezone.localtime().year
-            from calendar import monthrange
-            _, days_in_month = monthrange(current_year, current_month)
-            # Asumir 22 días laborables por mes
-            working_days = min(22, days_in_month)
-            absent_days = max(0, working_days - total_days)
+            # Calcular días ausentes (solo registros con estado "ausente")
+            # NO días que faltan del mes
+            absent_days = attendances.filter(status='absent').count()
             
-            # Calcular tasa de asistencia (días trabajados vs días laborables del mes)
+            # Calcular tasa de asistencia (días trabajados vs total de días del mes)
+            # Usar total de días del mes para el cálculo
             current_month = timezone.localtime().month
             current_year = timezone.localtime().year
             from calendar import monthrange
             _, days_in_month = monthrange(current_year, current_month)
-            # Asumir 22 días laborables por mes
-            working_days = min(22, days_in_month)
             
             attendance_rate = 0
-            if working_days > 0:
-                attendance_rate = round((total_days / working_days) * 100, 1)
+            if days_in_month > 0:
+                attendance_rate = round((total_days / days_in_month) * 100, 1)
             
             stats = {
                 'totalDays': total_days,
