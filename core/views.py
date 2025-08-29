@@ -469,56 +469,68 @@ class DashboardViewSet(viewsets.ViewSet):
             total_days = attendances.count()
             
             # Contadores para diferentes tipos de asistencia
+            # IMPORTANTE: Un día solo se cuenta una vez, basado en su estado final
             on_time_days = 0
             late_days = 0
+            absent_days = 0
             
             for attendance in attendances:
-                if not attendance.check_in or not attendance.area:
+                if not attendance.area:
                     continue
                 
-                # Obtener horarios esperados para esta área y fecha
-                from core.services.schedule_service import ScheduleService
-                expected_check_in, expected_check_out = ScheduleService.get_expected_times(
-                    attendance.area, attendance.date
-                )
+                # IMPORTANTE: Usar el estado FINAL del registro, no el estado inicial
+                # El estado final ya considera si marcó entrada, salida, y si completó la jornada
                 
-                if not expected_check_in or not expected_check_out:
-                    # Sin horario configurado, considerar como a tiempo
-                    on_time_days += 1
-                    continue
-                
-                # Obtener período de gracia
-                grace_period = ScheduleService.get_grace_period(attendance.area)
-                
-                # Convertir horas a objetos time para comparar
-                check_in_time = attendance.check_in
-                
-                if isinstance(check_in_time, str):
-                    from datetime import datetime
-                    try:
-                        check_in_time = datetime.strptime(check_in_time, '%H:%M:%S').time()
-                    except ValueError:
-                        check_in_time = datetime.strptime(check_in_time, '%H:%M').time()
-                
-                # Calcular hora límite de entrada (con período de gracia)
-                from datetime import datetime, timedelta
-                limit_datetime = datetime.combine(attendance.date, expected_check_in)
-                limit_datetime = limit_datetime + timedelta(minutes=grace_period)
-                limit_time = limit_datetime.time()
-                
-                # Verificar entrada
-                is_late_entry = check_in_time > limit_time
-                
-                # Clasificar el día de manera simple: solo entrada
-                if is_late_entry:
+                if attendance.status == 'absent':
+                    # Si el estado final es ausente, contar como ausente
+                    absent_days += 1
+                elif attendance.status == 'late':
+                    # Si el estado final es tarde, contar como tarde
                     late_days += 1
-                else:
-                    # A tiempo: entrada a tiempo
+                elif attendance.status == 'present':
+                    # Si el estado final es presente, contar como a tiempo
                     on_time_days += 1
-            
-            # Calcular días ausentes (solo registros con estado "ausente")
-            # NO días que faltan del mes
-            absent_days = attendances.filter(status='absent').count()
+                else:
+                    # Para otros estados, verificar si tiene entrada
+                    if not attendance.check_in:
+                        absent_days += 1
+                    else:
+                        # Si tiene entrada pero no tiene estado claro, verificar si llegó tarde
+                        from core.services.schedule_service import ScheduleService
+                        expected_check_in, expected_check_out = ScheduleService.get_expected_times(
+                            attendance.area, attendance.date
+                        )
+                        
+                        if expected_check_in:
+                            # Obtener período de gracia
+                            grace_period = ScheduleService.get_grace_period(attendance.area)
+                            
+                            # Convertir horas a objetos time para comparar
+                            check_in_time = attendance.check_in
+                            
+                            if isinstance(check_in_time, str):
+                                from datetime import datetime
+                                try:
+                                    check_in_time = datetime.strptime(check_in_time, '%H:%M:%S').time()
+                                except ValueError:
+                                    check_in_time = datetime.strptime(check_in_time, '%H:%M').time()
+                            
+                            # Calcular hora límite de entrada (con período de gracia)
+                            from datetime import datetime, timedelta
+                            limit_datetime = datetime.combine(attendance.date, expected_check_in)
+                            limit_datetime = limit_datetime + timedelta(minutes=grace_period)
+                            limit_time = limit_datetime.time()
+                            
+                            # Verificar entrada
+                            is_late_entry = check_in_time > limit_time
+                            
+                            if is_late_entry:
+                                late_days += 1
+                            else:
+                                on_time_days += 1
+                        else:
+                            # Sin horario configurado, considerar como a tiempo
+                            on_time_days += 1
             
             # Calcular tasa de asistencia (días trabajados vs total de días del mes)
             # Usar total de días del mes para el cálculo
