@@ -45,6 +45,7 @@
       :items="filteredReportData"
       :loading="loading"
       class="elevation-1"
+      :no-data-text="'No hay datos para mostrar'"
     >
       <template v-slot:item.date="{ item }">
         {{ formatDate(item.date) }}
@@ -157,7 +158,7 @@ export default {
     const getStatusText = (status) => {
       const texts = {
         present: 'Presente',
-        late: 'Tarde',
+        late: 'Atraso',
         absent: 'Ausente'
       };
       return texts[status] || status;

@@ -10,7 +10,7 @@
             { title: 'Todos', value: 'all' },
             { title: 'Presente', value: 'present' },
             { title: 'Ausente', value: 'absent' },
-            { title: 'Tarde', value: 'late' }
+            { title: 'Atraso', value: 'late' }
           ]"
           item-title="title"
           item-value="value"

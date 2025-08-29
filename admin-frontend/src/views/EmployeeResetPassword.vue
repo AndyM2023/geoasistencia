@@ -25,25 +25,10 @@
               </h2>
               <p class="text-body-1 text-grey-lighten-1">
                 {{ isForceChange 
-                  ? 'Por seguridad, DEBES cambiar tu contraseña antes de poder usar el sistema.' 
+                  ? 'Por seguridad, DEBES cambiar tu contraseña.' 
                   : 'Ingresa tu nueva contraseña para completar la recuperación.' 
                 }}
               </p>
-              
-              <!-- Alerta para cambio obligatorio -->
-              <v-alert
-                v-if="isForceChange"
-                type="warning"
-                variant="tonal"
-                class="mt-4"
-                border="start"
-                border-color="warning"
-              >
-                <template v-slot:prepend>
-                  <v-icon color="warning">mdi-alert-circle</v-icon>
-                </template>
-                <strong>IMPORTANTE:</strong> No podrás registrar asistencia ni usar el sistema hasta que cambies tu contraseña.
-              </v-alert>
             </div>
 
             <!-- Verificación del token -->

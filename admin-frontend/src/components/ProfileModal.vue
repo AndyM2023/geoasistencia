@@ -90,40 +90,40 @@
                 <v-icon color="blue-400" class="mr-2">mdi-contact-mail</v-icon>
                 Información de Contacto
               </h3>
-              <v-btn
-                v-if="!isEditing"
-                color="blue-400"
-                variant="tonal"
-                size="small"
-                @click="startEditing"
-                class="edit-btn"
-              >
-                <v-icon left size="small">mdi-pencil</v-icon>
-                Editar
-              </v-btn>
-              <div v-else class="edit-actions">
-                <v-btn
-                  color="green-400"
-                  variant="tonal"
-                  size="small"
-                  @click="saveChanges"
-                  :loading="saving"
-                  class="save-btn"
-                >
-                  <v-icon left size="small">mdi-check</v-icon>
-                  Guardar
-                </v-btn>
-                <v-btn
-                  color="grey-400"
-                  variant="text"
-                  size="small"
-                  @click="cancelEditing"
-                  class="cancel-btn"
-                >
-                  <v-icon left size="small">mdi-close</v-icon>
-                  Cancelar
-                </v-btn>
-              </div>
+                             <v-btn
+                 v-if="!isEditing && authStore.user && authStore.user.role === 'admin'"
+                 color="blue-400"
+                 variant="tonal"
+                 size="small"
+                 @click="startEditing"
+                 class="edit-btn"
+               >
+                 <v-icon left size="small">mdi-pencil</v-icon>
+                 Editar
+               </v-btn>
+               <div v-else-if="isEditing && authStore.user && authStore.user.role === 'admin'" class="edit-actions">
+                 <v-btn
+                   color="green-400"
+                   variant="tonal"
+                   size="small"
+                   @click="saveChanges"
+                   :loading="saving"
+                   class="save-btn"
+                 >
+                   <v-icon left size="small">mdi-check</v-icon>
+                   Guardar
+                 </v-btn>
+                 <v-btn
+                   color="grey-400"
+                   variant="text"
+                   size="small"
+                   @click="cancelEditing"
+                   class="cancel-btn"
+                 >
+                   <v-icon left size="small">mdi-close</v-icon>
+                   Cancelar
+                 </v-btn>
+               </div>
             </div>
             <v-row>
               <v-col cols="12" sm="6">
@@ -776,6 +776,7 @@ export default {
        loadProfile,
        formatDate,
        closeModal,
+       authStore,
        // Variables del modal de contraseña
        showPasswordModal,
        passwordLoading,

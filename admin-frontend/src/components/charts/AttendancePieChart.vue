@@ -46,7 +46,7 @@ export default {
       })
       
       return {
-        labels: ['Presentes', 'Tardanzas', 'Ausencias'],
+        labels: ['Presentes', 'Atrasos', 'Ausencias'],
         datasets: [
           {
             label: 'Estados de Asistencia',

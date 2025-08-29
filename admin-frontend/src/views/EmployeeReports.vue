@@ -153,6 +153,7 @@
             class="bg-transparent"
             density="compact"
             hover
+            :no-data-text="'No hay datos para mostrar'"
           >
             <template v-slot:item.date="{ item }">
               <span class="text-white">{{ formatDate(item.date) }}</span>
@@ -465,6 +466,8 @@ export default {
          dateTo: dateTo.value 
        })
      }
+
+     
      
      // Función para limpiar filtros de fecha
      const clearDateFilter = () => {
