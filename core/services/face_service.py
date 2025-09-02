@@ -175,90 +175,140 @@ class FaceRecognitionService:
             print(f"📁 Carpeta creada: {employee_folder}")
             print(f"📁 Carpeta existe: {os.path.exists(employee_folder)}")
             
-            # ✅ PROCESAMIENTO REALMENTE PARALELO: 5 fotos simultáneas
+            # ✅ PROCESAMIENTO ULTRA-OPTIMIZADO: Decodificación en lote + procesamiento paralelo
             saved_photos = 0
             rejected_photos = 0
             total_photos = len(photos_data)
-            # Sin batch_size - procesamiento secuencial simple
             
-            print(f"🚀 PROCESAMIENTO SECUENCIAL ULTRA-OPTIMIZADO - {total_photos} fotos con Facenet-512")
-            print(f"⚡ VELOCIDAD MÁXIMA: Sin paralelo (más seguro para Django)")
-            print(f"⏱️ Tiempo estimado: {total_photos * 0.8:.1f} segundos (OPTIMIZADO)")
+            # ✅ OPTIMIZACIÓN ESPECIAL: Detectar si son pocas fotos para modo ultra-rápido
+            if total_photos <= 20:
+                print(f"🚀 MODO ULTRA-RÁPIDO - {total_photos} fotos con Facenet-128")
+                print(f"⚡ VELOCIDAD MÁXIMA: Procesamiento directo sin lotes")
+                print(f"⏱️ Tiempo estimado: {total_photos * 0.2:.1f} segundos (MODO ULTRA-RÁPIDO)")
+                ultra_fast_mode = True
+            else:
+                print(f"🚀 PROCESAMIENTO ULTRA-OPTIMIZADO - {total_photos} fotos con Facenet-128")
+                print(f"⚡ VELOCIDAD MÁXIMA: Decodificación en lote + procesamiento paralelo")
+                print(f"⏱️ Tiempo estimado: {total_photos * 0.3:.1f} segundos (ULTRA-OPTIMIZADO)")
+                ultra_fast_mode = False
             
-            # ✅ PROCESAMIENTO SECUENCIAL SIMPLE (MÁS SEGURO)
-            print(f"🔄 Iniciando procesamiento secuencial optimizado...")
-            
-            # ✅ PROCESAR FOTOS UNA POR UNA (MÁS SEGURO PARA DJANGO)
-            for i, photo_data in enumerate(photos_data):
-                try:
-                    progress_percent = ((i + 1) / total_photos) * 100
-                    print(f"\n📸 Procesando foto {i+1}/{total_photos} ({progress_percent:.1f}%)")
-                    
-                    # ✅ Decodificar Y extraer rostro en un solo paso
-                    face_image = self._decode_base64_image(photo_data)
-                    
-                    if face_image is None:
-                        print(f"   ❌ Foto {i+1} rechazada: Sin rostro válido")
-                        rejected_photos += 1
-                        continue
-                    
-                    print(f"   ✅ Rostro extraído: {face_image.shape}")
-                    
-                    # ✅ Guardar con timestamp único
-                    timestamp = int(time.time() * 1000000) + i
-                    photo_path = os.path.join(employee_folder, f"face_{timestamp}.jpg")
-                    
-                    # ✅ COMPRESIÓN ULTRA-OPTIMIZADA para máxima velocidad
-                    print(f"      💾 Intentando guardar imagen...")
-                    print(f"      📁 Ruta: {photo_path}")
-                    print(f"      🖼️  Imagen shape: {face_image.shape}")
-                    print(f"      🖼️  Imagen dtype: {face_image.dtype}")
-                    print(f"      🖼️  Imagen min/max: {face_image.min()}/{face_image.max()}")
-                    
-                    save_result = cv2.imwrite(photo_path, face_image, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                    print(f"      💾 Resultado de cv2.imwrite: {save_result}")
-                    
-                    if save_result and os.path.exists(photo_path):
-                        # ✅ Generar embedding Facenet-512
-                        print(f"   🧠 Generando embedding Facenet-512...")
-                        embedding = self.facial_system.extract_face_features(face_image)
+            if ultra_fast_mode:
+                # ✅ MODO ULTRA-RÁPIDO: Para pocas fotos (≤20)
+                print(f"⚡ MODO ULTRA-RÁPIDO: Procesando {total_photos} fotos directamente...")
+                
+                # Procesar cada foto directamente sin lotes
+                for i, photo_data in enumerate(photos_data):
+                    try:
+                        print(f"📸 Procesando foto {i+1}/{total_photos}...")
                         
-                        if embedding is not None:
-                            embedding_dims = len(embedding)
-                            print(f"   ✅ Embedding {embedding_dims}D generado")
-                            
-                            # Guardar embedding
+                        # Decodificar imagen
+                        face_image = self._decode_base64_image(photo_data)
+                        if face_image is None:
+                            print(f"   ❌ Foto {i+1} rechazada: Sin rostro válido")
+                            rejected_photos += 1
+                            continue
+                        
+                        # Extraer características
+                        features = self.facial_system.extract_face_features(face_image)
+                        if features is None:
+                            print(f"   ❌ Foto {i+1} sin características válidas")
+                            rejected_photos += 1
+                            continue
+                        
+                        # Guardar directamente
+                        timestamp = int(time.time() * 1000000) + i
+                        photo_path = os.path.join(employee_folder, f"face_{timestamp}.jpg")
+                        
+                        if cv2.imwrite(photo_path, face_image, [cv2.IMWRITE_JPEG_QUALITY, 70]):
                             embedding_path = photo_path.replace('.jpg', '.npy')
-                            np.save(embedding_path, embedding)
+                            np.save(embedding_path, features)
                             
                             if os.path.exists(embedding_path):
                                 saved_photos += 1
-                                print(f"   ✅ #{saved_photos} guardada exitosamente")
+                                print(f"   ✅ Foto {i+1} guardada exitosamente")
                             else:
                                 rejected_photos += 1
                                 if os.path.exists(photo_path):
                                     os.remove(photo_path)
                         else:
                             rejected_photos += 1
-                            if os.path.exists(photo_path):
-                                os.remove(photo_path)
-                            print(f"   ❌ Error generando embedding")
-                    else:
+                            print(f"   ❌ Error guardando foto {i+1}")
+                            
+                    except Exception as e:
                         rejected_photos += 1
-                        print(f"   ❌ Error guardando imagen")
-                        print(f"      💾 save_result: {save_result}")
-                        print(f"      📁 Archivo existe: {os.path.exists(photo_path)}")
-                        if os.path.exists(photo_path):
-                            print(f"      📁 Tamaño del archivo: {os.path.getsize(photo_path)} bytes")
-                        else:
-                            print(f"      📁 Archivo NO creado")
+                        print(f"   ❌ Error procesando foto {i+1}: {e}")
+                        continue
                         
-                except Exception as e:
-                    rejected_photos += 1
-                    print(f"   ❌ Error procesando foto {i+1}: {e}")
-                    continue
+            else:
+                # ✅ MODO NORMAL: Para muchas fotos (>20)
+                print(f"🔄 Decodificando {total_photos} imágenes en lote ultra-optimizado...")
+                
+                # Usar el nuevo método de decodificación en lote
+                face_images = self._batch_decode_base64_images(photos_data)
+                
+                # Filtrar imágenes válidas
+                valid_face_images = []
+                valid_photos = []
+                
+                for i, face_image in enumerate(face_images):
+                    if face_image is not None:
+                        valid_face_images.append(face_image)
+                        valid_photos.append(i)
+                        print(f"   ✅ Foto {i+1} decodificada: {face_image.shape}")
+                    else:
+                        print(f"   ❌ Foto {i+1} rechazada: Sin rostro válido")
+                        rejected_photos += 1
+                
+                print(f"📸 Imágenes válidas para procesamiento: {len(valid_face_images)}")
+                
+                # ✅ OPTIMIZACIÓN 2: Procesamiento en lote usando el sistema facial optimizado
+                if valid_face_images:
+                    print(f"🧠 Procesando {len(valid_face_images)} rostros en lote...")
+                    
+                    # Usar el nuevo método batch_extract_features del sistema facial
+                    features_list = self.facial_system.batch_extract_features(valid_face_images)
+                    
+                    # ✅ OPTIMIZACIÓN 3: Guardar en paralelo usando ThreadPoolExecutor
+                    print(f"💾 Guardando {len(valid_face_images)} rostros en paralelo...")
+                    
+                    def save_face_data(args):
+                        i, face_image, features, valid_photo_idx = args
+                        try:
+                            if features is not None:
+                                timestamp = int(time.time() * 1000000) + valid_photo_idx
+                                photo_path = os.path.join(employee_folder, f"face_{timestamp}.jpg")
+                                
+                                # ✅ OPTIMIZACIÓN: Compresión más rápida (70 en lugar de 85)
+                                if cv2.imwrite(photo_path, face_image, [cv2.IMWRITE_JPEG_QUALITY, 70]):
+                                    embedding_path = photo_path.replace('.jpg', '.npy')
+                                    np.save(embedding_path, features)
+                                    
+                                    if os.path.exists(embedding_path):
+                                        print(f"   ✅ Rostro {valid_photo_idx+1} guardado exitosamente")
+                                        return True
+                                    else:
+                                        if os.path.exists(photo_path):
+                                            os.remove(photo_path)
+                                        return False
+                                else:
+                                    return False
+                            else:
+                                print(f"   ❌ Rostro {valid_photo_idx+1} sin características válidas")
+                                return False
+                        except Exception as e:
+                            print(f"   ❌ Error guardando rostro {valid_photo_idx+1}: {e}")
+                            return False
+                    
+                    # ✅ PROCESAMIENTO PARALELO: Máximo 3 hilos para balance velocidad/estabilidad
+                    with ThreadPoolExecutor(max_workers=3) as executor:
+                        save_args = [(i, face_image, features, valid_photos[i]) 
+                                    for i, (face_image, features) in enumerate(zip(valid_face_images, features_list))]
+                        
+                        results = list(executor.map(save_face_data, save_args))
+                        saved_photos = sum(results)
+                        rejected_photos += (len(valid_face_images) - saved_photos)
             
-            print(f"🎯 Procesamiento secuencial completado: {saved_photos}/{total_photos} fotos procesadas")
+            print(f"🎯 Procesamiento ultra-optimizado completado: {saved_photos}/{total_photos} fotos procesadas")
             print(f"✅ Servidor Django sigue funcionando - Terminal NO se cierra")
             
             print(f"\n📊 RESUMEN DEL PROCESAMIENTO:")
@@ -707,8 +757,8 @@ class FaceRecognitionService:
 
     def _decode_base64_image(self, base64_data):
         """
-        Decodifica imagen base64 y extrae automáticamente el rostro
-        ✅ AHORA RECORTA AUTOMÁTICAMENTE AL ROSTRO COMO EN EL SISTEMA ANTERIOR
+        Decodifica imagen base64 y extrae automáticamente el rostro - OPTIMIZADO PARA VELOCIDAD
+        ✅ ULTRA-OPTIMIZADO: Menos logs, procesamiento más directo
         
         Args:
             base64_data: String con datos de imagen en base64
@@ -717,51 +767,106 @@ class FaceRecognitionService:
             numpy.ndarray: Imagen del rostro recortada o None si hay error
         """
         try:
-            print(f"      📥 Decodificando imagen base64...")
-            print(f"      📏 Longitud de datos: {len(base64_data)} caracteres")
-            
-            # Remover prefijo data URL si existe
+            # ✅ OPTIMIZACIÓN: Remover prefijo data URL de forma más eficiente
             if ',' in base64_data:
-                base64_data = base64_data.split(',')[1]
-                print(f"      🔧 Prefijo data URL removido")
+                base64_data = base64_data.split(',', 1)[1]  # Solo dividir una vez
             
-            # Decodificar base64
-            print(f"      🔓 Decodificando base64...")
+            # ✅ OPTIMIZACIÓN: Decodificación directa sin logs excesivos
             image_bytes = base64.b64decode(base64_data)
-            print(f"      📦 Bytes decodificados: {len(image_bytes)} bytes")
             
-            # Convertir a imagen PIL
-            print(f"      🖼️  Convirtiendo a imagen PIL...")
-            pil_image = Image.open(BytesIO(image_bytes))
-            print(f"      📐 Dimensiones PIL: {pil_image.size} | Modo: {pil_image.mode}")
+            # ✅ OPTIMIZACIÓN: Usar OpenCV directamente para decodificar (más rápido que PIL)
+            try:
+                # Decodificar directamente con OpenCV (más rápido)
+                nparr = np.frombuffer(image_bytes, np.uint8)
+                opencv_image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if opencv_image is None:
+                    # Fallback a PIL si OpenCV falla
+                    pil_image = Image.open(BytesIO(image_bytes))
+                    if pil_image.mode != 'RGB':
+                        pil_image = pil_image.convert('RGB')
+                    opencv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+                
+            except Exception as e:
+                # Fallback completo a PIL
+                pil_image = Image.open(BytesIO(image_bytes))
+                if pil_image.mode != 'RGB':
+                    pil_image = pil_image.convert('RGB')
+                opencv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
             
-            # Convertir a RGB si es necesario
-            if pil_image.mode != 'RGB':
-                print(f"      🔄 Convirtiendo modo de {pil_image.mode} a RGB...")
-                pil_image = pil_image.convert('RGB')
-            
-            # Convertir a numpy array (OpenCV format BGR)
-            print(f"      🔄 Convirtiendo a formato OpenCV (BGR)...")
-            opencv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-            print(f"      ✅ Imagen OpenCV creada: {opencv_image.shape}")
-            
-            # ✅ EXTRACCIÓN AUTOMÁTICA DEL ROSTRO (SISTEMA PERMISIVO)
-            print("      🎯 Iniciando extracción automática del rostro...")
+            # ✅ OPTIMIZACIÓN: Extracción de rostro más eficiente
             face_image = self._extract_face_region(opencv_image)
             
-            # ✅ AHORA SIEMPRE RETORNA UNA IMAGEN (permisivo)
-            if face_image is not None:
-                print(f"      ✅ Rostro extraído exitosamente: {face_image.shape}")
-                return face_image
-            else:
-                print("      ⚠️ Fallback: Usando imagen original")
-                return opencv_image  # ✅ FALLBACK: Usar imagen original
+            # ✅ OPTIMIZACIÓN: Retornar imagen procesada o original
+            return face_image if face_image is not None else opencv_image
             
         except Exception as e:
-            print(f"      ❌ Error decodificando imagen base64: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"      ❌ Error decodificando imagen: {e}")
             return None
+    
+    def _batch_decode_base64_images(self, base64_data_list):
+        """
+        ✅ NUEVO MÉTODO: Decodifica múltiples imágenes base64 en lote
+        OPTIMIZADO PARA VELOCIDAD - Procesa múltiples imágenes simultáneamente
+        
+        Args:
+            base64_data_list: Lista de strings con datos de imagen en base64
+            
+        Returns:
+            Lista de imágenes OpenCV o None para imágenes fallidas
+        """
+        try:
+            print(f"🚀 DECODIFICACIÓN EN LOTE: {len(base64_data_list)} imágenes")
+            
+            def decode_single_image(base64_data):
+                try:
+                    # ✅ OPTIMIZACIÓN: Remover prefijo data URL de forma más eficiente
+                    if ',' in base64_data:
+                        base64_data = base64_data.split(',', 1)[1]
+                    
+                    # ✅ OPTIMIZACIÓN: Decodificación directa
+                    image_bytes = base64.b64decode(base64_data)
+                    
+                    # ✅ OPTIMIZACIÓN: Usar OpenCV directamente
+                    nparr = np.frombuffer(image_bytes, np.uint8)
+                    opencv_image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    
+                    if opencv_image is None:
+                        # Fallback a PIL
+                        pil_image = Image.open(BytesIO(image_bytes))
+                        if pil_image.mode != 'RGB':
+                            pil_image = pil_image.convert('RGB')
+                        opencv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+                    
+                    # ✅ OPTIMIZACIÓN: Extracción de rostro
+                    face_image = self._extract_face_region(opencv_image)
+                    return face_image if face_image is not None else opencv_image
+                    
+                except Exception as e:
+                    print(f"      ❌ Error decodificando imagen: {e}")
+                    return None
+            
+            # ✅ PROCESAMIENTO PARALELO: Decodificar en lotes de 5
+            batch_size = 5
+            all_images = []
+            
+            for i in range(0, len(base64_data_list), batch_size):
+                batch = base64_data_list[i:i + batch_size]
+                print(f"   📦 Decodificando lote {i//batch_size + 1}: {len(batch)} imágenes")
+                
+                # Procesar lote en paralelo
+                with ThreadPoolExecutor(max_workers=3) as executor:
+                    batch_results = list(executor.map(decode_single_image, batch))
+                    all_images.extend(batch_results)
+            
+            successful = sum(1 for img in all_images if img is not None)
+            print(f"✅ DECODIFICACIÓN EN LOTE COMPLETADA: {successful}/{len(base64_data_list)} exitosas")
+            
+            return all_images
+            
+        except Exception as e:
+            print(f"❌ Error en decodificación en lote: {e}")
+            return [None] * len(base64_data_list)
     
     def _save_base64_image(self, base64_data, file_path):
         """Guarda una imagen desde base64"""

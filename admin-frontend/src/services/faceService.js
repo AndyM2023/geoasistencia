@@ -16,11 +16,26 @@ export const faceService = {
             
             console.log('📤 Request data completo:', requestData);
 
+            // ✅ OPTIMIZACIÓN: Timeout dinámico basado en número de fotos
+            const photoCount = photosBase64.length;
+            let timeoutMs;
+            
+            if (photoCount <= 20) {
+                timeoutMs = 15000; // 15 segundos para ≤20 fotos (MODO ULTRA-RÁPIDO)
+                console.log(`⚡ MODO ULTRA-RÁPIDO: ${photoCount} fotos - Timeout: 15 segundos`);
+            } else if (photoCount <= 50) {
+                timeoutMs = 30000; // 30 segundos para 21-50 fotos
+                console.log(`🚀 MODO OPTIMIZADO: ${photoCount} fotos - Timeout: 30 segundos`);
+            } else {
+                timeoutMs = 60000; // 1 minuto para >50 fotos
+                console.log(`📦 MODO LOTE: ${photoCount} fotos - Timeout: 1 minuto`);
+            }
+
             const response = await api.post(`/employees/${employeeId}/register_face/`, requestData, {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                timeout: 180000 // 3 minutos para procesar 50 fotos con Facenet-512
+                timeout: timeoutMs
             });
 
             console.log('✅ Respuesta del backend Django:', response.data);
