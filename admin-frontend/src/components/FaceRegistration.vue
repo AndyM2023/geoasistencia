@@ -56,15 +56,29 @@
             <div class="capture-indicator">
               <v-progress-circular
                 :model-value="(fotosCapturadas / targetCount) * 100"
-                :color="faceDetected ? 'green-400' : 'orange-400'"
+                :color="isPaused ? 'red-400' : (faceDetected ? 'green-400' : 'orange-400')"
                 size="64"
                 width="6"
                 class="mb-2"
               >
                 {{ fotosCapturadas }}/{{ targetCount }}
               </v-progress-circular>
-              <p class="text-green-400 text-center">Capturando...</p>
-              <div v-if="fotosCapturadas < targetCount" class="text-center">
+              
+              <!-- Estado normal de captura -->
+              <p v-if="!isPaused" class="text-green-400 text-center">Capturando...</p>
+              
+              <!-- Estado de pausa -->
+              <div v-if="isPaused" class="text-center">
+                <v-icon color="red-400" size="48" class="mb-2">mdi-pause-circle</v-icon>
+                <p class="text-red-400 text-center font-weight-bold">Captura Pausada</p>
+                <p class="text-orange-400 text-sm">No se detecta rostro</p>
+                <p class="text-white text-xs mt-1">
+                  Coloque su cara frente a la cámara para continuar
+                </p>
+              </div>
+              
+              <!-- Estado normal de detección -->
+              <div v-if="!isPaused && fotosCapturadas < targetCount" class="text-center">
                 <v-icon 
                   :color="faceDetected ? 'green-400' : 'orange-400'" 
                   size="24" 
@@ -230,6 +244,12 @@ const stream = ref(null);
 const captureInterval = ref(null);
 const faceDetected = ref(false);
 
+// Nuevos estados para control de pausa inteligente
+const isPaused = ref(false);
+const consecutiveFailedAttempts = ref(0);
+const maxFailedAttempts = 3; // Pausar después de 3 intentos fallidos consecutivos
+const pauseDuration = 2000; // Pausar por 2 segundos cuando no se detecta rostro
+
 // Computed para nombre capitalizado
 const displayEmployeeName = computed(() => {
   return capitalizeFullNameString(props.employeeName);
@@ -267,19 +287,25 @@ const detectFace = async () => {
       }
     }
     
-    // Fallback más estricto: análisis de imagen más inteligente
+    // Análisis de imagen MUCHO MÁS ESTRICTO para evitar falsos positivos
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
     
-    // Verificar que la imagen no esté completamente oscura o borrosa
     let totalBrightness = 0;
     let pixelCount = 0;
     let hasVariation = false;
     let lastBrightness = -1;
     let skinTonePixels = 0;
     let totalPixels = 0;
+    let edgePixels = 0; // Píxeles con cambios bruscos (bordes)
+    let centerSkinPixels = 0; // Píxeles de piel en el centro de la imagen
+    let centerPixels = 0;
     
-    // Analizar cada píxel para detectar tonos de piel
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const centerRadius = Math.min(canvas.width, canvas.height) * 0.3; // 30% del tamaño
+    
+    // Analizar cada píxel para detectar características faciales
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
@@ -287,31 +313,47 @@ const detectFace = async () => {
       
       totalPixels++;
       
+      // Calcular posición del píxel
+      const pixelIndex = i / 4;
+      const x = pixelIndex % canvas.width;
+      const y = Math.floor(pixelIndex / canvas.width);
+      
       // Calcular brillo del píxel
       const brightness = (r + g + b) / 3;
       totalBrightness += brightness;
       pixelCount++;
       
-      // Detectar tonos de piel (más flexible)
-      // Los tonos de piel pueden variar mucho, ser más inclusivos
-      if (
-        // Criterio 1: R > G > B (típico de piel)
-        (r > g && g > b) ||
-        // Criterio 2: R y G altos, B bajo (piel clara)
-        (r > 80 && g > 60 && b < 100) ||
-        // Criterio 3: R muy alto, G y B moderados (piel más oscura)
-        (r > 120 && g > 50 && b < 80) ||
-        // Criterio 4: Rango general de tonos de piel
-        (r > 70 && g > 50 && b < 110)
-      ) {
-        skinTonePixels++;
+      // Detectar si está en el centro de la imagen
+      const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      const isInCenter = distanceFromCenter <= centerRadius;
+      
+      if (isInCenter) {
+        centerPixels++;
       }
       
-      // Verificar variación entre píxeles consecutivos
+      // Detectar tonos de piel MUCHO MÁS ESTRICTOS
+      const isSkinTone = (
+        // Criterio 1: R > G > B (típico de piel humana)
+        (r > g && g > b && r > 100 && g > 80 && b < 120) ||
+        // Criterio 2: Piel clara con valores específicos
+        (r > 120 && g > 100 && b < 100 && r - b > 30) ||
+        // Criterio 3: Piel más oscura pero con características humanas
+        (r > 80 && g > 60 && b < 80 && r > b + 20 && g > b + 10)
+      );
+      
+      if (isSkinTone) {
+        skinTonePixels++;
+        if (isInCenter) {
+          centerSkinPixels++;
+        }
+      }
+      
+      // Detectar bordes (cambios bruscos de brillo)
       if (lastBrightness !== -1) {
         const variation = Math.abs(brightness - lastBrightness);
-        if (variation > 30) {
+        if (variation > 50) { // Más estricto para bordes
           hasVariation = true;
+          edgePixels++;
         }
       }
       lastBrightness = brightness;
@@ -319,15 +361,19 @@ const detectFace = async () => {
     
     const averageBrightness = totalBrightness / pixelCount;
     const skinTonePercentage = (skinTonePixels / totalPixels) * 100;
+    const centerSkinPercentage = centerPixels > 0 ? (centerSkinPixels / centerPixels) * 100 : 0;
+    const edgePercentage = (edgePixels / totalPixels) * 100;
     
-    // Criterios más equilibrados para considerar que hay un rostro:
-    // 1. Brillo promedio en rango razonable
-    // 2. Variación suficiente entre píxeles (no borroso)
-    // 3. Porcentaje razonable de tonos de piel
-    // 4. Distribución de colores típica de rostro humano
-    const hasGoodBrightness = averageBrightness > 50 && averageBrightness < 220; // Rango más amplio
-    const hasGoodContrast = hasVariation;
-    const hasSkinTones = skinTonePercentage > 5; // Reducido de 15% a 5%
+    // CRITERIOS EQUILIBRADOS para considerar que hay un rostro:
+    const hasGoodBrightness = averageBrightness > 60 && averageBrightness < 220; // Rango más flexible
+    const hasGoodContrast = hasVariation && edgePercentage > 1; // Bordes más flexibles
+    const hasSkinTones = skinTonePercentage > 8; // Reducido de 15% a 8%
+    const hasCenterSkin = centerSkinPercentage > 10; // Reducido de 20% a 10%
+    const hasReasonableEdges = edgePercentage > 0.5 && edgePercentage < 20; // Más flexible
+    
+    // Verificación adicional: la imagen no debe ser completamente uniforme
+    const isNotUniform = edgePercentage > 0.3; // Más flexible
+    const hasMinimumContent = skinTonePixels > 500; // Reducido de 1000 a 500
     
     console.log('🔍 Análisis de imagen (EQUILIBRADO):', {
       averageBrightness: Math.round(averageBrightness),
@@ -336,16 +382,41 @@ const detectFace = async () => {
       hasGoodContrast,
       skinTonePixels,
       skinTonePercentage: Math.round(skinTonePercentage * 100) / 100,
-      hasSkinTones
+      hasSkinTones,
+      centerSkinPixels,
+      centerSkinPercentage: Math.round(centerSkinPercentage * 100) / 100,
+      hasCenterSkin,
+      edgePixels,
+      edgePercentage: Math.round(edgePercentage * 100) / 100,
+      hasReasonableEdges
     });
     
-    // Solo retornar true si se cumplen los criterios principales
-    const isFace = hasGoodBrightness && hasGoodContrast && hasSkinTones;
+    // Sistema de puntuación más flexible - no todos los criterios son obligatorios
+    let score = 0;
+    const maxScore = 7;
+    
+    if (hasGoodBrightness) score++;
+    if (hasGoodContrast) score++;
+    if (hasSkinTones) score++;
+    if (hasCenterSkin) score++;
+    if (hasReasonableEdges) score++;
+    if (isNotUniform) score++;
+    if (hasMinimumContent) score++;
+    
+    // Se requiere al menos 5 de 7 criterios para considerar que hay un rostro
+    const isFace = score >= 5;
     
     if (isFace) {
-      console.log('✅ Criterios equilibrados cumplidos - Probablemente es un rostro');
+      console.log(`✅ Sistema de puntuación: ${score}/${maxScore} - Es un rostro`);
     } else {
-      console.log('❌ Criterios equilibrados NO cumplidos - No es un rostro');
+      console.log(`❌ Sistema de puntuación: ${score}/${maxScore} - NO es un rostro`);
+      console.log('   - Brillo adecuado:', hasGoodBrightness);
+      console.log('   - Contraste y bordes:', hasGoodContrast);
+      console.log('   - Tonos de piel suficientes:', hasSkinTones);
+      console.log('   - Piel en el centro:', hasCenterSkin);
+      console.log('   - Bordes razonables:', hasReasonableEdges);
+      console.log('   - No es uniforme:', isNotUniform);
+      console.log('   - Contenido mínimo:', hasMinimumContent);
     }
     
     return isFace;
@@ -384,6 +455,9 @@ const startCapture = async () => {
     isCapturing.value = true;
     fotosCapturadas.value = 0;
     capturedPhotos.value = [];
+    isPaused.value = false;
+    consecutiveFailedAttempts.value = 0;
+    faceDetected.value = false;
     mensaje.value = { tipo: 'success', texto: 'Cámara iniciada. Capturando fotos...' };
     
     // Iniciar captura automática
@@ -395,9 +469,30 @@ const startCapture = async () => {
   }
 };
 
-// Función para captura automática
+// Función para captura automática con pausa inteligente
 const startAutomaticCapture = () => {
   captureInterval.value = setInterval(async () => {
+    console.log(`🔄 Ciclo de captura - Pausado: ${isPaused.value}, Fotos: ${fotosCapturadas.value}/${props.targetCount}`);
+    
+    // Si está pausado, verificar si hay rostro para reanudar
+    if (isPaused.value) {
+      console.log('⏸️ Captura pausada - verificando si hay rostro para reanudar...');
+      const faceDetectedResult = await detectFace();
+      faceDetected.value = faceDetectedResult;
+      
+      if (faceDetectedResult) {
+        console.log('✅ Rostro detectado durante pausa - reanudando captura');
+        resumeCapture();
+        // Después de reanudar, proceder con la captura normal
+        if (fotosCapturadas.value < props.targetCount) {
+          await captureFace();
+        }
+      } else {
+        console.log('❌ Aún no se detecta rostro - manteniendo pausa');
+      }
+      return;
+    }
+    
     if (fotosCapturadas.value < props.targetCount) {
       await captureFace();
     } else {
@@ -408,7 +503,7 @@ const startAutomaticCapture = () => {
   }, 1000);
 };
 
-// Función para capturar una foto
+// Función para capturar una foto con control de pausa inteligente
 const captureFace = async () => {
   try {
     if (!videoElement.value || !stream.value) return;
@@ -418,8 +513,24 @@ const captureFace = async () => {
     faceDetected.value = faceDetectedResult;
     
     if (!faceDetectedResult) {
-      console.log('⚠️ No se detectó rostro, saltando captura...');
+      console.log('⚠️ No se detectó rostro, incrementando contador de fallos...');
+      consecutiveFailedAttempts.value++;
+      
+      // Si se alcanza el máximo de intentos fallidos, pausar la captura
+      if (consecutiveFailedAttempts.value >= maxFailedAttempts) {
+        pauseCapture();
+      }
       return;
+    }
+    
+    // Si se detectó rostro, resetear contador y reanudar si estaba pausado
+    if (consecutiveFailedAttempts.value > 0) {
+      console.log('✅ Rostro detectado nuevamente, reseteando contador de fallos');
+      consecutiveFailedAttempts.value = 0;
+    }
+    
+    if (isPaused.value) {
+      resumeCapture();
     }
     
     console.log('✅ Rostro detectado, procediendo con captura...');
@@ -437,9 +548,38 @@ const captureFace = async () => {
     
     console.log(`📸 Foto ${fotosCapturadas.value}/${props.targetCount} capturada (rostro detectado)`);
     
+    // Actualizar mensaje de progreso
+    mensaje.value = { 
+      tipo: 'success', 
+      texto: `Capturando fotos... ${fotosCapturadas.value}/${props.targetCount}` 
+    };
+    
   } catch (error) {
     console.error('❌ Error capturando foto:', error);
   }
+};
+
+// Función para pausar la captura
+const pauseCapture = () => {
+  console.log('⏸️ Pausando captura - no se detecta rostro');
+  isPaused.value = true;
+  mensaje.value = { 
+    tipo: 'warning', 
+    texto: '⏸️ No se detecta rostro. Coloque su cara frente a la cámara para continuar...' 
+  };
+};
+
+// Función para reanudar la captura
+const resumeCapture = () => {
+  console.log('▶️ Reanudando captura - rostro detectado');
+  isPaused.value = false;
+  consecutiveFailedAttempts.value = 0;
+  faceDetected.value = true;
+  mensaje.value = { 
+    tipo: 'success', 
+    texto: `Capturando fotos... ${fotosCapturadas.value}/${props.targetCount}` 
+  };
+  console.log('✅ Estados reseteados - captura reanudada');
 };
 
 // Función para procesar fotos
@@ -484,7 +624,12 @@ const stopCapture = () => {
     stream.value = null;
   }
   
+  // Resetear todos los estados
   isCapturing.value = false;
+  isPaused.value = false;
+  consecutiveFailedAttempts.value = 0;
+  faceDetected.value = false;
+  
   mensaje.value = { tipo: 'info', texto: 'Captura detenida' };
 };
 
