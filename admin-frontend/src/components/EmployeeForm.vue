@@ -171,7 +171,7 @@
                     <!-- Eliminar foto -->
                     <v-btn
                       v-if="editingEmployee && shouldShowDeletePhotoButton(employeeForm, editingEmployee)"
-                      @click="removePhoto(employeeForm, editingEmployee)"
+                      @click="removePhoto()"
                       color="red-400"
                       variant="outlined"
                       prepend-icon="mdi-delete"
@@ -599,7 +599,7 @@ export default {
     const removePhoto = () => {
       if (employeeForm.photo) {
         employeeForm.photo = null
-      } else if (editingEmployee?.photo) {
+      } else if (props.editingEmployee?.photo) {
         employeeForm.photo = 'DELETE_PHOTO'
       }
     }
